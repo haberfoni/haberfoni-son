@@ -20,7 +20,7 @@ const HomePage = () => {
             <SEO />
             <div className="bg-gray-100 min-h-screen">
                 <div className="container mx-auto px-4 pt-4">
-                    <AdBanner />
+                    <AdBanner customMobileDimensions="320x100" customHeight="h-[100px] md:h-[250px]" />
                 </div>
                 <Hero items={heroItems} />
                 <NewsGrid items={gridItems} />

@@ -60,7 +60,7 @@ const NewsDetailPage = () => {
                 image={news.image}
                 url={`/kategori/${slugify(news.category)}/${slug}`}
                 type="article"
-                publishedTime={new Date().toISOString()} // In a real app, use actual date
+                publishedTime={new Date().toISOString()} // In a real app, use actual date from news.time if available as date object
                 author="Haberfoni Editörü"
                 tags={[news.category, 'Haber', 'Gündem']}
             />
@@ -141,6 +141,10 @@ const NewsDetailPage = () => {
                     {/* Sidebar / Related News */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-24">
+                            {/* Ad above Related News */}
+                            <div className="mb-6">
+                                <AdBanner vertical={true} customDimensions="300x250" customHeight="h-[250px]" text="Reklam Alani 300x250" />
+                            </div>
                             <h3 className="text-xl font-bold text-gray-900 mb-6 border-l-4 border-primary pl-4">
                                 Benzer Haberler
                             </h3>
@@ -151,15 +155,11 @@ const NewsDetailPage = () => {
                             </div>
 
                             {/* Ad Placeholder 1 */}
-                            {/* To add a real ad, pass image="URL" and href="URL" props */}
                             <div className="mt-12">
-                                <AdBanner vertical={true} />
+                                <AdBanner vertical={true} customDimensions="300x250" customHeight="h-[250px] md:h-[250px]" text="Reklam Alani 300x250" />
                             </div>
 
-                            {/* Ad Placeholder 2 */}
-                            <div className="mt-6">
-                                <AdBanner vertical={true} />
-                            </div>
+
                         </div>
                     </div>
                 </div>

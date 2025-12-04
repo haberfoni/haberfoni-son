@@ -83,19 +83,41 @@ const Header = () => {
                 <div className="container mx-auto px-4 flex items-center justify-between">
 
                     {/* Left Side: Financial Data */}
-                    <div className="flex items-center space-x-4 overflow-x-auto no-scrollbar flex-1 mr-4">
-                        <div className="hidden md:block text-gray-500 font-medium whitespace-nowrap mr-2">
-                            {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                        {currencyData.map((item) => (
-                            <div key={item.name} className="flex items-center space-x-1 whitespace-nowrap">
-                                <span className="font-bold text-gray-700">{item.name}</span>
-                                <span className="font-mono text-gray-600">{item.value}</span>
-                                <span className={`flex items-center ${item.direction === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                                    {item.direction === 'up' ? <TrendingUp size={10} className="mr-0.5" /> : <TrendingDown size={10} className="mr-0.5" />}
-                                </span>
+                    <div className="flex-1 mr-4 overflow-hidden relative group [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+                        <div className="flex items-center w-max animate-marquee whitespace-nowrap hover:[animation-play-state:paused]">
+                            {/* Original Data */}
+                            <div className="flex items-center space-x-8 pr-8">
+                                <div className="hidden md:block text-gray-500 font-medium mr-2">
+                                    {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                                {currencyData.map((item) => (
+                                    <div key={`orig-${item.name}`} className="flex items-center space-x-2">
+                                        <span className="font-bold text-gray-700">{item.name}</span>
+                                        <span className="font-mono text-gray-600">{item.value}</span>
+                                        <span className={`flex items-center ${item.direction === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                                            {item.direction === 'up' ? <TrendingUp size={12} className="mr-0.5" /> : <TrendingDown size={12} className="mr-0.5" />}
+                                            <span className="text-[10px]">{item.change}</span>
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
+                            {/* Duplicated Data for Seamless Loop */}
+                            <div className="flex items-center space-x-8 pr-8">
+                                <div className="hidden md:block text-gray-500 font-medium mr-2">
+                                    {new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                                {currencyData.map((item) => (
+                                    <div key={`dup-${item.name}`} className="flex items-center space-x-2">
+                                        <span className="font-bold text-gray-700">{item.name}</span>
+                                        <span className="font-mono text-gray-600">{item.value}</span>
+                                        <span className={`flex items-center ${item.direction === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                                            {item.direction === 'up' ? <TrendingUp size={12} className="mr-0.5" /> : <TrendingDown size={12} className="mr-0.5" />}
+                                            <span className="text-[10px]">{item.change}</span>
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     {/* Right Side: Social, Galleries, Weather */}
@@ -104,8 +126,6 @@ const Header = () => {
                         <div className="hidden md:flex items-center space-x-3 border-r border-gray-300 pr-4">
                             <a href={SOCIAL_MEDIA_LINKS.facebook} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors" aria-label="Facebook"><Facebook size={14} /></a>
                             <a href={SOCIAL_MEDIA_LINKS.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors" aria-label="Twitter"><Twitter size={14} /></a>
-                            {/* X Icon (Twitter alternative if needed, using X from lucide if available or just text) */}
-                            <a href={SOCIAL_MEDIA_LINKS.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors font-bold text-xs" aria-label="X (Twitter)">X</a>
                         </div>
 
                         {/* Gallery Links */}
@@ -132,7 +152,7 @@ const Header = () => {
                     <div className="flex items-center justify-between h-16">
                         {/* Logo */}
                         <div className="flex items-center">
-                            <Link to="/" className="text-3xl font-black tracking-tighter italic">
+                            <Link to="/" className="text-3xl font-black tracking-tighter italic" onClick={() => window.scrollTo(0, 0)}>
                                 HABER<span className="text-primary">FONİ</span>
                             </Link>
                         </div>

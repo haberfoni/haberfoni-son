@@ -5,26 +5,36 @@ import { Link, useLocation } from 'react-router-dom';
 import AdBanner from './AdBanner';
 
 const NewsGrid = ({ items = [] }) => {
-    const [visibleCount, setVisibleCount] = React.useState(6);
+    const scrollRef = React.useRef(null);
     const location = useLocation();
+
+    const [visibleCount, setVisibleCount] = React.useState(16);
+    const [prevCount, setPrevCount] = React.useState(16);
 
     // Reset visible count when navigating/location changes
     React.useEffect(() => {
-        setVisibleCount(6);
+        setVisibleCount(16);
     }, [location]);
 
+    // Handle scroll after loading more
+    React.useEffect(() => {
+        if (visibleCount > prevCount && scrollRef.current) {
+            scrollRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        setPrevCount(visibleCount);
+    }, [visibleCount]);
+
     const handleLoadMore = () => {
-        setVisibleCount((prev) => prev + 6);
+        setVisibleCount((prev) => prev + 16);
     };
 
-    // Calculate how many ads to show based on visible rows (3 items per row)
-    // We want 1 ad for every 2 rows (6 items), capped at 4 ads (24 items)
-    const adCount = Math.min(4, Math.max(1, Math.floor(visibleCount / 6)));
+    // Calculate total chunks based on visible count
+    const totalChunks = Math.ceil(Math.min(visibleCount, items.length) / 16);
 
     return (
         <section className="container mx-auto px-4 py-12">
             <div className="mb-8">
-                <AdBanner small />
+                <AdBanner customMobileDimensions="300x250" customHeight="h-[250px] md:h-[250px]" text="Reklam Alani 970x250" />
             </div>
             <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-bold text-gray-900 border-l-4 border-primary pl-4">
@@ -35,53 +45,88 @@ const NewsGrid = ({ items = [] }) => {
                 </Link>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-8">
-                {/* News Column */}
-                <div className="lg:w-3/4">
-                    {/* Render news in chunks of 6 */}
-                    {Array.from({ length: Math.ceil(Math.min(visibleCount, items.length) / 6) }).map((_, chunkIndex) => {
-                        const chunkStart = chunkIndex * 6;
-                        const chunkEnd = Math.min(chunkStart + 6, visibleCount);
-                        const chunkItems = items.slice(chunkStart, chunkEnd);
+            <div className="flex flex-col gap-8">
+                {Array.from({ length: totalChunks }).map((_, chunkIndex) => {
+                    const chunkStart = chunkIndex * 16;
+                    const chunkEnd = Math.min(chunkStart + 16, visibleCount);
+                    const chunkItems = items.slice(chunkStart, chunkEnd);
 
-                        return (
-                            <React.Fragment key={chunkIndex}>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                                    {chunkItems.map((news) => (
-                                        <NewsCard key={news.id} news={news} />
-                                    ))}
+                    const newChunkIndex = Math.ceil(prevCount / 16);
+                    const isPreviousChunk = chunkIndex === newChunkIndex - 1;
+                    const isNewChunk = chunkIndex === newChunkIndex;
+
+                    // Horizontal ad logic: show after chunk if not the last chunk of data and within limit (64 items / 4 chunks)
+                    const showHorizontalAd = chunkEnd < visibleCount && chunkEnd < 64;
+
+                    // Sidebar ad logic: show for every chunk up to 4 chunks (matching previous limit)
+                    const showSidebarAd = chunkIndex < 4;
+                    const isLastSidebarAd = chunkIndex === Math.min(totalChunks, 4) - 1;
+
+                    return (
+                        <React.Fragment key={chunkIndex}>
+                            <div className="flex flex-col lg:flex-row gap-8">
+                                {/* Left Column: News Grid */}
+                                <div className="lg:w-3/4">
+                                    <div
+                                        className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 mb-8 scroll-mt-40"
+                                        ref={isNewChunk && !((chunkIndex * 16) < 64) ? scrollRef : null}
+                                    >
+                                        {chunkItems.map((news) => (
+                                            <NewsCard key={news.id} news={news} />
+                                        ))}
+                                    </div>
                                 </div>
-                                {/* Insert Ad after every 6 items, but not after the last chunk if it's the end of data, and stop after 24 items (4 chunks * 6 = 24) */}
-                                {chunkEnd < visibleCount && chunkEnd < 24 && (
-                                    <div className="mb-8">
-                                        <AdBanner />
+
+                                {/* Right Column: Sidebar Ad */}
+                                {showSidebarAd && (
+                                    <div className="lg:w-1/4 hidden lg:block">
+                                        {isLastSidebarAd && chunkIndex > 0 ? (
+                                            <div className="sticky top-40">
+                                                <AdBanner
+                                                    vertical={true}
+                                                    customDimensions="300x600"
+                                                    customHeight="h-[250px] md:h-[600px]"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-4">
+                                                <AdBanner
+                                                    vertical={true}
+                                                    customDimensions="300x250"
+                                                    customHeight="h-[250px] md:h-[250px]"
+                                                />
+                                                <AdBanner
+                                                    vertical={true}
+                                                    customDimensions="300x250"
+                                                    customHeight="h-[250px] md:h-[250px]"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 )}
-                            </React.Fragment>
-                        );
-                    })}
-                </div>
+                            </div>
 
-                {/* Sidebar Ad Column */}
-                <div className="lg:w-1/4">
-                    <div className="flex flex-col gap-8">
-                        {Array.from({ length: adCount }).map((_, index) => (
-                            <AdBanner key={index} vertical={true} customHeight="h-[780px]" customDimensions="300x780" />
-                        ))}
+                            {/* Full Width Horizontal Ad */}
+                            {showHorizontalAd && (
+                                <div className="mb-8 scroll-mt-40" ref={isPreviousChunk ? scrollRef : null}>
+                                    <AdBanner customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px] md:h-[250px]" text="Reklam Alani 970x250" />
+                                </div>
+                            )}
+                        </React.Fragment>
+                    );
+                })}
+
+                {visibleCount < items.length && (
+                    <div className="mt-12 text-center">
+                        <button
+                            onClick={handleLoadMore}
+                            className="px-8 py-3 bg-white border border-gray-200 text-gray-600 font-medium rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                        >
+                            Daha Fazla Haber Yükle
+                        </button>
                     </div>
-                </div>
+                )}
             </div>
-
-            {visibleCount < items.length && (
-                <div className="mt-12 text-center">
-                    <button
-                        onClick={handleLoadMore}
-                        className="px-8 py-3 bg-white border border-gray-200 text-gray-600 font-medium rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-                    >
-                        Daha Fazla Haber Yükle
-                    </button>
-                </div>
-            )}
         </section>
     );
 };

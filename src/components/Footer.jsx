@@ -65,7 +65,7 @@ const Footer = () => {
                     <div>
                         <h3 className="text-white font-bold text-lg mb-6">Kategoriler</h3>
                         <ul className="space-y-3">
-                            {categories.slice(0, 5).map((category) => (
+                            {categories.map((category) => (
                                 <li key={category}>
                                     <Link to={`/kategori/${slugify(category)}`} className="hover:text-primary transition-colors">
                                         {category}
@@ -99,6 +99,7 @@ const Footer = () => {
                             <input
                                 type="email"
                                 placeholder="E-posta adresiniz"
+                                aria-label="E-posta adresiniz"
                                 className="bg-gray-800 border-none rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-primary outline-none disabled:opacity-50"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
@@ -108,6 +109,7 @@ const Footer = () => {
                             <button
                                 onClick={handleSubscribe}
                                 disabled={status === 'loading'}
+                                aria-label="Bültene Abone Ol"
                                 className="bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
                             >
                                 {status === 'loading' ? (
@@ -133,7 +135,6 @@ const Footer = () => {
                         &copy; 2025 Haberfoni. Tüm hakları saklıdır.
                     </p>
                     <div className="flex items-center space-x-2 text-sm text-gray-500">
-                        {/* Removed Made in Bolt */}
                     </div>
                 </div>
             </div>

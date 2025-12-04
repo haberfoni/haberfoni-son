@@ -4,9 +4,9 @@ import { HelmetProvider } from 'react-helmet-async';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
+import HomePage from './pages/HomePage';
 
 // Lazy loaded pages
-const HomePage = lazy(() => import('./pages/HomePage'));
 const NewsDetailPage = lazy(() => import('./pages/NewsDetailPage'));
 const CategoryPage = lazy(() => import('./pages/CategoryPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));

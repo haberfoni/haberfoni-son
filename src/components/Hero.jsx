@@ -33,7 +33,7 @@ const Hero = ({ items = [] }) => {
         <section className="container mx-auto px-4 py-4">
             <div className="flex flex-col lg:flex-row gap-4">
                 {/* Main Slider (66%) */}
-                <div className="lg:w-2/3 relative h-[400px] lg:h-[500px] rounded-lg overflow-hidden group">
+                <div className="lg:w-2/3 relative h-[250px] md:h-[400px] lg:h-[500px] rounded-lg overflow-hidden group">
                     <div
                         className="flex h-full transition-transform duration-500 ease-in-out"
                         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
@@ -98,7 +98,7 @@ const Hero = ({ items = [] }) => {
                 </div>
 
                 {/* Side List (33%) - Surmanşet */}
-                <div className="lg:w-1/3 flex flex-col gap-2 h-[500px] overflow-y-auto pr-1 custom-scrollbar">
+                <div className="lg:w-1/3 flex flex-col gap-2 h-[300px] lg:h-[500px] overflow-y-auto pr-1 custom-scrollbar">
                     {items.map((item, index) => (
                         <Link
                             key={item.id}

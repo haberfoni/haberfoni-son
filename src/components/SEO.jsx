@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 const SEO = ({ title, description, image, url, type = 'website', publishedTime, modifiedTime, author, tags }) => {
     const siteTitle = 'Haberfoni';
     const siteUrl = 'https://haberfoni.com'; // Replace with actual domain
-    const defaultImage = `${siteUrl}/default-og-image.jpg`; // Replace with actual default image
+    const defaultImage = `${siteUrl}/images/slider_economy.png`; // Replace with actual default image
 
     const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
     const fullUrl = url ? `${siteUrl}${url}` : siteUrl;

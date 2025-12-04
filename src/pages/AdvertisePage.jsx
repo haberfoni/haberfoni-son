@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart, Users, MousePointer, Download } from 'lucide-react';
+import { BarChart, Users, MousePointer, Download, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
 
@@ -43,9 +43,32 @@ const AdvertisePage = () => {
             <div className="mb-20">
                 <h2 className="text-3xl font-bold text-center mb-12">Reklam Modellerimiz</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
-                        <div className="bg-gray-100 h-48 flex items-center justify-center text-gray-400">
-                            <span className="text-lg font-medium">Banner Alanları</span>
+                    {/* Display Ads Visual */}
+                    <div className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
+                        <div className="bg-gray-50 h-48 p-4 relative flex flex-col gap-2">
+                            {/* Header Ad */}
+                            <div className="h-8 w-full bg-primary/20 border border-primary/40 rounded flex items-center justify-center text-[10px] font-bold text-primary mb-1">
+                                970x250 Masthead
+                            </div>
+                            <div className="flex gap-2 flex-1">
+                                {/* Content Area */}
+                                <div className="flex-1 flex flex-col gap-2">
+                                    <div className="h-2 w-full bg-gray-200 rounded"></div>
+                                    <div className="h-2 w-3/4 bg-gray-200 rounded"></div>
+                                    <div className="h-2 w-full bg-gray-200 rounded"></div>
+                                    <div className="h-2 w-5/6 bg-gray-200 rounded"></div>
+                                    <div className="h-20 w-full bg-gray-200 rounded mt-auto"></div>
+                                </div>
+                                {/* Sidebar Ads */}
+                                <div className="w-1/3 flex flex-col gap-2">
+                                    <div className="h-16 w-full bg-primary/20 border border-primary/40 rounded flex items-center justify-center text-[10px] font-bold text-primary text-center">
+                                        300x250<br />Sidebar
+                                    </div>
+                                    <div className="h-full w-full bg-primary/20 border border-primary/40 rounded flex items-center justify-center text-[10px] font-bold text-primary text-center">
+                                        300x600<br />Sticky
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div className="p-6">
                             <h3 className="text-xl font-bold mb-3">Display Reklamlar</h3>
@@ -60,9 +83,21 @@ const AdvertisePage = () => {
                         </div>
                     </div>
 
-                    <div className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
-                        <div className="bg-gray-100 h-48 flex items-center justify-center text-gray-400">
-                            <span className="text-lg font-medium">Advertorial</span>
+                    {/* Advertorial Visual */}
+                    <div className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
+                        <div className="bg-gray-50 h-48 p-4 flex items-center justify-center">
+                            <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 w-full max-w-[240px]">
+                                <div className="h-24 bg-gray-200 rounded-md mb-3 relative overflow-hidden">
+                                    <div className="absolute top-2 right-2 bg-white/90 px-2 py-0.5 rounded text-[10px] font-bold text-gray-500">
+                                        SPONSORLU
+                                    </div>
+                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                        <Users size={24} />
+                                    </div>
+                                </div>
+                                <div className="h-3 w-full bg-gray-800 rounded mb-2"></div>
+                                <div className="h-2 w-2/3 bg-gray-300 rounded"></div>
+                            </div>
                         </div>
                         <div className="p-6">
                             <h3 className="text-xl font-bold mb-3">Sponsorlu İçerik</h3>
@@ -77,9 +112,21 @@ const AdvertisePage = () => {
                         </div>
                     </div>
 
-                    <div className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
-                        <div className="bg-gray-100 h-48 flex items-center justify-center text-gray-400">
-                            <span className="text-lg font-medium">Video Reklam</span>
+                    {/* Video Visual */}
+                    <div className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group">
+                        <div className="bg-gray-50 h-48 p-4 flex flex-col justify-center gap-2">
+                            <div className="h-2 w-full bg-gray-200 rounded"></div>
+                            <div className="h-2 w-5/6 bg-gray-200 rounded"></div>
+                            <div className="h-24 w-full bg-black/90 rounded-lg flex items-center justify-center relative my-1 group-hover:scale-[1.02] transition-transform">
+                                <div className="w-10 h-10 rounded-full bg-primary/90 flex items-center justify-center text-white pl-1 shadow-lg">
+                                    <Play size={20} fill="currentColor" />
+                                </div>
+                                <div className="absolute bottom-2 left-2 text-[10px] text-white/80 bg-black/50 px-1.5 rounded">
+                                    Reklam • 0:15
+                                </div>
+                            </div>
+                            <div className="h-2 w-full bg-gray-200 rounded"></div>
+                            <div className="h-2 w-4/5 bg-gray-200 rounded"></div>
                         </div>
                         <div className="p-6">
                             <h3 className="text-xl font-bold mb-3">Video & Native</h3>
@@ -113,7 +160,7 @@ const AdvertisePage = () => {
                         className="bg-transparent border border-white hover:bg-white/10 text-white font-bold py-4 px-8 rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                         <Download size={20} />
-                        Medya Kitini İndir
+                        Medya Kitini Görüntüle
                     </a>
                 </div>
             </div>

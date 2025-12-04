@@ -366,7 +366,23 @@ export const newsItems = [
         category: "Gündem",
         time: "00:00",
         author: "Çevre Bilinci"
-    }
+    },
+    // Extra items for Gündem to test Load More
+    { id: 125, title: "Gündem Test Haber 1", summary: "Test özeti 1", image: "https://picsum.photos/seed/gundem1/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 126, title: "Gündem Test Haber 2", summary: "Test özeti 2", image: "https://picsum.photos/seed/gundem2/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 127, title: "Gündem Test Haber 3", summary: "Test özeti 3", image: "https://picsum.photos/seed/gundem3/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 128, title: "Gündem Test Haber 4", summary: "Test özeti 4", image: "https://picsum.photos/seed/gundem4/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 129, title: "Gündem Test Haber 5", summary: "Test özeti 5", image: "https://picsum.photos/seed/gundem5/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 130, title: "Gündem Test Haber 6", summary: "Test özeti 6", image: "https://picsum.photos/seed/gundem6/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 131, title: "Gündem Test Haber 7", summary: "Test özeti 7", image: "https://picsum.photos/seed/gundem7/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 132, title: "Gündem Test Haber 8", summary: "Test özeti 8", image: "https://picsum.photos/seed/gundem8/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 133, title: "Gündem Test Haber 9", summary: "Test özeti 9", image: "https://picsum.photos/seed/gundem9/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 134, title: "Gündem Test Haber 10", summary: "Test özeti 10", image: "https://picsum.photos/seed/gundem10/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 135, title: "Gündem Test Haber 11", summary: "Test özeti 11", image: "https://picsum.photos/seed/gundem11/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 136, title: "Gündem Test Haber 12", summary: "Test özeti 12", image: "https://picsum.photos/seed/gundem12/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 137, title: "Gündem Test Haber 13", summary: "Test özeti 13", image: "https://picsum.photos/seed/gundem13/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 138, title: "Gündem Test Haber 14", summary: "Test özeti 14", image: "https://picsum.photos/seed/gundem14/800/600", category: "Gündem", time: "00:00", author: "Test" },
+    { id: 139, title: "Gündem Test Haber 15", summary: "Test özeti 15", image: "https://picsum.photos/seed/gundem15/800/600", category: "Gündem", time: "00:00", author: "Test" }
 ];
 
 export const videoGalleryItems = [
