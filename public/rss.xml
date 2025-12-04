@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+  <title>Haberfoni</title>
+  <link>https://haberfoni.com</link>
+  <description>Türkiye ve dünyadan en güncel haberler, son dakika gelişmeleri ve özel dosyalar Haberfoni'de.</description>
+  <language>tr</language>
+  <item>
+    <title>Örnek Haber Başlığı 1</title>
+    <link>https://haberfoni.com/haber/1</link>
+    <description>Haberin kısa özeti buraya gelecek.</description>
+    <pubDate>Wed, 04 Dec 2025 00:00:00 GMT</pubDate>
+  </item>
+  <item>
+    <title>Örnek Haber Başlığı 2</title>
+    <link>https://haberfoni.com/haber/2</link>
+    <description>Haberin kısa özeti buraya gelecek.</description>
+    <pubDate>Wed, 04 Dec 2025 00:00:00 GMT</pubDate>
+  </item>
+</channel>
+</rss>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haberfoni - Medya Kiti 2025</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 40px;
+            color: #1a1a1a;
+            background: white;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            border: 1px solid #eee;
+            padding: 60px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .header {
+            border-bottom: 4px solid #E30A17;
+            padding-bottom: 30px;
+            margin-bottom: 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .logo {
+            font-size: 48px;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -2px;
+            line-height: 1;
+        }
+
+        .text-primary {
+            color: #E30A17;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .section {
+            margin-bottom: 60px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #1a1a1a;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 32px;
+            background: #E30A17;
+            margin-right: 15px;
+            border-radius: 4px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 42px;
+            font-weight: 800;
+            color: #E30A17;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .demographics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .demo-chart {
+            background: #fff;
+            border: 1px solid #eee;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .bar-container {
+            margin-bottom: 15px;
+        }
+
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .bar-bg {
+            background: #eee;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            background: #E30A17;
+            height: 100%;
+            border-radius: 5px;
+        }
+
+        .ad-formats table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .ad-formats th {
+            text-align: left;
+            padding: 15px;
+            background: #f9f9f9;
+            border-bottom: 2px solid #eee;
+        }
+
+        .ad-formats td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .contact-box {
+            background: #1a1a1a;
+            color: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .contact-box h3 {
+            margin-top: 0;
+            font-size: 24px;
+        }
+
+        .contact-info {
+            font-size: 18px;
+            margin-top: 20px;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+
+            .container {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+                max-width: 100%;
+            }
+
+            .contact-box {
+                background: #f0f0f0;
+                color: black;
+                border: 1px solid #ccc;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <div class="logo">HABER<span class="text-primary">FONİ</span></div>
+                <div style="margin-top: 10px; color: #888;">Türkiye'nin Yeni Nesil Haber Platformu</div>
+            </div>
+            <div class="subtitle">MEDYA KİTİ 2025</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Rakamlarla Haberfoni</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">5M+</div>
+                    <div class="stat-label">Aylık Ziyaretçi</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">12M+</div>
+                    <div class="stat-label">Sayfa Görüntüleme</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">4.5dk</div>
+                    <div class="stat-label">Ort. Kalış Süresi</div>
+                </div>
+            </div>
+            <p>
+                Haberfoni, doğru ve tarafsız habercilik anlayışıyla kısa sürede Türkiye'nin en çok takip edilen dijital
+                haber kaynaklarından biri haline gelmiştir. Okuyucularımız, gündemi yakından takip eden, eğitimli ve
+                teknolojiye hakim bir kitleden oluşmaktadır.
+            </p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Okuyucu Profili</div>
+            <div class="demographics-grid">
+                <div class="demo-chart">
+                    <h3 style="margin-top: 0; margin-bottom: 20px;">Cinsiyet Dağılımı</h3>
+                    <div class="bar-container">
+                        <div class="bar-label"><span>Erkek</span><span>55%</span></div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 55%"></div>
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-label"><span>Kadın</span><span>45%</span></div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 45%; background: #333;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="demo-chart">
+                    <h3 style="margin-top: 0; margin-bottom: 20px;">Yaş Dağılımı</h3>
+                    <div class="bar-container">
+                        <div class="bar-label"><span>18-24</span><span>15%</span></div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 15%; opacity: 0.4"></div>
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-label"><span>25-34</span><span>35%</span></div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 35%"></div>
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-label"><span>35-44</span><span>30%</span></div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 30%; opacity: 0.8"></div>
+                        </div>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-label"><span>45+</span><span>20%</span></div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: 20%; opacity: 0.6"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Reklam Formatları</div>
+            <div class="ad-formats">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Format</th>
+                            <th>Boyut (px)</th>
+                            <th>Konum</th>
+                            <th>Cihaz</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Masthead</strong></td>
+                            <td>970x250</td>
+                            <td>Header Üstü</td>
+                            <td>Masaüstü</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sidebar Box</strong></td>
+                            <td>300x250</td>
+                            <td>Haber Detay Sağ</td>
+                            <td>Tümü</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Sticky Tower</strong></td>
+                            <td>300x600</td>
+                            <td>Haber Detay Sağ</td>
+                            <td>Masaüstü</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mobile Sticky</strong></td>
+                            <td>320x50</td>
+                            <td>Ekran Altı</td>
+                            <td>Mobil</td>
+                        </tr>
+                        <tr>
+                            <td><strong>In-Read Video</strong></td>
+                            <td>Responsive</td>
+                            <td>Haber Metni İçi</td>
+                            <td>Tümü</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="contact-box">
+                <h3>Reklam Vermek İçin</h3>
+                <p>Markanıza özel çözümler ve fiyat teklifi için bizimle iletişime geçin.</p>
+                <div class="contact-info">
+                    <strong>E-posta:</strong> reklam@haberfoni.com<br>
+                    <strong>Telefon:</strong> +90 212 123 45 67
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

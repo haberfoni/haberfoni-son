@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haberfoni - Kurumsal Kimlik</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 40px;
+            color: #1a1a1a;
+            background: white;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #eee;
+            padding: 60px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .header {
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #888;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .logo-display {
+            font-size: 60px;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -2px;
+        }
+
+        .text-primary {
+            color: #E30A17;
+        }
+
+        .favicon-grid {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+        }
+
+        .favicon-item {
+            text-align: center;
+        }
+
+        .favicon-item img {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+
+        .color-grid {
+            display: flex;
+            gap: 20px;
+        }
+
+        .color-card {
+            width: 150px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-preview {
+            height: 100px;
+        }
+
+        .color-info {
+            padding: 15px;
+            background: #f9f9f9;
+        }
+
+        .color-name {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .color-hex {
+            font-family: monospace;
+            color: #666;
+            font-size: 14px;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+
+            .container {
+                box-shadow: none;
+                border: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Kurumsal Kimlik</h1>
+            <span>Versiyon 1.0</span>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Logo</div>
+            <div class="logo-display">
+                HABER<span class="text-primary">FONİ</span>
+            </div>
+            <p style="margin-top: 20px; color: #666;">
+                Font: Inter / Style: Black Italic / Tracking: Tighter
+            </p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Favicon / İkon</div>
+            <div class="favicon-grid">
+                <div class="favicon-item">
+                    <img src="/favicon.svg" alt="Favicon">
+                    <div>Orijinal</div>
+                </div>
+                <div class="favicon-item">
+                    <img src="/favicon.svg" alt="Favicon" style="background: #000; padding: 10px;">
+                    <div>Koyu Zemin</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Renk Paleti</div>
+            <div class="color-grid">
+                <div class="color-card">
+                    <div class="color-preview" style="background-color: #E30A17;"></div>
+                    <div class="color-info">
+                        <span class="color-name">Primary Red</span>
+                        <span class="color-hex">#E30A17</span>
+                    </div>
+                </div>
+                <div class="color-card">
+                    <div class="color-preview" style="background-color: #1a1a1a;"></div>
+                    <div class="color-info">
+                        <span class="color-name">Black</span>
+                        <span class="color-hex">#1a1a1a</span>
+                    </div>
+                </div>
+                <div class="color-card">
+                    <div class="color-preview" style="background-color: #ffffff; border-bottom: 1px solid #eee;"></div>
+                    <div class="color-info">
+                        <span class="color-name">White</span>
+                        <span class="color-hex">#FFFFFF</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
