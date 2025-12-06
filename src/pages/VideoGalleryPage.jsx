@@ -2,18 +2,42 @@ import React from 'react';
 import { Play, Clock, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import SEO from '../components/SEO';
-import { videoGalleryItems } from '../data/mockData';
+import AdBanner from '../components/AdBanner'; // Import AdBanner
+import { fetchVideos } from '../services/api';
+import { mapVideoItem } from '../utils/mappers';
 import { slugify } from '../utils/slugify';
 
 const VideoGalleryPage = () => {
-    // Get Featured Video (first item)
-    const featuredVideo = videoGalleryItems[0];
+    const [featuredVideo, setFeaturedVideo] = React.useState(null);
+    const [mostWatched, setMostWatched] = React.useState([]);
+    const [latestVideos, setLatestVideos] = React.useState([]);
+    const [visibleCount, setVisibleCount] = React.useState(20);
+    const [prevCount, setPrevCount] = React.useState(20);
+    const scrollRef = React.useRef(null);
 
-    // Get Most Watched (random 5 items for demo)
-    const mostWatched = videoGalleryItems.slice(1, 6);
+    // Handle scroll after loading more
+    React.useEffect(() => {
+        if (visibleCount > prevCount && scrollRef.current) {
+            scrollRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        setPrevCount(visibleCount);
+    }, [visibleCount]);
 
-    // Get Latest Videos (all items)
-    const latestVideos = videoGalleryItems;
+    React.useEffect(() => {
+        const loadVideos = async () => {
+            const data = await fetchVideos();
+            const mappedData = data.map(mapVideoItem);
+
+            if (mappedData.length > 0) {
+                setFeaturedVideo(mappedData[0]);
+                setMostWatched(mappedData.slice(1, 6));
+                setLatestVideos(mappedData);
+            }
+        };
+        loadVideos();
+    }, []);
+
+    if (!featuredVideo) return null; // Or loading spinner
 
     return (
         <div className="bg-gray-100 min-h-screen pb-12">
@@ -75,40 +99,79 @@ const VideoGalleryPage = () => {
                             </div>
                         </Link>
 
-                        {/* Latest Videos Grid */}
+                        {/* Latest Videos Grid with Chunking & Ads */}
                         <div>
                             <div className="flex items-center space-x-2 mb-4 border-b-2 border-gray-200 pb-2">
                                 <span className="text-lg font-bold text-gray-800 uppercase">Son Eklenenler</span>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                {latestVideos.map((video) => (
-                                    <Link key={video.id} to={`/video-galeri/${slugify(video.title)}`} className="bg-white rounded-lg shadow-sm overflow-hidden group cursor-pointer hover:shadow-md transition-shadow">
-                                        <div className="relative aspect-video">
-                                            <img
-                                                src={video.thumbnail}
-                                                alt={video.title}
-                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                            />
-                                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                                                <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                                    <Play size={20} className="text-red-600 ml-1" fill="currentColor" />
-                                                </div>
-                                            </div>
-                                            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                                                {video.duration}
-                                            </div>
+
+                            {/* Display items in chunks of 20 */}
+                            {Array.from({ length: Math.ceil(Math.min(visibleCount, latestVideos.length) / 20) }).map((_, chunkIndex) => {
+                                const chunkStart = chunkIndex * 20;
+                                const chunkEnd = Math.min(chunkStart + 20, visibleCount);
+                                const chunkItems = latestVideos.slice(chunkStart, chunkEnd);
+
+                                // Check if this is a new chunk loaded by "Load More" to set ref
+                                const newChunkIndex = Math.ceil(prevCount / 20);
+                                const isNewChunk = chunkIndex === newChunkIndex;
+                                const showHorizontalAd = chunkEnd < visibleCount; // Show ad between loaded chunks if more exist
+
+                                return (
+                                    <React.Fragment key={chunkIndex}>
+                                        <div
+                                            className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 scroll-mt-24"
+                                            ref={isNewChunk && chunkIndex > 0 ? scrollRef : null}
+                                        >
+                                            {chunkItems.map((video) => (
+                                                <Link key={video.id} to={`/video-galeri/${slugify(video.title)}`} className="bg-white rounded-lg shadow-sm overflow-hidden group cursor-pointer hover:shadow-md transition-shadow">
+                                                    <div className="relative aspect-video">
+                                                        <img
+                                                            src={video.thumbnail}
+                                                            alt={video.title}
+                                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                                                            <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                                <Play size={20} className="text-red-600 ml-1" fill="currentColor" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                                            {video.duration}
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-4">
+                                                        <h3 className="font-bold text-gray-800 group-hover:text-red-600 transition-colors line-clamp-2 h-12 mb-2">
+                                                            {video.title}
+                                                        </h3>
+                                                        <div className="flex items-center justify-between text-gray-500 text-xs">
+                                                            <span>{video.date}</span>
+                                                        </div>
+                                                    </div>
+                                                </Link>
+                                            ))}
                                         </div>
-                                        <div className="p-4">
-                                            <h3 className="font-bold text-gray-800 group-hover:text-red-600 transition-colors line-clamp-2 h-12 mb-2">
-                                                {video.title}
-                                            </h3>
-                                            <div className="flex items-center justify-between text-gray-500 text-xs">
-                                                <span>{video.date}</span>
+
+                                        {/* Horizontal Ad between chunks */}
+                                        {showHorizontalAd && (
+                                            <div className="mb-8">
+                                                <AdBanner customDimensions="728x90" customMobileDimensions="300x250" customHeight="h-[250px] md:h-[90px]" text="Reklam Alani 728x90" />
                                             </div>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+
+                            {/* Load More Button */}
+                            {visibleCount < latestVideos.length && (
+                                <div className="mt-8 text-center">
+                                    <button
+                                        onClick={() => setVisibleCount(prev => prev + 20)}
+                                        className="px-8 py-3 bg-white border border-gray-200 text-gray-600 font-medium rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                                    >
+                                        Daha Fazla Gör
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
 

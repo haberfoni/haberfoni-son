@@ -1,20 +1,42 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Clock, Eye, Share2, Camera, Image as ImageIcon } from 'lucide-react';
-import { photoGalleryItems } from '../data/mockData';
+import { fetchPhotoGalleries, fetchGalleryImages } from '../services/api';
+import { mapPhotoGalleryItem } from '../utils/mappers';
 import SEO from '../components/SEO';
 import { slugify } from '../utils/slugify';
 
 const PhotoDetailPage = () => {
     const { slug } = useParams();
 
-    // Find album by slug
-    const album = photoGalleryItems.find(item => slugify(item.title) === slug);
+    const [album, setAlbum] = React.useState(null);
+    const [images, setImages] = React.useState([]);
+    const [relatedAlbums, setRelatedAlbums] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
 
-    // Filter related albums (exclude current)
-    const relatedAlbums = photoGalleryItems
-        .filter(item => item.id !== album?.id)
-        .slice(0, 5);
+    React.useEffect(() => {
+        const loadAlbum = async () => {
+            setLoading(true);
+            const galleries = await fetchPhotoGalleries();
+            const mappedGalleries = galleries.map(mapPhotoGalleryItem);
+
+            const currentAlbum = mappedGalleries.find(item => slugify(item.title) === slug);
+            setAlbum(currentAlbum);
+
+            if (currentAlbum) {
+                const galleryImages = await fetchGalleryImages(currentAlbum.id);
+                setImages(galleryImages.map(img => img.image_url));
+
+                setRelatedAlbums(mappedGalleries
+                    .filter(item => item.id !== currentAlbum.id)
+                    .slice(0, 5));
+            }
+            setLoading(false);
+        };
+        loadAlbum();
+    }, [slug]);
+
+    if (loading) return <div className="text-center py-20">Yükleniyor...</div>;
 
     if (!album) {
         return (
@@ -26,9 +48,6 @@ const PhotoDetailPage = () => {
             </div>
         );
     }
-
-    // Mock images if not present
-    const images = album.images || Array(5).fill(album.thumbnail);
 
     return (
         <div className="bg-gray-100 min-h-screen pb-12">

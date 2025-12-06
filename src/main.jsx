@@ -1,10 +1,43 @@
-import { StrictMode } from 'react'
+import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Uncaught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+          <h1>Bir hata oluştu.</h1>
+          <pre style={{ backgroundColor: '#f0f0f0', padding: '10px' }}>
+            {this.state.error && this.state.error.toString()}
+          </pre>
+          <button onClick={() => window.location.href = '/'}>Ana Sayfaya Dön</button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )

@@ -2,9 +2,11 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import NewsCard from '../components/NewsCard';
 import AdBanner from '../components/AdBanner';
-import { newsItems, sliderItems } from '../data/mockData';
+import { fetchNewsByCategory } from '../services/api';
+import { mapNewsItem } from '../utils/mappers';
 import SEO from '../components/SEO';
 import { slugify } from '../utils/slugify';
+import { categories } from '../data/mockData';
 
 const CategoryPage = () => {
     const { categoryName } = useParams();
@@ -12,18 +14,22 @@ const CategoryPage = () => {
     const [visibleCount, setVisibleCount] = React.useState(16);
     const [prevCount, setPrevCount] = React.useState(16);
 
-    // Combine all news items for filtering
-    const allNews = [...sliderItems, ...newsItems];
+    const [categoryNews, setCategoryNews] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
 
-    // Filter news by category (slug comparison)
-    const categoryNews = allNews.filter(
-        item => slugify(item.category) === categoryName
-    );
+    React.useEffect(() => {
+        const loadCategoryNews = async () => {
+            setLoading(true);
+            const data = await fetchNewsByCategory(categoryName);
+            setCategoryNews(data.map(mapNewsItem));
+            setLoading(false);
+        };
+        loadCategoryNews();
+    }, [categoryName]);
 
-    // Get display name from the first item found or capitalize slug
-    const displayCategoryName = categoryNews.length > 0
-        ? categoryNews[0].category
-        : categoryName?.charAt(0).toUpperCase() + categoryName?.slice(1);
+    // Find the proper display name (e.g. "gundem" -> "Gündem")
+    const matchedCategory = categories.find(c => slugify(c) === categoryName);
+    const displayCategoryName = matchedCategory || categoryName?.charAt(0).toUpperCase() + categoryName?.slice(1);
 
     // Reset visible count when category changes
     React.useEffect(() => {
@@ -40,9 +46,32 @@ const CategoryPage = () => {
         setPrevCount(visibleCount);
     }, [visibleCount]);
 
-    const handleLoadMore = () => {
+    const observerTarget = React.useRef(null);
+
+    const handleLoadMore = React.useCallback(() => {
         setVisibleCount((prev) => prev + 16);
-    };
+    }, []);
+
+    React.useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && visibleCount < categoryNews.length) {
+                    handleLoadMore();
+                }
+            },
+            { threshold: 0.1, rootMargin: '100px' }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => {
+            if (observerTarget.current) {
+                observer.unobserve(observerTarget.current);
+            }
+        };
+    }, [handleLoadMore, visibleCount, categoryNews.length]);
 
     const displayedNews = categoryNews.slice(0, visibleCount);
 
@@ -61,10 +90,14 @@ const CategoryPage = () => {
             </h1>
 
             <div className="mb-8">
-                <AdBanner customMobileDimensions="300x250" customHeight="h-[250px] md:h-[250px]" text="Reklam Alani 970x250" />
+                <AdBanner placementCode="category_top" customMobileDimensions="300x250" customHeight="h-[250px] md:h-[250px]" text="Reklam Alani 970x250" />
             </div>
 
-            {categoryNews.length > 0 ? (
+            {loading ? (
+                <div className="flex justify-center py-20">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                </div>
+            ) : categoryNews.length > 0 ? (
                 <div className="flex flex-col gap-8">
                     {Array.from({ length: totalChunks }).map((_, chunkIndex) => {
                         const chunkStart = chunkIndex * 16;
@@ -105,6 +138,7 @@ const CategoryPage = () => {
                                             {isLastSidebarAd && chunkIndex > 0 ? (
                                                 <div className="sticky top-40">
                                                     <AdBanner
+                                                        placementCode="sidebar_sticky"
                                                         vertical={true}
                                                         customDimensions="300x600"
                                                         customHeight="h-[250px] md:h-[600px]"
@@ -113,11 +147,13 @@ const CategoryPage = () => {
                                             ) : (
                                                 <div className="flex flex-col gap-4">
                                                     <AdBanner
+                                                        placementCode="sidebar_1"
                                                         vertical={true}
                                                         customDimensions="300x250"
                                                         customHeight="h-[250px] md:h-[250px]"
                                                     />
                                                     <AdBanner
+                                                        placementCode="sidebar_2"
                                                         vertical={true}
                                                         customDimensions="300x250"
                                                         customHeight="h-[250px] md:h-[250px]"
@@ -131,7 +167,13 @@ const CategoryPage = () => {
                                 {/* Full Width Horizontal Ad */}
                                 {showHorizontalAd && (
                                     <div className="mb-8 scroll-mt-40" ref={isPreviousChunk ? scrollRef : null}>
-                                        <AdBanner customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px] md:h-[250px]" text="Reklam Alani 970x250" />
+                                        <AdBanner
+                                            placementCode={chunkIndex === 0 ? "category_horizontal" : `category_horizontal_${chunkIndex + 1}`}
+                                            customDimensions="970x250"
+                                            customMobileDimensions="300x250"
+                                            customHeight="h-[250px] md:h-[250px]"
+                                            text={`Reklam Alani Yatay ${chunkIndex + 1}`}
+                                        />
                                     </div>
                                 )}
                             </React.Fragment>
@@ -139,13 +181,9 @@ const CategoryPage = () => {
                     })}
 
                     {visibleCount < categoryNews.length && (
-                        <div className="mt-12 text-center">
-                            <button
-                                onClick={handleLoadMore}
-                                className="px-8 py-3 bg-white border border-gray-200 text-gray-600 font-medium rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-                            >
-                                Daha Fazla Haber Yükle
-                            </button>
+                        <div ref={observerTarget} className="mt-12 text-center py-8">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                            <p className="text-gray-400 text-sm mt-2">Daha fazla haber yükleniyor...</p>
                         </div>
                     )}
                 </div>

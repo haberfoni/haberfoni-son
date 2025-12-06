@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Youtube, Mail } from 'lucide-react';
-import { categories } from '../data/mockData';
+import { fetchCategories } from '../services/api';
 import { SOCIAL_MEDIA_LINKS } from '../constants/socialMedia';
 import { slugify } from '../utils/slugify';
 
@@ -9,6 +9,15 @@ const Footer = () => {
     const [email, setEmail] = React.useState('');
     const [status, setStatus] = React.useState('idle'); // idle, loading, success, error
     const [message, setMessage] = React.useState('');
+    const [categories, setCategories] = React.useState([]);
+
+    React.useEffect(() => {
+        const loadCategories = async () => {
+            const data = await fetchCategories();
+            setCategories(data.map(c => c.name));
+        };
+        loadCategories();
+    }, []);
 
     const handleSubscribe = () => {
         if (!email || !email.includes('@')) {

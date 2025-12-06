@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { newsItems, sliderItems } from '../data/mockData';
+import { searchNews } from '../services/api';
+import { mapNewsItem } from '../utils/mappers';
 import NewsCard from '../components/NewsCard';
 import SEO from '../components/SEO';
 
@@ -15,32 +16,11 @@ const SearchPage = () => {
         setQuery(q || '');
 
         if (q) {
-            const lowerQ = q.toLowerCase();
-            const filteredNews = newsItems.filter(item =>
-                item.title.toLowerCase().includes(lowerQ) ||
-                item.summary.toLowerCase().includes(lowerQ) ||
-                item.category.toLowerCase().includes(lowerQ)
-            );
-
-            const filteredSlider = sliderItems.filter(item =>
-                item.title.toLowerCase().includes(lowerQ) ||
-                item.category.toLowerCase().includes(lowerQ)
-            );
-
-            // Merge and remove duplicates based on ID (assuming IDs might collide if we just concat, but here they are separate lists so maybe okay. 
-            // However, let's just combine them. If IDs collide between lists, we might need a better key strategy, but for mock data it's fine.)
-            // Actually, sliderItems don't have summary, newsItems do. NewsCard expects certain props.
-            // Let's normalize sliderItems to look like newsItems for NewsCard if needed, or just pass them as is if NewsCard handles it.
-            // NewsCard expects: id, title, summary, image, category, time, author.
-            // SliderItems have: id, title, image, category, time, views. Missing summary, author.
-
-            const normalizedSlider = filteredSlider.map(item => ({
-                ...item,
-                summary: '', // No summary for slider items
-                author: 'Editör' // Default author
-            }));
-
-            setSearchResults([...normalizedSlider, ...filteredNews]);
+            const performSearch = async () => {
+                const data = await searchNews(q);
+                setSearchResults(data.map(mapNewsItem));
+            };
+            performSearch();
         } else {
             setSearchResults([]);
         }

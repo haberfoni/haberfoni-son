@@ -2,65 +2,88 @@ import React, { useState, useEffect } from 'react';
 import { Search, Menu, X, TrendingUp, TrendingDown, Facebook, Twitter, Camera, Video } from 'lucide-react';
 import WeatherWidget from './WeatherWidget';
 import { Link, useNavigate } from 'react-router-dom';
-import { categories, financialData } from '../data/mockData';
+import { fetchCategories, fetchFinancialData } from '../services/api';
 import { SOCIAL_MEDIA_LINKS } from '../constants/socialMedia';
 import { slugify } from '../utils/slugify';
 
 const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [currencyData, setCurrencyData] = useState(financialData);
+    const [currencyData, setCurrencyData] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchCurrencyData = async () => {
-            try {
-                const res = await fetch('https://finans.truncgil.com/today.json');
-                const data = await res.json();
+        const loadCategories = async () => {
+            const data = await fetchCategories();
+            setCategories(data.map(c => c.name));
+        };
+        loadCategories();
+    }, []);
 
-                if (data) {
-                    setCurrencyData(prevData => prevData.map(item => {
-                        let apiItem = null;
+    useEffect(() => {
+        const loadFinancialData = async () => {
+            // First fetch the list of currencies we want to show from Supabase (or just use default list if empty)
+            const dbData = await fetchFinancialData();
+            let initialData = dbData.length > 0 ? dbData : [
+                { name: "DOLAR", value: "0", change: "0", direction: "neutral" },
+                { name: "EURO", value: "0", change: "0", direction: "neutral" },
+                { name: "ALTIN", value: "0", change: "0", direction: "neutral" }
+            ];
 
-                        if (item.name === 'DOLAR') apiItem = data.USD;
-                        else if (item.name === 'EURO') apiItem = data.EUR;
-                        else if (item.name === 'ALTIN') apiItem = data['gram-altin'];
+            setCurrencyData(initialData);
 
-                        if (apiItem) {
-                            // Parse "5.745,39" to 5745.39
-                            const rawValue = apiItem.Satış;
-                            const parsedValue = parseFloat(rawValue.replace(/\./g, '').replace(',', '.'));
+            // Then fetch live data
+            const fetchLiveCurrency = async () => {
+                try {
+                    const res = await fetch('https://finans.truncgil.com/today.json');
+                    const data = await res.json();
 
-                            // Format back to Turkish format: "5.745,39"
-                            const value = new Intl.NumberFormat('tr-TR', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            }).format(parsedValue);
+                    if (data) {
+                        setCurrencyData(prevData => prevData.map(item => {
+                            let apiItem = null;
 
-                            // Parse "%0,00" to determine direction
-                            const changeStr = apiItem.Değişim.replace('%', '').replace(',', '.');
-                            const change = parseFloat(changeStr);
-                            const direction = change >= 0 ? 'up' : 'down';
+                            if (item.name === 'DOLAR') apiItem = data.USD;
+                            else if (item.name === 'EURO') apiItem = data.EUR;
+                            else if (item.name === 'ALTIN') apiItem = data['gram-altin'];
 
-                            return {
-                                ...item,
-                                value: value,
-                                change: `%${Math.abs(change).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`,
-                                direction: direction
-                            };
-                        }
-                        return item;
-                    }));
+                            if (apiItem) {
+                                // Parse "5.745,39" to 5745.39
+                                const rawValue = apiItem.Satış;
+                                const parsedValue = parseFloat(rawValue.replace(/\./g, '').replace(',', '.'));
+
+                                // Format back to Turkish format: "5.745,39"
+                                const value = new Intl.NumberFormat('tr-TR', {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2
+                                }).format(parsedValue);
+
+                                // Parse "%0,00" to determine direction
+                                const changeStr = apiItem.Değişim.replace('%', '').replace(',', '.');
+                                const change = parseFloat(changeStr);
+                                const direction = change >= 0 ? 'up' : 'down';
+
+                                return {
+                                    ...item,
+                                    value: value,
+                                    change: `%${Math.abs(change).toLocaleString('tr-TR', { minimumFractionDigits: 2 })}`,
+                                    direction: direction
+                                };
+                            }
+                            return item;
+                        }));
+                    }
+                } catch (error) {
+                    console.error("Error fetching currency data:", error);
                 }
-            } catch (error) {
-                console.error("Error fetching currency data:", error);
-            }
+            };
+
+            fetchLiveCurrency();
+            const interval = setInterval(fetchLiveCurrency, 300000);
+            return () => clearInterval(interval);
         };
 
-        fetchCurrencyData();
-        // Refresh every 5 minutes
-        const interval = setInterval(fetchCurrencyData, 300000);
-        return () => clearInterval(interval);
+        loadFinancialData();
     }, []);
 
     const handleSearch = () => {

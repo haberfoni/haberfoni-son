@@ -1,12 +1,37 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
+import { AuthProvider } from './context/AuthContext';
+import { SiteSettingsProvider } from './context/SiteSettingsContext';
+import RedirectHandler from './components/RedirectHandler';
+
+// Components
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
-import HomePage from './pages/HomePage';
 
-// Lazy loaded pages
+// Admin Import
+import AdminLayout from './components/admin/AdminLayout';
+import ProtectedRoute from './components/admin/ProtectedRoute';
+import LoginPage from './pages/admin/LoginPage';
+import DashboardPage from './pages/admin/DashboardPage';
+import NewsListPage from './pages/admin/NewsListPage';
+import NewsEditPage from './pages/admin/NewsEditPage';
+import PhotoGalleryListPage from './pages/admin/PhotoGalleryListPage';
+import PhotoGalleryEditPage from './pages/admin/PhotoGalleryEditPage';
+import VideoGalleryListPage from './pages/admin/VideoGalleryListPage';
+import VideoGalleryEditPage from './pages/admin/VideoGalleryEditPage';
+import SubscribersPage from './pages/admin/SubscribersPage';
+import UsersPage from './pages/admin/UsersPage';
+import CommentsPage from './pages/admin/CommentsPage';
+import AdsPage from './pages/admin/AdsPage';
+import TagsPage from './pages/admin/TagsPage';
+import RedirectsPage from './pages/admin/RedirectsPage';
+import SeoFilesPage from './pages/admin/SeoFilesPage';
+import SettingsPage from './pages/admin/SettingsPage';
+
+// Public Lazy loaded pages
+const HomePage = lazy(() => import('./pages/HomePage')); // Lazy load Home as well for consistency
 const NewsDetailPage = lazy(() => import('./pages/NewsDetailPage'));
 const CategoryPage = lazy(() => import('./pages/CategoryPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
@@ -30,16 +55,30 @@ const PageLoader = () => (
   </div>
 );
 
+// Layouts
+const PublicLayout = () => (
+  <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+    <Header />
+    <main>
+      <Suspense fallback={<PageLoader />}>
+        <Outlet />
+      </Suspense>
+    </main>
+    <Footer />
+  </div>
+);
+
 function App() {
   return (
     <HelmetProvider>
-      <Router>
-        <ScrollToTop />
-        <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
-          <Header />
-          <main>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
+      <SiteSettingsProvider>
+        <AuthProvider>
+          <Router>
+            <RedirectHandler />
+            <ScrollToTop />
+            <Routes>
+              {/* Public Routes */}
+              <Route element={<PublicLayout />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/kategori/:categoryName" element={<CategoryPage />} />
                 <Route path="/kategori/:category/:slug" element={<NewsDetailPage />} />
@@ -56,13 +95,46 @@ function App() {
                 <Route path="/video-galeri/:slug" element={<VideoDetailPage />} />
                 <Route path="/foto-galeri" element={<PhotoGalleryPage />} />
                 <Route path="/foto-galeri/:slug" element={<PhotoDetailPage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
-          </main>
-          <Footer />
-        </div>
-      </Router>
+              </Route>
+
+              {/* Admin Routes */}
+              <Route path="/admin/login" element={<LoginPage />} />
+              <Route path="/admin" element={
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<DashboardPage />} />
+                <Route path="news" element={<NewsListPage />} />
+                <Route path="news/new" element={<NewsEditPage />} />
+                <Route path="news/edit/:id" element={<NewsEditPage />} />
+
+                <Route path="photo-galleries" element={<PhotoGalleryListPage />} />
+                <Route path="photo-galleries/new" element={<PhotoGalleryEditPage />} />
+                <Route path="photo-galleries/edit/:id" element={<PhotoGalleryEditPage />} />
+
+                <Route path="video-galleries" element={<VideoGalleryListPage />} />
+                <Route path="video-galleries/new" element={<VideoGalleryEditPage />} />
+                <Route path="video-galleries/edit/:id" element={<VideoGalleryEditPage />} />
+
+                <Route path="subscribers" element={<SubscribersPage />} />
+                <Route path="users" element={<UsersPage />} />
+
+                <Route path="comments" element={<CommentsPage />} />
+                <Route path="ads" element={<AdsPage />} />
+                <Route path="tags" element={<TagsPage />} />
+                <Route path="redirects" element={<RedirectsPage />} />
+                <Route path="seo" element={<SeoFilesPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+              </Route>
+
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+        </AuthProvider>
+      </SiteSettingsProvider>
     </HelmetProvider>
   );
 }

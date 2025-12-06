@@ -1,13 +1,18 @@
 import React, { useEffect } from 'react';
 import NewsCard from '../components/NewsCard';
-import { newsItems, sliderItems } from '../data/mockData';
+import { fetchNews } from '../services/api';
+import { mapNewsItem } from '../utils/mappers';
 import SEO from '../components/SEO';
 
 const AllNewsPage = () => {
-    // Combine all news items
-    const allNews = [...sliderItems, ...newsItems];
+    const [allNews, setAllNews] = React.useState([]);
 
     useEffect(() => {
+        const loadNews = async () => {
+            const data = await fetchNews();
+            setAllNews(data.map(mapNewsItem));
+        };
+        loadNews();
         window.scrollTo(0, 0);
     }, []);
 

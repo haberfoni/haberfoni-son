@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, Eye, ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ImageWithFallback from './ImageWithFallback';
 
 import { slugify } from '../utils/slugify';
+import { categories } from '../data/mockData';
 
 const Hero = ({ items = [] }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -38,31 +40,34 @@ const Hero = ({ items = [] }) => {
                         className="flex h-full transition-transform duration-500 ease-in-out"
                         style={{ transform: `translateX(-${currentIndex * 100}%)` }}
                     >
-                        {items.map((item, index) => (
-                            <div key={item.id} className="min-w-full h-full relative">
-                                <Link to={`/kategori/${slugify(item.category)}/${slugify(item.title)}`} className="block w-full h-full">
-                                    <img
-                                        src={item.image}
-                                        alt={item.title}
-                                        className="w-full h-full object-cover"
-                                        loading={index === 0 ? "eager" : "lazy"}
-                                        fetchPriority={index === 0 ? "high" : "auto"}
-                                        width="800"
-                                        height="500"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                        {items.map((item, index) => {
+                            const displayCategory = categories.find(c => slugify(c) === item.category) || item.category;
+                            return (
+                                <div key={item.id} className="min-w-full h-full relative">
+                                    <Link to={`/kategori/${slugify(item.category)}/${item.slug || slugify(item.title)}`} className="block w-full h-full">
+                                        <ImageWithFallback
+                                            src={item.image}
+                                            alt={item.title}
+                                            className="w-full h-full object-cover"
+                                            loading={index === 0 ? "eager" : "lazy"}
+                                            fetchPriority={index === 0 ? "high" : "auto"}
+                                            width="800"
+                                            height="500"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
 
-                                    <div className="absolute bottom-0 left-0 p-6 w-full">
-                                        <span className="inline-block px-2 py-1 bg-primary text-white text-xs font-bold uppercase mb-2">
-                                            {item.category}
-                                        </span>
-                                        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 leading-tight drop-shadow-md">
-                                            {item.title}
-                                        </h1>
-                                    </div>
-                                </Link>
-                            </div>
-                        ))}
+                                        <div className="absolute bottom-0 left-0 p-6 w-full">
+                                            <span className="inline-block px-2 py-1 bg-primary text-white text-xs font-bold uppercase mb-2">
+                                                {displayCategory}
+                                            </span>
+                                            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 leading-tight drop-shadow-md">
+                                                {item.title}
+                                            </h1>
+                                        </div>
+                                    </Link>
+                                </div>
+                            )
+                        })}
                     </div>
 
                     {/* Navigation buttons */}
@@ -102,12 +107,12 @@ const Hero = ({ items = [] }) => {
                     {items.map((item, index) => (
                         <Link
                             key={item.id}
-                            to={`/kategori/${slugify(item.category)}/${slugify(item.title)}`}
+                            to={`/kategori/${slugify(item.category)}/${item.slug || slugify(item.title)}`}
                             className={`flex gap-3 p-3 rounded-lg cursor-pointer transition-colors border-l-4 ${currentIndex === index ? 'bg-gray-100 border-primary' : 'bg-white border-transparent hover:bg-gray-50'}`}
                             onMouseEnter={() => goToSlide(index)}
                         >
                             <div className="w-24 h-16 flex-shrink-0 rounded overflow-hidden">
-                                <img
+                                <ImageWithFallback
                                     src={item.image}
                                     alt={item.title}
                                     className="w-full h-full object-cover"

@@ -34,7 +34,7 @@ const NewsGrid = ({ items = [] }) => {
     return (
         <section className="container mx-auto px-4 py-12">
             <div className="mb-8">
-                <AdBanner customMobileDimensions="300x250" customHeight="h-[250px] md:h-[250px]" text="Reklam Alani 970x250" />
+                <AdBanner placementCode="home_list_top" customMobileDimensions="300x250" customHeight="h-[250px] md:h-[250px]" text="Reklam Alani 970x250" />
             </div>
             <div className="flex items-center justify-between mb-8">
                 <h2 className="text-2xl font-bold text-gray-900 border-l-4 border-primary pl-4">
@@ -83,6 +83,7 @@ const NewsGrid = ({ items = [] }) => {
                                         {isLastSidebarAd && chunkIndex > 0 ? (
                                             <div className="sticky top-40">
                                                 <AdBanner
+                                                    placementCode="sidebar_sticky"
                                                     vertical={true}
                                                     customDimensions="300x600"
                                                     customHeight="h-[250px] md:h-[600px]"
@@ -91,11 +92,13 @@ const NewsGrid = ({ items = [] }) => {
                                         ) : (
                                             <div className="flex flex-col gap-4">
                                                 <AdBanner
+                                                    placementCode="sidebar_1"
                                                     vertical={true}
                                                     customDimensions="300x250"
                                                     customHeight="h-[250px] md:h-[250px]"
                                                 />
                                                 <AdBanner
+                                                    placementCode="sidebar_2"
                                                     vertical={true}
                                                     customDimensions="300x250"
                                                     customHeight="h-[250px] md:h-[250px]"
@@ -109,7 +112,13 @@ const NewsGrid = ({ items = [] }) => {
                             {/* Full Width Horizontal Ad */}
                             {showHorizontalAd && (
                                 <div className="mb-8 scroll-mt-40" ref={isPreviousChunk ? scrollRef : null}>
-                                    <AdBanner customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px] md:h-[250px]" text="Reklam Alani 970x250" />
+                                    <AdBanner
+                                        placementCode={chunkIndex === 0 ? "home_horizontal" : `home_horizontal_${chunkIndex + 1}`}
+                                        customDimensions="970x250"
+                                        customMobileDimensions="300x250"
+                                        customHeight="h-[250px] md:h-[250px]"
+                                        text={`Reklam Alani Yatay ${chunkIndex + 1}`}
+                                    />
                                 </div>
                             )}
                         </React.Fragment>

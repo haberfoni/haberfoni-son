@@ -1,20 +1,38 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Clock, Eye, Share2, Play } from 'lucide-react';
-import { videoGalleryItems } from '../data/mockData';
+import { fetchVideos } from '../services/api';
+import { mapVideoItem } from '../utils/mappers';
 import SEO from '../components/SEO';
 import { slugify } from '../utils/slugify';
 
 const VideoDetailPage = () => {
     const { slug } = useParams();
 
-    // Find video by slug
-    const video = videoGalleryItems.find(item => slugify(item.title) === slug);
+    const [video, setVideo] = React.useState(null);
+    const [relatedVideos, setRelatedVideos] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
 
-    // Filter related videos (exclude current)
-    const relatedVideos = videoGalleryItems
-        .filter(item => item.id !== video?.id)
-        .slice(0, 5);
+    React.useEffect(() => {
+        const loadVideo = async () => {
+            setLoading(true);
+            const videos = await fetchVideos();
+            const mappedVideos = videos.map(mapVideoItem);
+
+            const currentVideo = mappedVideos.find(item => slugify(item.title) === slug);
+            setVideo(currentVideo);
+
+            if (currentVideo) {
+                setRelatedVideos(mappedVideos
+                    .filter(item => item.id !== currentVideo.id)
+                    .slice(0, 5));
+            }
+            setLoading(false);
+        };
+        loadVideo();
+    }, [slug]);
+
+    if (loading) return <div className="text-center py-20">Yükleniyor...</div>;
 
     if (!video) {
         return (
