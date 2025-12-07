@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Clock, Eye, Share2, Play } from 'lucide-react';
+import { Clock, Eye, Share2, Play, Calendar } from 'lucide-react';
 import { fetchVideos } from '../services/api';
 import { mapVideoItem } from '../utils/mappers';
 import SEO from '../components/SEO';
@@ -13,7 +13,11 @@ const VideoDetailPage = () => {
     const [relatedVideos, setRelatedVideos] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
 
+    const viewCountedRef = React.useRef(false);
+
     React.useEffect(() => {
+        viewCountedRef.current = false; // Reset for new slug
+
         const loadVideo = async () => {
             setLoading(true);
             const videos = await fetchVideos();
@@ -23,14 +27,43 @@ const VideoDetailPage = () => {
             setVideo(currentVideo);
 
             if (currentVideo) {
+                // Increment view count
+                if (!viewCountedRef.current) {
+                    viewCountedRef.current = true;
+                    try {
+                        const { adminService } = await import('../services/adminService');
+                        await adminService.incrementVideoViews(currentVideo.id);
+                    } catch (err) {
+                        console.error("View increment failed", err);
+                    }
+                }
+
                 setRelatedVideos(mappedVideos
                     .filter(item => item.id !== currentVideo.id)
+                    .sort(() => 0.5 - Math.random()) // Randomize for "Recommended" feel
                     .slice(0, 5));
             }
             setLoading(false);
         };
         loadVideo();
     }, [slug]);
+
+    const handleShare = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: video.title,
+                    text: video.title,
+                    url: window.location.href,
+                });
+            } catch (err) {
+                console.log('Error sharing:', err);
+            }
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Link kopyalandı!');
+        }
+    };
 
     if (loading) return <div className="text-center py-20">Yükleniyor...</div>;
 
@@ -70,16 +103,46 @@ const VideoDetailPage = () => {
                     <div className="lg:col-span-2">
                         <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
                             {/* Video Player Placeholder */}
+                            {/* Video Player */}
+                            {/* Video Player */}
                             <div className="aspect-video bg-black relative">
-                                <iframe
-                                    width="100%"
-                                    height="100%"
-                                    src={video.videoUrl || "https://www.youtube.com/embed/dQw4w9WgXcQ"}
-                                    title={video.title}
-                                    frameBorder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                ></iframe>
+                                {(() => {
+                                    // Helper function from utils/videoUtils would be better, but importing directly here mainly
+                                    // Check if it's a YouTube video
+                                    const youtubeId = (video.videoUrl && (video.videoUrl.includes('youtube.com') || video.videoUrl.includes('youtu.be')))
+                                        ? (() => {
+                                            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+                                            const match = video.videoUrl.match(regExp);
+                                            return (match && match[7].length === 11) ? match[7] : null;
+                                        })()
+                                        : null;
+
+                                    if (youtubeId) {
+                                        return (
+                                            <iframe
+                                                width="100%"
+                                                height="100%"
+                                                src={`https://www.youtube.com/embed/${youtubeId}`}
+                                                title={video.title}
+                                                frameBorder="0"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                            ></iframe>
+                                        );
+                                    } else {
+                                        return (
+                                            <video
+                                                controls
+                                                width="100%"
+                                                height="100%"
+                                                className="w-full h-full"
+                                                src={video.videoUrl}
+                                            >
+                                                Tarayıcınız video etiketini desteklemiyor.
+                                            </video>
+                                        );
+                                    }
+                                })()}
                             </div>
 
                             <div className="p-6">
@@ -90,25 +153,35 @@ const VideoDetailPage = () => {
                                 <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
                                     <div className="flex items-center space-x-4 text-gray-500 text-sm">
                                         <div className="flex items-center space-x-1">
-                                            <Clock size={16} />
+                                            <Calendar size={16} />
                                             <span>{video.date}</span>
                                         </div>
+                                        {video.duration && (
+                                            <div className="flex items-center space-x-1">
+                                                <Clock size={16} />
+                                                <span>{video.duration}</span>
+                                            </div>
+                                        )}
                                         <div className="flex items-center space-x-1">
                                             <Eye size={16} />
                                             <span>{video.views} izlenme</span>
                                         </div>
                                     </div>
-                                    <button className="flex items-center space-x-1 text-gray-500 hover:text-primary transition-colors">
+                                    <button
+                                        onClick={handleShare}
+                                        className="flex items-center space-x-1 text-gray-500 hover:text-primary transition-colors"
+                                    >
                                         <Share2 size={18} />
                                         <span className="hidden sm:inline">Paylaş</span>
                                     </button>
                                 </div>
 
                                 <div className="prose max-w-none text-gray-700">
-                                    <p>
-                                        Bu video hakkında detaylı açıklama metni burada yer alacak.
-                                        Video içeriği, konuşmacılar ve konuyla ilgili özet bilgiler.
-                                    </p>
+                                    {video.description ? (
+                                        <div dangerouslySetInnerHTML={{ __html: video.description }} />
+                                    ) : (
+                                        <p align="justify">Bu video için henüz bir açıklama girilmemiştir.</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -144,7 +217,10 @@ const VideoDetailPage = () => {
                                             <div className="flex items-center space-x-2 text-xs text-gray-500">
                                                 <span>{item.date}</span>
                                                 <span>•</span>
-                                                <span>{item.views}</span>
+                                                <div className="flex items-center space-x-1">
+                                                    <Eye size={12} />
+                                                    <span>{item.views}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </Link>

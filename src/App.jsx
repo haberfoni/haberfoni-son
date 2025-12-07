@@ -29,6 +29,7 @@ import TagsPage from './pages/admin/TagsPage';
 import RedirectsPage from './pages/admin/RedirectsPage';
 import SeoFilesPage from './pages/admin/SeoFilesPage';
 import SettingsPage from './pages/admin/SettingsPage';
+import EmailSettingsPage from './pages/admin/EmailSettingsPage';
 
 // Public Lazy loaded pages
 const HomePage = lazy(() => import('./pages/HomePage')); // Lazy load Home as well for consistency
@@ -127,6 +128,7 @@ function App() {
                 <Route path="redirects" element={<RedirectsPage />} />
                 <Route path="seo" element={<SeoFilesPage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="email-settings" element={<EmailSettingsPage />} />
               </Route>
 
               {/* Fallback */}

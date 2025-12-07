@@ -30,7 +30,11 @@ const PhotoGalleryPage = () => {
 
             if (mappedData.length > 0) {
                 setFeaturedAlbum(mappedData[0]);
-                setMostViewed(mappedData.slice(1, 6));
+
+                // Sort by views (descending) and take top 5
+                const sortedByViews = [...mappedData].sort((a, b) => (b.views || 0) - (a.views || 0));
+                setMostViewed(sortedByViews.slice(0, 5));
+
                 setLatestAlbums(mappedData);
             }
         };

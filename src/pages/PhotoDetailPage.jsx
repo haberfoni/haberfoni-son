@@ -13,8 +13,11 @@ const PhotoDetailPage = () => {
     const [images, setImages] = React.useState([]);
     const [relatedAlbums, setRelatedAlbums] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
+    const viewCountedRef = React.useRef(false);
 
     React.useEffect(() => {
+        let incrementCalled = false;
+
         const loadAlbum = async () => {
             setLoading(true);
             const galleries = await fetchPhotoGalleries();
@@ -23,18 +26,45 @@ const PhotoDetailPage = () => {
             const currentAlbum = mappedGalleries.find(item => slugify(item.title) === slug);
             setAlbum(currentAlbum);
 
-            if (currentAlbum) {
+            if (currentAlbum && !incrementCalled) {
+                // Increment view count only once
+                incrementCalled = true;
+                const { adminService } = await import('../services/adminService');
+                await adminService.incrementGalleryViews(currentAlbum.id);
+
                 const galleryImages = await fetchGalleryImages(currentAlbum.id);
-                setImages(galleryImages.map(img => img.image_url));
+                setImages(galleryImages.map(img => ({
+                    image_url: img.image_url,
+                    caption: img.caption
+                })));
 
                 setRelatedAlbums(mappedGalleries
                     .filter(item => item.id !== currentAlbum.id)
+                    .sort(() => 0.5 - Math.random()) // Randomize for "Recommended" feel
                     .slice(0, 5));
             }
             setLoading(false);
         };
+
         loadAlbum();
     }, [slug]);
+
+    const handleShare = async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: album.title,
+                    text: album.title,
+                    url: window.location.href,
+                });
+            } catch (err) {
+                console.log('Error sharing:', err);
+            }
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Link kopyalandı!');
+        }
+    };
 
     if (loading) return <div className="text-center py-20">Yükleniyor...</div>;
 
@@ -93,12 +123,17 @@ const PhotoDetailPage = () => {
                                             <span>{album.count} Fotoğraf</span>
                                         </div>
                                     </div>
-                                    <button className="flex items-center space-x-1 text-gray-500 hover:text-primary transition-colors">
+                                    <button
+                                        onClick={handleShare}
+                                        className="flex items-center space-x-1 text-gray-500 hover:text-primary transition-colors"
+                                    >
                                         <Share2 size={18} />
                                         <span className="hidden sm:inline">Paylaş</span>
                                     </button>
                                 </div>
                             </div>
+
+
 
                             {/* Gallery Images */}
                             <div className="p-6 space-y-8">
@@ -106,7 +141,7 @@ const PhotoDetailPage = () => {
                                     <div key={index} className="space-y-2">
                                         <div className="relative rounded-lg overflow-hidden shadow-sm">
                                             <img
-                                                src={img}
+                                                src={img.image_url}
                                                 alt={`${album.title} - ${index + 1}`}
                                                 className="w-full h-auto"
                                                 loading="lazy"
@@ -115,9 +150,15 @@ const PhotoDetailPage = () => {
                                                 {index + 1} / {images.length}
                                             </div>
                                         </div>
-                                        <p className="text-gray-600 text-sm italic">
-                                            {album.title} galerisinden {index + 1}. fotoğraf
-                                        </p>
+                                        {img.caption ? (
+                                            <p className="text-gray-700 text-sm mt-2 px-1">
+                                                {img.caption}
+                                            </p>
+                                        ) : (
+                                            <p className="text-gray-400 text-xs italic mt-1 px-1">
+                                                * Açıklama yok
+                                            </p>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -154,7 +195,10 @@ const PhotoDetailPage = () => {
                                             <div className="flex items-center space-x-2 text-xs text-gray-500">
                                                 <span>{item.date}</span>
                                                 <span>•</span>
-                                                <span>{item.views}</span>
+                                                <div className="flex items-center space-x-1">
+                                                    <Eye size={12} />
+                                                    <span>{item.views}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </Link>

@@ -43,6 +43,7 @@ const AdminLayout = () => {
         { path: '/admin/tags', label: 'Etiketler', icon: <Tag size={20} /> },
         { path: '/admin/redirects', label: 'Yönlendirmeler', icon: <Repeat size={20} /> },
         { path: '/admin/seo', label: 'SEO Dosyaları', icon: <Shield size={20} /> },
+        { path: '/admin/email-settings', label: 'Email Ayarları', icon: <Mail size={20} /> },
         { path: '/admin/settings', label: 'Ayarlar & API', icon: <Settings size={20} /> },
     ];
 

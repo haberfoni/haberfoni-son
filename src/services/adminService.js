@@ -2,6 +2,48 @@ import { supabase } from './supabase';
 import { slugify } from '../utils/slugify';
 
 export const adminService = {
+    async getDashboardStats() {
+        // 1. Active News Count
+        const { count: activeNewsCount, error: newsError } = await supabase
+            .from('news')
+            .select('*', { count: 'exact', head: true })
+            .not('published_at', 'is', null);
+
+        if (newsError) console.error('Error fetching news count:', newsError);
+
+        // 2. Subscribers Count
+        const { count: subscribersCount, error: subsError } = await supabase
+            .from('subscribers')
+            .select('*', { count: 'exact', head: true });
+
+        if (subsError) console.error('Error fetching subscribers count:', subsError);
+
+        // 3. Total Comments Count (Replacing Revenue)
+        const { count: commentsCount, error: commentsError } = await supabase
+            .from('comments')
+            .select('*', { count: 'exact', head: true });
+
+        if (commentsError) console.error('Error fetching comments count:', commentsError);
+
+        // 4. Total Views (Sum of news views - Simplified approximation)
+        // Note: For large datasets, use RPC. For now, fetching views column.
+        const { data: viewsData, error: viewsError } = await supabase
+            .from('news')
+            .select('views');
+
+        let totalViews = 0;
+        if (!viewsError && viewsData) {
+            totalViews = viewsData.reduce((sum, item) => sum + (item.views || 0), 0);
+        }
+
+        return {
+            activeNews: activeNewsCount || 0,
+            subscribers: subscribersCount || 0,
+            totalComments: commentsCount || 0,
+            totalViews: totalViews
+        };
+    },
+
     // Service: Settings
     async getSettings() {
         const { data, error } = await supabase
@@ -530,14 +572,31 @@ export const adminService = {
     },
 
     // Service: Photo Galleries
-    async getPhotoGalleries() {
-        const { data, error } = await supabase
+    async getPhotoGalleries(page = 0, pageSize = 20, filters = {}) {
+        let query = supabase
             .from('photo_galleries')
-            .select('*')
-            .order('created_at', { ascending: false });
+            .select('*, gallery_images(image_url)', { count: 'exact' });
+
+        // Apply search filter
+        if (filters.search) {
+            query = query.ilike('title', `%${filters.search}%`);
+        }
+
+        if (filters.status === 'published') {
+            query = query.not('published_at', 'is', null);
+        } else if (filters.status === 'draft') {
+            query = query.is('published_at', null);
+        }
+
+        // Order and paginate
+        query = query
+            .order('created_at', { ascending: false })
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+
+        const { data, error, count } = await query;
 
         if (error) throw error;
-        return data;
+        return { data, count };
     },
 
     async getPhotoGallery(id) {
@@ -636,15 +695,108 @@ export const adminService = {
         return true;
     },
 
-    // Service: Videos
-    async getVideos() {
-        const { data, error } = await supabase
-            .from('videos')
-            .select('*')
-            .order('created_at', { ascending: false });
+    async duplicatePhotoGallery(id) {
+        // 1. Fetch original gallery with images
+        const { data: original, error: fetchError } = await supabase
+            .from('photo_galleries')
+            .select('*, gallery_images(*)')
+            .eq('id', id)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        // 2. Prepare gallery copy
+        const { id: _, created_at, published_at, gallery_images, ...galleryData } = original;
+        galleryData.title = `${galleryData.title} (Kopya)`;
+        galleryData.views = 0;
+
+        // 3. Insert gallery copy
+        const { data: newGallery, error: galleryError } = await supabase
+            .from('photo_galleries')
+            .insert(galleryData)
+            .select()
+            .single();
+
+        if (galleryError) throw galleryError;
+
+        // 4. Copy images if any
+        if (gallery_images && gallery_images.length > 0) {
+            const imagesCopy = gallery_images.map(img => ({
+                gallery_id: newGallery.id,
+                image_url: img.image_url,
+                caption: img.caption,
+                order_index: img.order_index
+            }));
+
+            const { error: imagesError } = await supabase
+                .from('gallery_images')
+                .insert(imagesCopy);
+
+            if (imagesError) throw imagesError;
+        }
+
+        return newGallery;
+    },
+
+    async duplicatePhotoGalleriesBulk(ids) {
+        const promises = ids.map(id => this.duplicatePhotoGallery(id));
+        await Promise.all(promises);
+        return true;
+    },
+
+    async deletePhotoGalleriesBulk(ids) {
+        const { error } = await supabase
+            .from('photo_galleries')
+            .delete()
+            .in('id', ids);
 
         if (error) throw error;
-        return data;
+        return true;
+    },
+
+    async togglePhotoGalleryStatus(id, isPublished) {
+        console.log('Service toggle called:', id, isPublished);
+        const { data, error } = await supabase
+            .from('photo_galleries')
+            .update({ published_at: isPublished ? new Date().toISOString() : null })
+            .eq('id', id)
+            .select();
+
+        console.log('Supabase update result:', data, error);
+
+        if (error) throw error;
+        return true;
+    },
+
+
+    // Service: Videos
+    async getVideos(page = 0, pageSize = 20, filters = {}) {
+        let query = supabase
+            .from('videos')
+            .select('*', { count: 'exact' });
+
+        if (filters.search) {
+            query = query.ilike('title', `%${filters.search}%`);
+        }
+
+        if (filters.status === 'published') {
+            query = query.not('published_at', 'is', null);
+        } else if (filters.status === 'draft') {
+            query = query.is('published_at', null);
+        }
+
+        // Add sorting
+        query = query.order('created_at', { ascending: false });
+
+        // Add pagination
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
+        query = query.range(from, to);
+
+        const { data, count, error } = await query;
+
+        if (error) throw error;
+        return { data, count };
     },
 
     async getVideo(id) {
@@ -661,7 +813,7 @@ export const adminService = {
     async createVideo(video) {
         const { data, error } = await supabase
             .from('videos')
-            .insert(video)
+            .insert([{ ...video, published_at: new Date() }]) // Default published
             .select()
             .single();
 
@@ -686,6 +838,55 @@ export const adminService = {
             .from('videos')
             .delete()
             .eq('id', id);
+
+        if (error) throw error;
+        return true;
+    },
+
+    async toggleVideoStatus(id, status) {
+        const { error } = await supabase
+            .from('videos')
+            .update({ published_at: status ? new Date().toISOString() : null })
+            .eq('id', id);
+
+        if (error) throw error;
+        return true;
+    },
+
+    async duplicateVideosBulk(ids) {
+        // Fetch originals
+        const { data: originals, error: fetchError } = await supabase
+            .from('videos')
+            .select('*')
+            .in('id', ids);
+
+        if (fetchError) throw fetchError;
+        if (!originals || originals.length === 0) return;
+
+        // Prepare copies
+        const copies = originals.map(video => ({
+            title: `${video.title} (Kopya)`,
+            video_url: video.video_url,
+            thumbnail_url: video.thumbnail_url,
+            duration: video.duration,
+            description: video.description,
+            views: 0,
+            published_at: null // Copies are drafts
+        }));
+
+        const { error: insertError } = await supabase
+            .from('videos')
+            .insert(copies);
+
+        if (insertError) throw insertError;
+        return true;
+    },
+
+    async deleteVideosBulk(ids) {
+        const { error } = await supabase
+            .from('videos')
+            .delete()
+            .in('id', ids);
 
         if (error) throw error;
         return true;
@@ -745,5 +946,217 @@ export const adminService = {
             .getPublicUrl(filePath);
 
         return data.publicUrl;
+    },
+
+    // Service: Gallery Thumbnail Upload
+    async uploadGalleryThumbnail(file) {
+        // Validate file size (max 1MB)
+        const maxSize = 1 * 1024 * 1024; // 1MB in bytes
+        if (file.size > maxSize) {
+            throw new Error('Dosya boyutu 1MB\'dan büyük olamaz.');
+        }
+
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            throw new Error('Sadece JPEG, PNG ve WebP formatları desteklenmektedir.');
+        }
+
+        // Generate unique filename
+        const fileExt = file.name.split('.').pop();
+        const fileName = `thumbnail_${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        // Upload to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+            .from('gallery-thumbnails')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            console.error('Upload error:', uploadError);
+            throw new Error('Dosya yüklenirken hata oluştu: ' + uploadError.message);
+        }
+
+        // Get public URL
+        const { data } = supabase.storage
+            .from('gallery-thumbnails')
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
+    },
+
+    async deleteGalleryThumbnail(url) {
+        if (!url) return;
+
+        try {
+            // Extract filename from URL
+            // URL format: https://.../storage/v1/object/public/gallery-thumbnails/filename.jpg
+            const urlParts = url.split('/');
+            const filename = urlParts[urlParts.length - 1];
+
+            if (!filename) return;
+
+            // Delete from Supabase Storage
+            const { error } = await supabase.storage
+                .from('gallery-thumbnails')
+                .remove([filename]);
+
+            if (error) {
+                console.error('Delete error:', error);
+            }
+        } catch (error) {
+            console.error('Error deleting thumbnail:', error);
+            // Don't throw - deletion is not critical
+        }
+    },
+
+    // Service: Gallery Images Upload (Multiple)
+    async uploadGalleryImages(files, onProgress) {
+        const uploadedUrls = [];
+        const totalFiles = files.length;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+
+            // Validate file size (max 5MB)
+            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+            if (file.size > maxSize) {
+                throw new Error(`${file.name}: Dosya boyutu 5MB'dan büyük olamaz.`);
+            }
+
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                throw new Error(`${file.name}: Sadece JPEG, PNG ve WebP formatları desteklenmektedir.`);
+            }
+
+            // Generate unique filename
+            const fileExt = file.name.split('.').pop();
+            const fileName = `gallery_${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            // Upload to Supabase Storage
+            const { error: uploadError } = await supabase.storage
+                .from('gallery-images')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                console.error('Upload error:', uploadError);
+                throw new Error(`${file.name}: Dosya yüklenirken hata oluştu - ${uploadError.message}`);
+            }
+
+            // Get public URL
+            const { data } = supabase.storage
+                .from('gallery-images')
+                .getPublicUrl(filePath);
+
+            uploadedUrls.push(data.publicUrl);
+
+            // Update progress
+            if (onProgress) {
+                const progress = Math.round(((i + 1) / totalFiles) * 100);
+                onProgress(progress);
+            }
+        }
+
+        return uploadedUrls;
+    },
+
+    async deleteGalleryImage(url) {
+        if (!url) return;
+
+        try {
+            // Extract filename from URL
+            const urlParts = url.split('/');
+            const filename = urlParts[urlParts.length - 1];
+
+            if (!filename) return;
+
+            // Delete from Supabase Storage
+            const { error } = await supabase.storage
+                .from('gallery-images')
+                .remove([filename]);
+
+            if (error) {
+                console.error('Delete error:', error);
+            }
+        } catch (error) {
+            console.error('Error deleting gallery image:', error);
+            // Don't throw - deletion is not critical
+        }
+    },
+
+    // Service: Video Upload
+    async uploadVideo(file, onProgress) {
+        // Validate file size (max 50MB)
+        const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+        if (file.size > maxSize) {
+            throw new Error(`Dosya boyutu 50MB'dan büyük olamaz.`);
+        }
+
+        // Validate file type
+        const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+        if (!allowedTypes.includes(file.type)) {
+            throw new Error(`Desteklenmeyen video formatı. Sadece MP4, WebM, OGG ve MOV yüklenebilir.`);
+        }
+
+        // Generate unique filename
+        const fileExt = file.name.split('.').pop();
+        const fileName = `video_${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        // Upload to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+            .from('videos') // Requires 'videos' bucket to be created
+            .upload(filePath, file);
+
+        if (uploadError) {
+            console.error('Upload error:', uploadError);
+            throw new Error(`Video yüklenirken hata oluştu: ${uploadError.message}`);
+        }
+
+        // Get public URL
+        const { data } = supabase.storage
+            .from('videos')
+            .getPublicUrl(filePath);
+
+        // Mock progress (since fetch API doesn't support progress easily without XHR)
+        // If supabase-js supports it in newer versions, it's automatic. 
+        // For now we just call 100% when done.
+        if (onProgress) onProgress(100);
+
+        return data.publicUrl;
+    },
+
+    // Increment gallery views
+    async incrementGalleryViews(galleryId) {
+        const { data } = await supabase
+            .from('photo_galleries')
+            .select('views')
+            .eq('id', galleryId)
+            .single();
+
+        if (data) {
+            await supabase
+                .from('photo_galleries')
+                .update({ views: parseInt(data.views || 0) + 1 })
+                .eq('id', galleryId);
+        }
+    },
+
+    // Increment video views
+    async incrementVideoViews(videoId) {
+        const { data } = await supabase
+            .from('videos')
+            .select('views')
+            .eq('id', videoId)
+            .single();
+
+        if (data) {
+            await supabase
+                .from('videos')
+                .update({ views: parseInt(data.views || 0) + 1 })
+                .eq('id', videoId);
+        }
     }
 };

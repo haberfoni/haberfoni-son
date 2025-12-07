@@ -30,7 +30,11 @@ const VideoGalleryPage = () => {
 
             if (mappedData.length > 0) {
                 setFeaturedVideo(mappedData[0]);
-                setMostWatched(mappedData.slice(1, 6));
+
+                // Sort by views for "Most Watched" sidebar
+                const sortedByViews = [...mappedData].sort((a, b) => (b.views || 0) - (a.views || 0));
+                setMostWatched(sortedByViews.slice(0, 5));
+
                 setLatestVideos(mappedData);
             }
         };

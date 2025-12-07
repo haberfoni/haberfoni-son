@@ -117,10 +117,41 @@ export const searchNews = async (query) => {
         .from('news')
         .select('id, title, summary, image_url, video_url, media_type, slug, category, created_at, published_at, views')
         .or(`title.ilike.%${query}%,summary.ilike.%${query}%`)
+        .not('published_at', 'is', null)
         .order('created_at', { ascending: false });
 
     if (error) {
         console.error('Error searching news:', error);
+        return [];
+    }
+    return data;
+};
+
+export const searchVideos = async (query) => {
+    const { data, error } = await supabase
+        .from('videos')
+        .select('*')
+        .ilike('title', `%${query}%`)
+        .not('published_at', 'is', null)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error searching videos:', error);
+        return [];
+    }
+    return data;
+};
+
+export const searchPhotoGalleries = async (query) => {
+    const { data, error } = await supabase
+        .from('photo_galleries')
+        .select('*, gallery_images(image_url, caption)')
+        .ilike('title', `%${query}%`)
+        .not('published_at', 'is', null)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error searching photo galleries:', error);
         return [];
     }
     return data;
@@ -176,26 +207,47 @@ export const fetchFinancialData = async () => {
     return financialData;
 };
 
-// Videos
 export const fetchVideos = async () => {
-    return videoGalleryItems;
+    const { data, error } = await supabase
+        .from('videos')
+        .select('*')
+        .not('published_at', 'is', null)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching videos:', error);
+        return [];
+    }
+    return data || [];
 };
 
 // Photo Galleries
 export const fetchPhotoGalleries = async () => {
-    return photoGalleryItems;
+    const { data, error } = await supabase
+        .from('photo_galleries')
+        .select('*, gallery_images(image_url, caption)')
+        .not('published_at', 'is', null)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching photo galleries:', error);
+        return [];
+    }
+
+    return data || [];
 };
 
 export const fetchGalleryImages = async (galleryId) => {
-    // Find gallery in mockData
-    const gallery = photoGalleryItems.find(g => g.id == galleryId);
-    if (!gallery || !gallery.images) return [];
+    const { data, error } = await supabase
+        .from('gallery_images')
+        .select('*')
+        .eq('gallery_id', galleryId)
+        .order('order_index', { ascending: true });
 
-    // Map string URLs to object structure if needed, or just return urls
-    return gallery.images.map((url, index) => ({
-        id: index,
-        url: url,
-        order_index: index,
-        gallery_id: galleryId
-    }));
+    if (error) {
+        console.error('Error fetching gallery images:', error);
+        return [];
+    }
+
+    return data || [];
 };

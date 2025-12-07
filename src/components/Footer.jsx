@@ -4,6 +4,7 @@ import { Facebook, Twitter, Instagram, Youtube, Mail } from 'lucide-react';
 import { fetchCategories } from '../services/api';
 import { SOCIAL_MEDIA_LINKS } from '../constants/socialMedia';
 import { slugify } from '../utils/slugify';
+import { supabase } from '../services/supabase';
 
 const Footer = () => {
     const [email, setEmail] = React.useState('');
@@ -19,7 +20,7 @@ const Footer = () => {
         loadCategories();
     }, []);
 
-    const handleSubscribe = () => {
+    const handleSubscribe = async () => {
         if (!email || !email.includes('@')) {
             setStatus('error');
             setMessage('Lütfen geçerli bir e-posta adresi giriniz.');
@@ -28,18 +29,37 @@ const Footer = () => {
 
         setStatus('loading');
 
-        // Simulate API call
-        setTimeout(() => {
-            setStatus('success');
-            setMessage('Bültenimize başarıyla abone oldunuz!');
-            setEmail('');
+        try {
+            // Save to Supabase subscribers table
+            const { data, error } = await supabase
+                .from('subscribers')
+                .insert([{ email, is_active: true }])
+                .select();
 
-            // Reset message after 3 seconds
-            setTimeout(() => {
-                setStatus('idle');
-                setMessage('');
-            }, 3000);
-        }, 1500);
+            if (error) {
+                // Check if email already exists
+                if (error.code === '23505') {
+                    setStatus('error');
+                    setMessage('Bu e-posta adresi zaten kayıtlı.');
+                } else {
+                    throw error;
+                }
+            } else {
+                setStatus('success');
+                setMessage('Bültenimize başarıyla abone oldunuz!');
+                setEmail('');
+
+                // Reset message after 3 seconds
+                setTimeout(() => {
+                    setStatus('idle');
+                    setMessage('');
+                }, 3000);
+            }
+        } catch (error) {
+            console.error('Subscription error:', error);
+            setStatus('error');
+            setMessage('Bir hata oluştu. Lütfen tekrar deneyin.');
+        }
     };
 
     return (
