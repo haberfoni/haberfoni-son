@@ -5,6 +5,7 @@ import AdBanner from './AdBanner';
 import CommentSection from './CommentSection';
 import { getEmbedUrl } from '../utils/videoUtils';
 import ImageWithFallback from './ImageWithFallback';
+import { supabase } from '../services/supabase';
 
 const NewsArticle = ({ news, onVisible }) => {
     const articleRef = useRef(null);
@@ -54,7 +55,7 @@ const NewsArticle = ({ news, onVisible }) => {
             </h1>
 
             {news.summary && (
-                <h2 className="text-xl md:text-2xl font-semibold text-gray-700 mb-6 leading-snug">
+                <h2 className="text-xl md:text-2xl font-semibold text-gray-700 mb-6 leading-snug break-words break-all">
                     {news.summary}
                 </h2>
             )}
@@ -129,12 +130,30 @@ const NewsArticle = ({ news, onVisible }) => {
                         customDimensions="300x250"
                         customHeight="h-[250px]"
                         text="Haber Sonu Reklam"
+                        newsId={news.id}
                     />
                 </div>
             </div>
 
+            {/* Tags Display (Requested: Above Comments) */}
+            {news.tags && news.tags.length > 0 && (
+                <div className="mt-8 mb-8 pt-6 border-t border-gray-100">
+                    <div className="flex flex-wrap gap-2">
+                        {news.tags.map(tag => (
+                            <Link
+                                key={tag.id}
+                                to={`/etiket/${tag.slug}`}
+                                className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-primary hover:text-white transition-colors border border-gray-200"
+                            >
+                                #{tag.name}
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Comment Section */}
-            <CommentSection comments={news.comments} />
+            <CommentSection newsId={news.id} />
         </div>
     );
 };

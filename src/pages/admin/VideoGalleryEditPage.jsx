@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Video, PlayCircle, Image as ImageIcon, X, Link } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import RichTextEditor from '../../components/RichTextEditor';
+import SeoPreview from '../../components/admin/SeoPreview';
 
 const extractYoutubeId = (url) => {
     const match = url?.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -52,7 +53,11 @@ const VideoGalleryEditPage = () => {
         video_url: '',
         thumbnail_url: '',
         duration: '',
-        description: ''
+
+        description: '',
+        seo_title: '',
+        seo_description: '',
+        seo_keywords: ''
     });
 
     // Thumbnail upload state
@@ -82,7 +87,10 @@ const VideoGalleryEditPage = () => {
                 video_url: data.video_url,
                 thumbnail_url: data.thumbnail_url || '',
                 duration: data.duration || '',
-                description: data.description || ''
+                description: data.description || '',
+                seo_title: data.seo_title || data.title || '',
+                seo_description: data.seo_description || (data.description ? data.description.replace(/<[^>]*>?/gm, '').slice(0, 200) : '') || '',
+                seo_keywords: data.seo_keywords || ''
             });
             // Set preview if thumbnail exists
             if (data.thumbnail_url) {
@@ -218,6 +226,9 @@ const VideoGalleryEditPage = () => {
                 thumbnail_url: thumbnailUrl || null,
                 duration: formData.duration || null,
                 description: formData.description || null,
+                seo_title: formData.seo_title || null,
+                seo_description: formData.seo_description || null,
+                seo_keywords: formData.seo_keywords || null,
                 // Add views for new records if not present
                 ...(!isEditing && { views: 0 })
             };
@@ -267,7 +278,14 @@ const VideoGalleryEditPage = () => {
                             type="text"
                             required
                             value={formData.title}
-                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setFormData(prev => ({
+                                    ...prev,
+                                    title: val,
+                                    seo_title: (!prev.seo_title || prev.seo_title === prev.title) ? val : prev.seo_title
+                                }));
+                            }}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
                         />
                     </div>
@@ -277,7 +295,15 @@ const VideoGalleryEditPage = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Video Açıklaması</label>
                         <RichTextEditor
                             value={formData.description || ''}
-                            onChange={(content) => setFormData({ ...formData, description: content })}
+                            onChange={(content) => {
+                                const stripped = content.replace(/<[^>]*>?/gm, '').slice(0, 200);
+                                setFormData(prev => ({
+                                    ...prev,
+                                    description: content,
+                                    // Auto-update SEO desc if it matches old stripped description
+                                    seo_description: (!prev.seo_description || prev.seo_description === prev.description?.replace(/<[^>]*>?/gm, '').slice(0, 200)) ? stripped : prev.seo_description
+                                }));
+                            }}
                             placeholder="Video içeriği hakkında bilgi..."
                         />
                     </div>
@@ -396,6 +422,52 @@ const VideoGalleryEditPage = () => {
                             <p className="text-xs text-gray-500 mt-1">
                                 Dosya yüklenirse otomatik dolar. YouTube videoları için elle giriniz.
                             </p>
+                        </div>
+                    </div>
+                    {/* SEO Settings */}
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+                        <h3 className="font-semibold text-gray-800 flex items-center">
+                            <span className="mr-2">🔎</span> SEO Ayarları
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">SEO Başlığı</label>
+                                <input
+                                    type="text"
+                                    value={formData.seo_title}
+                                    onChange={(e) => setFormData({ ...formData, seo_title: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">SEO Anahtar Kelimeler</label>
+                                <input
+                                    type="text"
+                                    value={formData.seo_keywords}
+                                    onChange={(e) => setFormData({ ...formData, seo_keywords: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">SEO Açıklaması</label>
+                            <textarea
+                                rows="2"
+                                value={formData.seo_description}
+                                onChange={(e) => setFormData({ ...formData, seo_description: e.target.value })}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+                            />
+                        </div>
+
+                        {/* SEO Preview */}
+                        <div className="mt-4">
+                            <SeoPreview
+                                title={formData.seo_title || formData.title}
+                                description={formData.seo_description || formData.description?.replace(/<[^>]*>?/gm, '').slice(0, 160)}
+                                image={formData.thumbnail_url}
+                                url={`/video-galeri/${formData.title ? formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'video'}`}
+                                date={new Date().toISOString()}
+                            />
                         </div>
                     </div>
 

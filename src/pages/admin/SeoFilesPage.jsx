@@ -5,7 +5,8 @@ import { adminService } from '../../services/adminService';
 const SeoFilesPage = () => {
     const [files, setFiles] = useState({
         robots_txt: '',
-        ads_txt: ''
+        ads_txt: '',
+        sitemap_xml: ''
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -20,9 +21,26 @@ const SeoFilesPage = () => {
         try {
             setLoading(true);
             const settings = await adminService.getSettings();
+
+            // Generate Sitemap on load
+            const sitemap = await adminService.generateSitemap();
+
             setFiles({
-                robots_txt: settings.robots_txt || 'User-agent: *\nAllow: /',
-                ads_txt: settings.ads_txt || 'google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0'
+                robots_txt: settings.robots_txt || `User-agent: *
+Disallow: /admin/
+Disallow: /panel/
+Allow: /
+
+# Google Bot Specific Rules
+User-agent: Googlebot
+Disallow: /admin/
+Disallow: /panel/
+Allow: /
+
+# Sitemap
+Sitemap: ${window.location.origin}/sitemap.xml`,
+                ads_txt: settings.ads_txt || 'google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0',
+                sitemap_xml: sitemap
             });
         } catch (error) {
             console.error('Error loading SEO files:', error);
@@ -38,6 +56,8 @@ const SeoFilesPage = () => {
             await adminService.updateSettingsBulk([
                 { key: 'robots_txt', value: files.robots_txt },
                 { key: 'ads_txt', value: files.ads_txt }
+                // sitemap is generated, not saved as setting usually, but we could if needed. 
+                // For now, only robots and ads are editable/saveable settings.
             ]);
             setMessage({ type: 'success', text: 'Dosyalar kaydedildi.' });
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -59,11 +79,27 @@ const SeoFilesPage = () => {
         document.body.removeChild(element);
     };
 
+    const handleGenerateSitemap = async () => {
+        setLoading(true);
+        try {
+            const sitemap = await adminService.generateSitemap();
+            setFiles(prev => ({ ...prev, sitemap_xml: sitemap }));
+            setMessage({ type: 'success', text: 'Sitemap güncellendi.' });
+            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+        } catch (error) {
+            console.error('Error generating sitemap:', error);
+            setMessage({ type: 'error', text: 'Sitemap oluşturulamadı.' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading) return <div className="p-8 text-center">Yükleniyor...</div>;
 
     const tabs = [
         { id: 'robots', label: 'robots.txt', filename: 'robots.txt' },
         { id: 'ads', label: 'ads.txt', filename: 'ads.txt' },
+        { id: 'sitemap', label: 'sitemap.xml', filename: 'sitemap.xml' },
     ];
 
     return (
@@ -75,20 +111,35 @@ const SeoFilesPage = () => {
                 </div>
                 <div className="flex space-x-2">
                     <button
-                        onClick={() => downloadFile(activeTab === 'robots' ? 'robots.txt' : 'ads.txt', activeTab === 'robots' ? files.robots_txt : files.ads_txt)}
+                        onClick={() => downloadFile(
+                            tabs.find(t => t.id === activeTab).filename,
+                            files[activeTab === 'sitemap' ? 'sitemap_xml' : activeTab + '_txt']
+                        )}
                         className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                     >
                         <Download size={18} />
                         <span className="hidden md:inline">İndir</span>
                     </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="flex items-center space-x-2 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
-                    >
-                        <Save size={18} />
-                        <span>{saving ? 'Kaydediliyor...' : 'Kaydet'}</span>
-                    </button>
+
+                    {activeTab === 'sitemap' ? (
+                        <button
+                            onClick={handleGenerateSitemap}
+                            disabled={loading}
+                            className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        >
+                            <FileText size={18} />
+                            <span>Yeniden Oluştur</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleSave}
+                            disabled={saving}
+                            className="flex items-center space-x-2 px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50"
+                        >
+                            <Save size={18} />
+                            <span>{saving ? 'Kaydediliyor...' : 'Kaydet'}</span>
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -118,19 +169,32 @@ const SeoFilesPage = () => {
 
                 <div className="p-0">
                     <textarea
-                        value={activeTab === 'robots' ? files.robots_txt : files.ads_txt}
-                        onChange={(e) => setFiles(prev => ({
-                            ...prev,
-                            [activeTab === 'robots' ? 'robots_txt' : 'ads_txt']: e.target.value
-                        }))}
-                        className="w-full h-[500px] p-6 font-mono text-sm focus:outline-none resize-none"
+                        value={activeTab === 'sitemap' ? files.sitemap_xml : (activeTab === 'robots' ? files.robots_txt : files.ads_txt)}
+                        onChange={(e) => {
+                            if (activeTab === 'sitemap') return; // Read-only
+                            setFiles(prev => ({
+                                ...prev,
+                                [activeTab === 'robots' ? 'robots_txt' : 'ads_txt']: e.target.value
+                            }))
+                        }}
+                        readOnly={activeTab === 'sitemap'}
+                        className={`w-full h-[500px] p-6 font-mono text-sm focus:outline-none resize-none ${activeTab === 'sitemap' ? 'bg-gray-50' : ''}`}
                         spellCheck="false"
                     />
                 </div>
 
-                <div className="bg-yellow-50 p-4 border-t border-yellow-100 text-xs text-yellow-800">
-                    <strong>Önemli Not:</strong> Değişiklikleri kaydettikten sonra <span className="font-bold">İndir</span> butonunu kullanarak dosyayı bilgisayarınıza indirin ve FTP/Hosting panelinizden sitenizin anadizinine (public_html) yükleyin. Bu işlem otomatik yapılamaz.
-                </div>
+                {activeTab !== 'ads' && (
+                    <div className="bg-orange-50 p-4 border-t border-orange-100 text-sm text-orange-800 flex items-start space-x-3">
+                        <span className="text-2xl">⚠️</span>
+                        <div>
+                            <strong className="block mb-1 font-bold">Önemli Teknik Bilgi:</strong>
+                            {activeTab === 'sitemap'
+                                ? 'Sitemap dosyanız her zaman otomatik ve günceldir. Ekstra bir işlem yapmanıza gerek yoktur.'
+                                : 'Bu paneldeki "Kaydet" butonu sadece veritabanını günceller. Siteniz statik yapıda olduğu için, yaptığınız değişikliklerin arama motorlarına yansıması için dosyayı indirip sunucunuza (public_html dizinine) manuel olarak yüklemeniz gerekir.'
+                            }
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

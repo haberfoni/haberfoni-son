@@ -26,11 +26,6 @@ export const SiteSettingsProvider = ({ children }) => {
             setAds(adsData);
             setRedirects(redirectsData);
 
-            // Apply Copy Protection if enabled
-            if (settingsData.copy_protection === 'true') {
-                enableCopyProtection();
-            }
-
         } catch (error) {
             console.error('Error loading site data:', error);
         } finally {
@@ -38,19 +33,8 @@ export const SiteSettingsProvider = ({ children }) => {
         }
     };
 
-    const enableCopyProtection = () => {
-        document.addEventListener('contextmenu', (e) => e.preventDefault());
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
-                e.preventDefault();
-            }
-        });
-        document.body.style.userSelect = 'none';
-        document.body.style.webkitUserSelect = 'none';
-    };
-
     return (
-        <SiteSettingsContext.Provider value={{ settings, ads, redirects, loading }}>
+        <SiteSettingsContext.Provider value={{ settings, ads, redirects, loading, reloadSettings: loadData }}>
             {children}
         </SiteSettingsContext.Provider>
     );

@@ -21,7 +21,19 @@ export const mapNewsItem = (item) => {
         sliderOrder: item.slider_order,
         video_url: item.video_url,
         media_type: item.media_type,
-        slug: item.slug // Custom slug support
+        slug: item.slug, // Custom slug support
+        // Preserve ad-specific properties
+        type: item.type, // 'ad', 'slider-ad', or 'news'
+        link_url: item.link_url, // For ads
+        image_url: item.image_url, // For ads
+        adPlacementId: item.adPlacementId, // For ad tracking
+        adPlacementId: item.adPlacementId, // For ad tracking
+        tags: item.tags, // Pass tags through
+        seo_title: item.seo_title,
+        seo_description: item.seo_description,
+        seo_keywords: item.seo_keywords,
+        is_published: !!item.published_at, // Derived from timestamp
+        published_at: item.published_at
     };
 };
 
@@ -35,7 +47,10 @@ export const mapVideoItem = (item) => {
         views: item.views,
         description: item.description,
         formattedDate: item.published_at ? formatDate(item.published_at) : '',
-        date: item.published_at ? formatDistanceToNow(new Date(item.published_at), { addSuffix: true, locale: tr }) : ''
+        date: item.published_at ? formatDistanceToNow(new Date(item.published_at), { addSuffix: true, locale: tr }) : '',
+        seo_title: item.seo_title,
+        seo_description: item.seo_description,
+        seo_keywords: item.seo_keywords
     };
 };
 
@@ -48,6 +63,9 @@ export const mapPhotoGalleryItem = (item) => {
         formattedDate: item.published_at ? formatDate(item.published_at) : '',
         date: item.published_at ? formatDistanceToNow(new Date(item.published_at), { addSuffix: true, locale: tr }) : '',
         count: item.gallery_images ? item.gallery_images.length : 0,
-        description: item.description
+        description: item.description,
+        seo_title: item.seo_title,
+        seo_description: item.seo_description,
+        seo_keywords: item.seo_keywords
     };
 };

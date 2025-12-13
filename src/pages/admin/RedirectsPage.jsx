@@ -29,10 +29,17 @@ const RedirectsPage = () => {
         e.preventDefault();
         if (!newRedirect.old_path.trim() || !newRedirect.new_path.trim()) return;
 
+        // Ensure paths start with /
+        let oldPath = newRedirect.old_path.trim();
+        if (!oldPath.startsWith('/')) oldPath = '/' + oldPath;
+
+        let newPath = newRedirect.new_path.trim();
+        if (!newPath.startsWith('http') && !newPath.startsWith('/')) newPath = '/' + newPath;
+
         try {
             const added = await adminService.addRedirect({
-                old_path: newRedirect.old_path,
-                new_path: newRedirect.new_path,
+                old_path: oldPath,
+                new_path: newPath,
                 status_code: 301
             });
             setRedirects([added, ...redirects]);
@@ -78,23 +85,23 @@ const RedirectsPage = () => {
                 <h2 className="font-semibold text-gray-700 mb-4">Yeni Yönlendirme Ekle</h2>
                 <form onSubmit={handleAddRedirect} className="flex flex-col md:flex-row gap-4 items-end">
                     <div className="flex-1 w-full">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Eski Yol (Örn: /eski-haber)</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Eski Yol (Örn: /kategori/gundem/eski-baslik.html)</label>
                         <input
                             type="text"
                             value={newRedirect.old_path}
                             onChange={(e) => setNewRedirect({ ...newRedirect, old_path: e.target.value })}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary font-mono text-sm"
-                            placeholder="/eski-konum"
+                            placeholder="/kategori/gundem/eski-baslik.html"
                         />
                     </div>
                     <div className="flex-1 w-full">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Yeni Yol (Örn: /yeni-haber)</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Yeni Yol (Örn: /kategori/gundem/yeni-baslik)</label>
                         <input
                             type="text"
                             value={newRedirect.new_path}
                             onChange={(e) => setNewRedirect({ ...newRedirect, new_path: e.target.value })}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary font-mono text-sm"
-                            placeholder="/yeni-konum"
+                            placeholder="/kategori/gundem/yeni-baslik"
                         />
                     </div>
                     <button

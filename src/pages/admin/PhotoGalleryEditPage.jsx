@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Image as ImageIcon, Plus, Trash2, GripVertical } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import RichTextEditor from '../../components/RichTextEditor';
+import SeoPreview from '../../components/admin/SeoPreview';
 
 const PhotoGalleryEditPage = () => {
     const { id } = useParams();
@@ -11,7 +12,11 @@ const PhotoGalleryEditPage = () => {
 
     const [formData, setFormData] = useState({
         title: '',
-        thumbnail_url: ''
+
+        thumbnail_url: '',
+        seo_title: '',
+        seo_description: '',
+        seo_keywords: ''
     });
 
     // Manage array of images
@@ -46,7 +51,11 @@ const PhotoGalleryEditPage = () => {
             const data = await adminService.getPhotoGallery(id);
             setFormData({
                 title: data.title,
-                thumbnail_url: data.thumbnail_url || ''
+
+                thumbnail_url: data.thumbnail_url || '',
+                seo_title: data.seo_title || data.title || '',
+                seo_description: data.seo_description || '',
+                seo_keywords: data.seo_keywords || ''
             });
             // Set thumbnail preview if exists
             if (data.thumbnail_url) {
@@ -213,6 +222,10 @@ const PhotoGalleryEditPage = () => {
             const payload = {
                 title: formData.title,
                 thumbnail_url: thumbnailUrl || (validImages.length > 0 ? validImages[0].image_url : null),
+
+                seo_title: formData.seo_title || null,
+                seo_description: formData.seo_description || null,
+                seo_keywords: formData.seo_keywords || null,
                 views: 0
             };
 
@@ -262,7 +275,14 @@ const PhotoGalleryEditPage = () => {
                                 type="text"
                                 required
                                 value={formData.title}
-                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        title: val,
+                                        seo_title: (!prev.seo_title || prev.seo_title === prev.title) ? val : prev.seo_title
+                                    }));
+                                }}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
                                 placeholder="Örn: Haftanın En İyi Doğa Fotoğrafları"
                             />
@@ -346,6 +366,57 @@ const PhotoGalleryEditPage = () => {
                             </div>
 
                             <p className="text-xs text-gray-500 mt-2">Boş bırakılırsa ilk fotoğraf kapak olarak kullanılır.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* SEO Settings */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <h2 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">SEO Ayarları</h2>
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">SEO Başlığı</label>
+                                <input
+                                    type="text"
+                                    value={formData.seo_title}
+                                    onChange={(e) => setFormData({ ...formData, seo_title: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+                                    placeholder="Google'da görünecek başlık"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Otomatik olarak galeri başlığından alınır.</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">SEO Anahtar Kelimeler</label>
+                                <input
+                                    type="text"
+                                    value={formData.seo_keywords}
+                                    onChange={(e) => setFormData({ ...formData, seo_keywords: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+                                    placeholder="virgül, ile, ayırın"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">SEO Açıklaması</label>
+                            <textarea
+                                rows="2"
+                                value={formData.seo_description}
+                                onChange={(e) => setFormData({ ...formData, seo_description: e.target.value })}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+                                placeholder="Google'da görünecek açıklama"
+                            />
+                        </div>
+
+                        {/* SEO Preview */}
+                        <div className="mt-4">
+                            <SeoPreview
+                                title={formData.seo_title || formData.title}
+                                description={formData.seo_description || formData.title + ' fotoğraf galerisi.'}
+                                image={formData.thumbnail_url}
+                                url={`/foto-galeri/${formData.title ? formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'galeri'}`}
+                                date={new Date().toISOString()}
+                            />
                         </div>
                     </div>
                 </div>

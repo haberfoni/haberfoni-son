@@ -1,29 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, Send, CheckCircle } from 'lucide-react';
+import { fetchComments, submitComment } from '../services/api';
 
-const CommentSection = ({ comments = [] }) => {
+const CommentSection = ({ newsId }) => {
+    const [comments, setComments] = useState([]);
     const [formData, setFormData] = useState({
         name: '',
         comment: ''
     });
-    const [status, setStatus] = useState('idle'); // idle, submitting, success
+    const [status, setStatus] = useState('idle'); // idle, submitting, success, error
+    const [errorMessage, setErrorMessage] = useState('');
 
-    const handleSubmit = (e) => {
+    useEffect(() => {
+        if (newsId) {
+            loadComments();
+        }
+    }, [newsId]);
+
+    const loadComments = async () => {
+        try {
+            const data = await fetchComments(newsId);
+            setComments(data || []);
+        } catch (error) {
+            console.error('Error loading comments:', error);
+        }
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!formData.name.trim() || !formData.comment.trim()) return;
 
         setStatus('submitting');
+        setErrorMessage('');
 
-        // Simulate API call
-        setTimeout(() => {
+        try {
+            await submitComment({ newsId, name: formData.name, content: formData.comment });
             setStatus('success');
             setFormData({ name: '', comment: '' });
 
-            // Reset status after a few seconds to allow new comments
+            // Reload comments to see if any approved ones appear (unlikely but good practice)
+            // Actually new comments are unapproved, so they won't show up yet.
+
+            // Reset status after a few seconds
             setTimeout(() => {
                 setStatus('idle');
             }, 5000);
-        }, 1000);
+        } catch (error) {
+            console.error('Comment submit error:', error);
+            setStatus('error');
+            // Try to extract a useful message for the user
+            const msg = error.message || error.error_description || (error.details ? JSON.stringify(error.details) : 'Yorum gönderilirken bir hata oluştu.');
+            setErrorMessage(msg);
+        }
     };
 
     return (
@@ -42,10 +70,10 @@ const CommentSection = ({ comments = [] }) => {
                             </div>
                             <div>
                                 <div className="flex items-center space-x-2 mb-1">
-                                    <span className="font-bold text-gray-900">{comment.user}</span>
-                                    <span className="text-xs text-gray-400">• {comment.date}</span>
+                                    <span className="font-bold text-gray-900">{comment.user_name}</span>
+                                    <span className="text-xs text-gray-400">• {new Date(comment.created_at).toLocaleDateString('tr-TR')}</span>
                                 </div>
-                                <p className="text-gray-700 leading-relaxed">{comment.text}</p>
+                                <p className="text-gray-700 leading-relaxed">{comment.comment}</p>
                             </div>
                         </div>
                     ))
@@ -68,6 +96,12 @@ const CommentSection = ({ comments = [] }) => {
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit}>
+                        {status === 'error' && (
+                            <div className="mb-4 bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-200">
+                                <p className="font-bold">Hata:</p>
+                                <p>{errorMessage}</p>
+                            </div>
+                        )}
                         <div className="mb-4">
                             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">İsim</label>
                             <input

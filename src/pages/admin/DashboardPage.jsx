@@ -39,28 +39,28 @@ const DashboardPage = () => {
     const statCards = [
         {
             label: 'Toplam Görüntülenme',
-            value: stats.totalViews.toLocaleString(),
+            value: (stats?.totalViews || 0).toLocaleString(),
             change: '-',
             trend: 'neutral',
             icon: <Eye size={24} className="text-blue-500" />
         },
         {
             label: 'Aktif Haberler',
-            value: stats.activeNews.toLocaleString(),
+            value: (stats?.activeNews || 0).toLocaleString(),
             change: 'Canlı',
             trend: 'up',
             icon: <FileText size={24} className="text-green-500" />
         },
         {
             label: 'Toplam Aboneler',
-            value: stats.subscribers.toLocaleString(),
+            value: (stats?.subscribers || 0).toLocaleString(),
             change: 'Hepsi',
             trend: 'up',
             icon: <Users size={24} className="text-purple-500" />
         },
         {
             label: 'Toplam Yorumlar',
-            value: stats.totalComments.toLocaleString(),
+            value: (stats?.totalComments || 0).toLocaleString(),
             change: 'İnteraktif',
             trend: 'up',
             icon: <MessageSquare size={24} className="text-yellow-500" />
@@ -88,7 +88,7 @@ const DashboardPage = () => {
                             </div>
                             {stat.change !== '-' && (
                                 <span className={`text-xs font-semibold px-2 py-1 rounded flex items-center ${stat.trend === 'up' ? 'text-green-600 bg-green-50' :
-                                        stat.trend === 'down' ? 'text-red-600 bg-red-50' : 'text-gray-600 bg-gray-50'
+                                    stat.trend === 'down' ? 'text-red-600 bg-red-50' : 'text-gray-600 bg-gray-50'
                                     }`}>
                                     {stat.trend === 'up' ? <ArrowUp size={12} className="mr-1" /> :
                                         stat.trend === 'down' ? <ArrowDown size={12} className="mr-1" /> : null}

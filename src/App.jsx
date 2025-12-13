@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext';
-import { SiteSettingsProvider } from './context/SiteSettingsContext';
+import { SiteSettingsProvider, useSiteSettings } from './context/SiteSettingsContext';
 import RedirectHandler from './components/RedirectHandler';
 
 // Components
@@ -25,17 +25,27 @@ import SubscribersPage from './pages/admin/SubscribersPage';
 import UsersPage from './pages/admin/UsersPage';
 import CommentsPage from './pages/admin/CommentsPage';
 import AdsPage from './pages/admin/AdsPage';
+import HomeLayoutPage from './pages/admin/HomeLayoutPage';
+import HeadlinesPage from './pages/admin/HeadlinesPage';
+import CategoriesPage from './pages/admin/CategoriesPage';
 import TagsPage from './pages/admin/TagsPage';
 import RedirectsPage from './pages/admin/RedirectsPage';
 import SeoFilesPage from './pages/admin/SeoFilesPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import EmailSettingsPage from './pages/admin/EmailSettingsPage';
+import PagesPage from './pages/admin/PagesPage';
+import PageEditPage from './pages/admin/PageEditPage';
+import FooterLinksPage from './pages/admin/FooterLinksPage';
+import ContactMessagesPage from './pages/admin/ContactMessagesPage';
+import ActivityLogsPage from './pages/admin/ActivityLogsPage';
+import SetupGuidePage from './pages/admin/SetupGuidePage';
 
 // Public Lazy loaded pages
-const HomePage = lazy(() => import('./pages/HomePage')); // Lazy load Home as well for consistency
+const HomePage = lazy(() => import('./pages/HomePage'));
 const NewsDetailPage = lazy(() => import('./pages/NewsDetailPage'));
 const CategoryPage = lazy(() => import('./pages/CategoryPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
+const TagPage = lazy(() => import('./pages/TagPage'));
 const AllNewsPage = lazy(() => import('./pages/AllNewsPage'));
 const PhotoGalleryPage = lazy(() => import('./pages/PhotoGalleryPage'));
 const VideoGalleryPage = lazy(() => import('./pages/VideoGalleryPage'));
@@ -48,6 +58,9 @@ const KvkkPage = lazy(() => import('./pages/KvkkPage'));
 const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
 const VideoDetailPage = lazy(() => import('./pages/VideoDetailPage'));
 const PhotoDetailPage = lazy(() => import('./pages/PhotoDetailPage'));
+const SitemapPage = lazy(() => import('./pages/SitemapPage'));
+const TextFilePage = lazy(() => import('./pages/TextFilePage'));
+const DynamicPage = lazy(() => import('./pages/DynamicPage'));
 
 // Loading component
 const PageLoader = () => (
@@ -56,9 +69,15 @@ const PageLoader = () => (
   </div>
 );
 
+// Popup Ad Component
+import PopupAd from './components/PopupAd';
+import SiteWarning from './components/SiteWarning';
+
 // Layouts
 const PublicLayout = () => (
   <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+    <SiteWarning />
+    <PopupAd />
     <Header />
     <main>
       <Suspense fallback={<PageLoader />}>
@@ -84,6 +103,7 @@ function App() {
                 <Route path="/kategori/:categoryName" element={<CategoryPage />} />
                 <Route path="/kategori/:category/:slug" element={<NewsDetailPage />} />
                 <Route path="/search" element={<SearchPage />} />
+                <Route path="/etiket/:tagSlug" element={<TagPage />} />
                 <Route path="/tum-haberler" element={<AllNewsPage />} />
                 <Route path="/hakkimizda" element={<AboutPage />} />
                 <Route path="/kunye" element={<ImprintPage />} />
@@ -96,6 +116,7 @@ function App() {
                 <Route path="/video-galeri/:slug" element={<VideoDetailPage />} />
                 <Route path="/foto-galeri" element={<PhotoGalleryPage />} />
                 <Route path="/foto-galeri/:slug" element={<PhotoDetailPage />} />
+                <Route path="/kurumsal/:slug" element={<DynamicPage />} />
               </Route>
 
               {/* Admin Routes */}
@@ -122,14 +143,32 @@ function App() {
                 <Route path="subscribers" element={<SubscribersPage />} />
                 <Route path="users" element={<UsersPage />} />
 
+                <Route path="contact-messages" element={<ContactMessagesPage />} />
                 <Route path="comments" element={<CommentsPage />} />
                 <Route path="ads" element={<AdsPage />} />
+                <Route path="home-layout" element={<HomeLayoutPage />} />
+                <Route path="headlines" element={<HeadlinesPage />} />
+                <Route path="categories" element={<CategoriesPage />} />
+                <Route path="pages" element={<PagesPage />} />
+                <Route path="pages/new" element={<PageEditPage />} />
+                <Route path="pages/edit/:id" element={<PageEditPage />} />
+                <Route path="footer-links" element={<FooterLinksPage />} />
                 <Route path="tags" element={<TagsPage />} />
                 <Route path="redirects" element={<RedirectsPage />} />
                 <Route path="seo" element={<SeoFilesPage />} />
-                <Route path="settings" element={<SettingsPage />} />
                 <Route path="email-settings" element={<EmailSettingsPage />} />
+                <Route path="activity-logs" element={<ActivityLogsPage />} />
+                <Route path="setup-guide" element={<SetupGuidePage />} />
+                <Route path="settings" element={<SettingsPage />} />
               </Route>
+
+              {/* System Routes */}
+              <Route path="/sitemap.xml" element={<SitemapPage />} />
+              <Route path="/robots.txt" element={<TextFilePage type="robots" />} />
+              <Route path="/ads.txt" element={<TextFilePage type="ads" />} />
+
+              {/* Dynamic Pages (Must be last before 404) */}
+              <Route path="/:slug" element={<DynamicPage />} />
 
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

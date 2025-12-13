@@ -1,21 +1,32 @@
-import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-
 import { useSiteSettings } from '../context/SiteSettingsContext';
 
-const SEO = ({ title, description, image, url, type = 'website', publishedTime, modifiedTime, author, tags }) => {
+const SEO = ({ title, description, image, url, type = 'website', publishedTime, modifiedTime, author, tags, noIndex = false }) => {
     const { settings } = useSiteSettings();
+    const location = useLocation();
+    const isHome = location.pathname === '/';
+
     const siteTitle = settings?.site_title || 'Haberfoni';
-    const siteUrl = 'https://haberfoni.com'; // Keep this hardcoded or from env for now as base URL is usually static
+    const siteUrl = 'https://haberfoni.com';
     const defaultImage = `${siteUrl}/images/slider_economy.png`;
 
-    // Override defaults with dynamic settings if available
-    const metaDescription = description || settings?.site_description || 'En güncel haberler';
+    // Logic: Use provided description. 
+    // If missing, fallback to site description or title to ensure tag is never empty.
+    const metaDescription = description || settings?.site_description || title || 'Haberfoni güncel haberler';
 
     // Derived values
     const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
     const metaImage = image || defaultImage;
-    const fullUrl = url || siteUrl;
+    const fullUrl = url ? (url.startsWith('http') ? url : `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`) : siteUrl;
+
+    console.log('%c SEO DATA ', 'background: #007bff; color: white; padding: 2px 5px; border-radius: 2px;', {
+        Title: fullTitle,
+        Description: metaDescription,
+        Canonical: fullUrl,
+        Robots: noIndex ? "noindex, nofollow" : "index, follow",
+        Keywords: tags ? tags.join(', ') : 'None'
+    });
 
     const structuredData = type === 'article' ? {
         "@context": "https://schema.org",
@@ -40,26 +51,40 @@ const SEO = ({ title, description, image, url, type = 'website', publishedTime, 
         "description": description
     } : null;
 
+    // Robots Logic: If noIndex is true or site settings demand it (future proofing), use noindex.
+    // Otherwise use default index, follow.
+    const robotsContent = noIndex
+        ? "noindex, nofollow"
+        : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1";
+
     return (
         <Helmet>
             {/* Standard Metadata */}
+            <meta name="description" content={metaDescription} key="description" />
             <title>{fullTitle}</title>
-            <meta name="description" content={description} />
-            <link rel="canonical" href={fullUrl} />
+            {settings?.favicon && <link rel="icon" href={settings.favicon} />}
+            <link rel="canonical" href={fullUrl} key="canonical" />
+            <meta name="robots" content={robotsContent} key="robots" />
+            {tags && tags.length > 0 && (
+                <meta name="keywords" content={tags.join(', ')} key="keywords" />
+            )}
 
             {/* Open Graph / Facebook */}
             <meta property="og:type" content={type} />
             <meta property="og:title" content={title || siteTitle} />
-            <meta property="og:description" content={description} />
+            <meta property="og:description" content={metaDescription} />
             <meta property="og:image" content={metaImage} />
             <meta property="og:url" content={fullUrl} />
             <meta property="og:site_name" content={siteTitle} />
+            <meta property="og:locale" content="tr_TR" />
             {publishedTime && <meta property="article:published_time" content={publishedTime} />}
             {modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
             {tags && tags.map(tag => <meta key={tag} property="article:tag" content={tag} />)}
 
             {/* Twitter */}
             <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:site" content="@haberfoni" />
+            <meta name="twitter:creator" content="@haberfoni" />
             <meta name="twitter:title" content={title || siteTitle} />
             <meta name="twitter:description" content={metaDescription} />
             <meta name="twitter:image" content={metaImage} />
@@ -113,7 +138,7 @@ const SEO = ({ title, description, image, url, type = 'website', publishedTime, 
             )}
 
             {/* Google News / Discover Specifics */}
-            <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+            {/* Google News / Discover Specifics - Handled in robots meta above */}
 
             {/* Structured Data */}
             {structuredData && (
