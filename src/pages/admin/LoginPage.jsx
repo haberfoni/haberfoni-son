@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../../context/AuthContext';
+
+import { adminService } from '../../services/adminService';
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -22,6 +25,16 @@ const LoginPage = () => {
             if (result.error) {
                 throw result.error;
             }
+
+            // Log successful login
+            try {
+                const userEmail = result.data?.user?.email || email;
+                const userId = result.data?.user?.id;
+                await adminService.logActivity('LOGIN', 'AUTH', `Kullanıcı panele giriş yaptı: ${userEmail}`, userId);
+            } catch (logError) {
+                console.error('Logging failed:', logError);
+            }
+
             navigate('/admin/news');
         } catch (err) {
             console.error('Login error:', err);
@@ -45,6 +58,10 @@ const LoginPage = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
+            <Helmet>
+                <title>Giriş Yap | Haberfoni Admin</title>
+                <meta name="robots" content="noindex, nofollow" />
+            </Helmet>
             <div className="w-full max-w-md">
                 {/* Logo/Header */}
                 <div className="text-center mb-8">

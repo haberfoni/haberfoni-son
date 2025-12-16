@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tag, Plus, Trash2, X } from 'lucide-react';
+import { Tag, Plus, Trash2, X, Check } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 
 const TagsPage = () => {
@@ -7,6 +7,8 @@ const TagsPage = () => {
     const [newTag, setNewTag] = useState('');
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
+
+    const [selectedTags, setSelectedTags] = useState([]);
 
     useEffect(() => {
         loadTags();
@@ -17,6 +19,7 @@ const TagsPage = () => {
             setLoading(true);
             const data = await adminService.getTags();
             setTags(data);
+            setSelectedTags([]); // Reset selection on reload
         } catch (error) {
             console.error('Error loading tags:', error);
             setMessage({ type: 'error', text: 'Etiketler yüklenirken hata oluştu.' });
@@ -41,12 +44,39 @@ const TagsPage = () => {
         }
     };
 
-    const handleDelete = async (id) => {
+    const toggleSelect = (id) => {
+        if (selectedTags.includes(id)) {
+            setSelectedTags(selectedTags.filter(tId => tId !== id));
+        } else {
+            setSelectedTags([...selectedTags, id]);
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedTags.length === 0) return;
+        if (!window.confirm(`${selectedTags.length} adet etiketi silmek istediğinize emin misiniz?`)) return;
+
+        try {
+            await adminService.deleteTags(selectedTags);
+            setTags(tags.filter(t => !selectedTags.includes(t.id)));
+            setSelectedTags([]);
+            setMessage({ type: 'success', text: 'Seçilen etiketler silindi.' });
+            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+        } catch (error) {
+            console.error('Error deleting tags:', error);
+            setMessage({ type: 'error', text: 'Toplu silme işlemi başarısız.' });
+        }
+    };
+
+    // Keep single delete for backward compatibility / ease of use
+    const handleDelete = async (id, e) => {
+        e.stopPropagation(); // Prevent selection toggle
         if (!window.confirm('Bu etiketi silmek istediğinize emin misiniz?')) return;
 
         try {
             await adminService.deleteTag(id);
             setTags(tags.filter(t => t.id !== id));
+            setSelectedTags(selectedTags.filter(tId => tId !== id));
             setMessage({ type: 'success', text: 'Etiket silindi.' });
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         } catch (error) {
@@ -95,27 +125,57 @@ const TagsPage = () => {
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h2 className="font-semibold text-gray-700 mb-4">Mevcut Etiketler ({tags.length})</h2>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                    <div>
+                        <h2 className="font-semibold text-gray-700">Mevcut Etiketler ({tags.length})</h2>
+                        <p className="text-xs text-red-500 mt-1 font-medium">
+                            * Silmek istediğiniz etiketleri seçiniz.
+                        </p>
+                    </div>
+                    {selectedTags.length > 0 && (
+                        <button
+                            onClick={handleBulkDelete}
+                            className="flex items-center text-sm bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors font-medium animate-in fade-in slide-in-from-right-4"
+                        >
+                            <Trash2 size={16} className="mr-1.5" />
+                            Seçilenleri Sil ({selectedTags.length})
+                        </button>
+                    )}
+                </div>
 
                 {tags.length === 0 ? (
                     <p className="text-gray-500 text-center py-8">Henüz hiç etiket eklenmemiş.</p>
                 ) : (
                     <div className="flex flex-wrap gap-2">
-                        {tags.map(tag => (
-                            <div
-                                key={tag.id}
-                                className="inline-flex items-center bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm group hover:bg-gray-200 transition-colors"
-                            >
-                                <span>{tag.name}</span>
-                                <button
-                                    onClick={() => handleDelete(tag.id)}
-                                    className="ml-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
-                                    title="Sil"
+                        {tags.map(tag => {
+                            const isSelected = selectedTags.includes(tag.id);
+                            return (
+                                <div
+                                    key={tag.id}
+                                    onClick={() => toggleSelect(tag.id)}
+                                    className={`
+                                        cursor-pointer inline-flex items-center px-3 py-1.5 rounded-full text-sm transition-all border select-none
+                                        ${isSelected
+                                            ? 'bg-red-50 text-red-700 border-red-200 ring-1 ring-red-200 shadow-sm'
+                                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                                        }
+                                    `}
                                 >
-                                    <X size={14} />
-                                </button>
-                            </div>
-                        ))}
+                                    <span>{tag.name}</span>
+                                    {isSelected ? (
+                                        <Check size={14} className="ml-2" />
+                                    ) : (
+                                        <button
+                                            onClick={(e) => handleDelete(tag.id, e)}
+                                            className="ml-2 text-gray-400 hover:text-red-500 hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                                            title="Sil"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>

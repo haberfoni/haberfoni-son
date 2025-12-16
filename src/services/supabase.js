@@ -1,9 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-// TODO: Move these to .env file for better practice
-// VITE_SUPABASE_URL=https://elrxpnzihsjugndbgvrv.supabase.co
-// VITE_SUPABASE_ANON_KEY=...
-const supabaseUrl = 'https://elrxpnzihsjugndbgvrv.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVscnhwbnppaHNqdWduZGJndnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzY2ODMsImV4cCI6MjA4MDUxMjY4M30.SeWT_Jc4SrM5WWsaK1Ss3Ry36rdHatq1GoUyfqVJD5o';
+// Runtime Config (config.js) öncelikli, yoksa Environment Variable (.env) kullanılır
+const config = window.APP_CONFIG || {};
+// "API_URL" ve "API_KEY" generic isimlendirmeleri de desteklenir (White-label için)
+const supabaseUrl = config.API_URL || config.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = config.API_KEY || config.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.warn('Supabase URL veya Key eksik! Lütfen public/config.js dosyasını kontrol edin.');
+}
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
+export { supabaseUrl, supabaseKey };

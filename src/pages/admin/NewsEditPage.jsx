@@ -3,13 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Image as ImageIcon, Video, AlertTriangle, Eye, Trash2, X } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 import { adminService } from '../../services/adminService';
+import { useAuth } from '../../context/AuthContext';
 import { slugify } from '../../utils/slugify';
 import { getYouTubeId } from '../../utils/videoUtils';
 import RichTextEditor from '../../components/RichTextEditor';
+import TagSelector from '../../components/admin/TagSelector';
+import SeoPreview from '../../components/admin/SeoPreview';
 
 const NewsEditPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const isEditing = !!id;
     const [loading, setLoading] = useState(isEditing);
     const [saving, setSaving] = useState(false);
@@ -26,9 +30,53 @@ const NewsEditPage = () => {
         category: 'gundem',
         image_url: '',
         is_published: false, // Internal UI state
-        is_sticky: false,   // Internal UI state
-        video_url: ''
+        is_sticky: false,   // Internal UI state - also manages headlines table
+        video_url: '',
+        seo_title: '',
+        seo_description: '',
+        seo_keywords: ''
     });
+
+    const [headlineSlot, setHeadlineSlot] = useState(null); // Track if news is in headlines
+    const [selectedTagIds, setSelectedTagIds] = useState([]); // Selected tags
+
+    const [categories, setCategories] = useState([]);
+
+    useEffect(() => {
+        loadCategories();
+    }, []);
+
+    const loadCategories = async () => {
+        try {
+            const data = await adminService.getCategories();
+            if (data && data.length > 0) {
+                setCategories(data);
+            } else {
+                // Fallback if no categories in DB yet
+                setCategories([
+                    { name: 'Gündem', slug: 'gundem' },
+                    { name: 'Spor', slug: 'spor' },
+                    { name: 'Ekonomi', slug: 'ekonomi' },
+                    { name: 'Magazin', slug: 'magazin' },
+                    { name: 'Dünya', slug: 'dunya' },
+                    { name: 'Teknoloji', slug: 'teknoloji' },
+                    { name: 'Sağlık', slug: 'saglik' }
+                ]);
+            }
+        } catch (error) {
+            console.error('Error loading categories:', error);
+            // Fallback list
+            setCategories([
+                { name: 'Gündem', slug: 'gundem' },
+                { name: 'Spor', slug: 'spor' },
+                { name: 'Ekonomi', slug: 'ekonomi' },
+                { name: 'Magazin', slug: 'magazin' },
+                { name: 'Dünya', slug: 'dunya' },
+                { name: 'Teknoloji', slug: 'teknoloji' },
+                { name: 'Sağlık', slug: 'saglik' }
+            ]);
+        }
+    };
 
     useEffect(() => {
         if (isEditing) {
@@ -46,6 +94,14 @@ const NewsEditPage = () => {
 
             if (error) throw error;
 
+            // Check if news is in headlines
+            const slot = await adminService.getHeadlineByNewsId(id);
+            setHeadlineSlot(slot);
+
+            // Load tags
+            const tags = await adminService.getNewsTags(id);
+            setSelectedTagIds(tags || []);
+
             // Map DB columns to UI state
             const generatedSlug = slugify(data.title || '');
             const hasCustomSlug = data.slug && data.slug !== generatedSlug;
@@ -59,8 +115,12 @@ const NewsEditPage = () => {
                 slug: data.slug || generatedSlug,
                 // If published_at is set, it's published.
                 is_published: !!published_at,
-                // Map is_slider to is_sticky
-                is_sticky: !!is_slider
+                // Map headline presence to is_sticky (overrides is_slider)
+                // Map headline presence to is_sticky (overrides is_slider)
+                is_sticky: !!slot,
+                seo_title: data.seo_title || data.title || '',
+                seo_description: data.seo_description || data.summary || '',
+                seo_keywords: data.seo_keywords || ''
             });
 
             // If the saved slug is different from what we would generate, 
@@ -90,9 +150,19 @@ const NewsEditPage = () => {
         // but the user's "test2" workflow suggests they want control or auto.
         if (!manualSlug) {
             const slug = slugify(title);
-            setFormData(prev => ({ ...prev, title, slug }));
+            setFormData(prev => ({
+                ...prev,
+                title,
+                slug,
+                // Auto-sync SEO Title if it was empty or same as previous title
+                seo_title: (!prev.seo_title || prev.seo_title === prev.title) ? title : prev.seo_title
+            }));
         } else {
-            setFormData(prev => ({ ...prev, title }));
+            setFormData(prev => ({
+                ...prev,
+                title,
+                seo_title: (!prev.seo_title || prev.seo_title === prev.title) ? title : prev.seo_title
+            }));
         }
 
         // Debounce or just check on significant change?
@@ -136,7 +206,17 @@ const NewsEditPage = () => {
                 // DATA MAPPING
                 published_at: formData.is_published ? new Date().toISOString() : null,
                 is_slider: formData.is_sticky,
-                updater_id: undefined
+                published_at: formData.is_published ? new Date().toISOString() : null,
+                // DATA MAPPING
+                published_at: formData.is_published ? new Date().toISOString() : null,
+                is_slider: formData.is_sticky,
+                author_id: !isEditing ? user?.id : undefined, // Only set author on creation
+                updater_id: user?.id, // Track who updated it
+
+                // SEO Fields - Fallback Logic
+                seo_title: formData.seo_title || formData.title,
+                seo_description: formData.seo_description || formData.summary || formData.content?.replace(/<[^>]*>?/gm, '').slice(0, 200) || '',
+                seo_keywords: formData.seo_keywords
             };
 
             // DEBUG: Log what we're about to save
@@ -182,6 +262,14 @@ const NewsEditPage = () => {
 
             try {
                 result = await trySave(dbPayload);
+
+                // Log Activity
+                if (result) {
+                    const action = isEditing ? 'UPDATE' : 'CREATE';
+                    const desc = isEditing ? `Haber güncellendi: ${formData.title}` : `Yeni haber oluşturuldu: ${formData.title}`;
+                    // Fire and forget log to not block UI
+                    adminService.logActivity(action, 'NEWS', desc, result.id).catch(console.error);
+                }
             } catch (error) {
                 // RETRY LOGIC: If 'media_type' column is missing, remove it and try again.
                 if (error.message && error.message.includes('media_type')) {
@@ -189,9 +277,42 @@ const NewsEditPage = () => {
                     const fallbackPayload = { ...dbPayload };
                     delete fallbackPayload.media_type;
                     result = await trySave(fallbackPayload);
+
+                    // Log Activity for retry success
+                    if (result) {
+                        const action = isEditing ? 'UPDATE' : 'CREATE';
+                        const desc = isEditing ? `Haber güncellendi (Retry): ${formData.title}` : `Yeni haber oluşturuldu (Retry): ${formData.title}`;
+                        adminService.logActivity(action, 'NEWS', desc, result.id).catch(console.error);
+                    }
                 } else {
                     throw error; // Re-throw other errors
                 }
+            }
+
+            // HEADLINE MANAGEMENT: Add/remove from headlines based on is_sticky
+            const newsId = result?.id || id;
+            if (formData.is_sticky) {
+                // Add to headlines
+                if (!headlineSlot) {
+                    const nextSlot = await adminService.getNextAvailableSlot();
+                    if (nextSlot) {
+                        await adminService.addToHeadline(newsId, nextSlot);
+                        console.log(`Added to headline slot ${nextSlot}`);
+                    } else {
+                        setMessage({ type: 'warning', text: 'Haber kaydedildi ancak tüm manşet slotları dolu.' });
+                    }
+                }
+            } else {
+                // Remove from headlines if it was there
+                if (headlineSlot) {
+                    await adminService.removeFromHeadline(headlineSlot);
+                    console.log(`Removed from headline slot ${headlineSlot}`);
+                }
+            }
+
+            // Save Tags
+            if (selectedTagIds) {
+                await adminService.updateNewsTags(newsId, selectedTagIds);
             }
 
             setMessage({ type: 'success', text: 'Haber başarıyla kaydedildi.' });
@@ -260,7 +381,7 @@ const NewsEditPage = () => {
 
                         {/* URL Preview (Always Visible, Read-only if custom not active) */}
                         <div className="flex items-center space-x-0.5 mb-2 p-3 bg-gray-50 rounded border border-gray-200 text-sm text-gray-600 break-all">
-                            <span className="shrink-0">https://haberfoni.com/kategori/</span>
+                            <span className="shrink-0">/kategori/</span>
                             <span className="font-medium text-gray-700 shrink-0">{slugify(formData.category || 'kategori')}/</span>
                             <span className="font-bold text-gray-900">{formData.slug}</span>
                         </div>
@@ -316,8 +437,8 @@ const NewsEditPage = () => {
                                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary capitalize"
                             >
-                                {['gundem', 'spor', 'ekonomi', 'magazin', 'dunya', 'teknoloji', 'saglik'].map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
+                                {categories.map(cat => (
+                                    <option key={cat.slug} value={cat.slug}>{cat.name}</option>
                                 ))}
                             </select>
                         </div>
@@ -360,15 +481,46 @@ const NewsEditPage = () => {
 
                     {/* Summary */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Özet</label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-sm font-medium text-gray-700">Özet</label>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const stripped = formData.content?.replace(/<[^>]*>?/gm, '').slice(0, 200) || '';
+                                    if (!stripped) {
+                                        alert('İçerik henüz boş.');
+                                        return;
+                                    }
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        summary: stripped,
+                                        seo_description: stripped
+                                    }));
+                                }}
+                                className="text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                            >
+                                İçerikten Üret
+                            </button>
+                        </div>
                         <textarea
                             rows="2"
                             value={formData.summary}
-                            onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setFormData(prev => ({
+                                    ...prev,
+                                    summary: val,
+                                    // Only auto-fill SEO description if it's currently EMPTY. 
+                                    // If user wrote something manually, leave it alone.
+                                    seo_description: !prev.seo_description ? val : prev.seo_description
+                                }));
+                            }}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
                             placeholder="Kısa özet..."
                         />
                     </div>
+
+
 
 
                     {/* Media Type Selection */}
@@ -559,10 +711,112 @@ const NewsEditPage = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">İçerik</label>
                         <RichTextEditor
                             value={formData.content}
-                            onChange={(content) => setFormData({ ...formData, content: content })}
+                            onChange={(content) => {
+                                setFormData(prev => {
+                                    const stripped = content.replace(/<[^>]*>?/gm, '').slice(0, 200);
+
+                                    // 1. Auto-update Summary logic
+                                    // Update summary if it's currently empty OR if it matches the previous content prefix (assuming auto-generated)
+                                    const prevStripped = prev.content?.replace(/<[^>]*>?/gm, '').slice(0, 200) || '';
+                                    const isSummaryAuto = !prev.summary || prev.summary === prevStripped;
+                                    const newSummary = isSummaryAuto ? stripped : prev.summary;
+
+                                    // 2. Auto-update SEO Description logic (Smart Fallback)
+                                    // If user hasn't entered a custom SEO description (is empty),
+                                    // keep it synced with the Summary (which is either manual or content-derived).
+                                    // If user HAS entered a custom value, do not touch it.
+                                    const newSeoDesc = !prev.seo_description ? newSummary : prev.seo_description;
+
+                                    return {
+                                        ...prev,
+                                        content: content,
+                                        summary: newSummary,
+                                        seo_description: newSeoDesc
+                                    };
+                                });
+                            }}
                             placeholder="Haber içeriğini buraya yazın..."
                         />
                         <p className="text-xs text-gray-400 mt-1">Metin editörünü kullanarak haberinizi düzenleyebilir veya "Kaynak" butonu ile HTML koduna müdahale edebilirsiniz.</p>
+                    </div>
+
+                    {/* SEO Settings - Auto-populated */}
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-4">
+                        <h3 className="font-semibold text-gray-800 flex items-center">
+                            <span className="mr-2">🔎</span> SEO Ayarları
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">SEO Başlığı</label>
+                                <input
+                                    type="text"
+                                    value={formData.seo_title}
+                                    onChange={(e) => setFormData({ ...formData, seo_title: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+                                    placeholder="Google'da görünecek başlık"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Otomatik olarak haber başlığından alınır. Sona otomatik olarak " | Site Adı" eklenir.</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">SEO Anahtar Kelimeler</label>
+                                <input
+                                    type="text"
+                                    value={formData.seo_keywords}
+                                    onChange={(e) => setFormData({ ...formData, seo_keywords: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+                                    placeholder="virgül, ile, ayırın"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="block text-sm font-medium text-gray-700">SEO Açıklaması</label>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const stripped = formData.content?.replace(/<[^>]*>?/gm, '').slice(0, 200) || '';
+                                        if (!stripped) {
+                                            alert('İçerik henüz boş.');
+                                            return;
+                                        }
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            seo_description: stripped
+                                        }));
+                                    }}
+                                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                                >
+                                    İçerikten Çek
+                                </button>
+                            </div>
+                            <textarea
+                                rows="2"
+                                value={formData.seo_description}
+                                onChange={(e) => setFormData({ ...formData, seo_description: e.target.value })}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+                                placeholder="Google'da görünecek açıklama"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Otomatik olarak özetten alınır (Max 200 karakter önerilir).</p>
+                        </div>
+
+                        {/* SEO Preview */}
+                        <div className="col-span-1 md:col-span-2">
+                            <SeoPreview
+                                title={formData.seo_title || formData.title}
+                                description={formData.seo_description || formData.summary}
+                                image={formData.image_url}
+                                url={`/kategori/${formData.category}/${formData.slug}`}
+                                date={formData.published_at || new Date().toISOString()}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Tag Selector */}
+                    <div>
+                        <TagSelector
+                            selectedTagIds={selectedTagIds}
+                            onChange={setSelectedTagIds}
+                        />
                     </div>
                 </div>
 

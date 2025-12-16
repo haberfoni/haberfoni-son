@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Clock, Eye, Share2, Play, Calendar } from 'lucide-react';
-import { fetchVideos } from '../services/api';
+import { fetchVideos, incrementVideoView } from '../services/api';
 import { mapVideoItem } from '../utils/mappers';
 import SEO from '../components/SEO';
 import { slugify } from '../utils/slugify';
@@ -13,11 +13,9 @@ const VideoDetailPage = () => {
     const [relatedVideos, setRelatedVideos] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
 
-    const viewCountedRef = React.useRef(false);
+    const countedSlugRef = React.useRef(null);
 
     React.useEffect(() => {
-        viewCountedRef.current = false; // Reset for new slug
-
         const loadVideo = async () => {
             setLoading(true);
             const videos = await fetchVideos();
@@ -27,15 +25,10 @@ const VideoDetailPage = () => {
             setVideo(currentVideo);
 
             if (currentVideo) {
-                // Increment view count
-                if (!viewCountedRef.current) {
-                    viewCountedRef.current = true;
-                    try {
-                        const { adminService } = await import('../services/adminService');
-                        await adminService.incrementVideoViews(currentVideo.id);
-                    } catch (err) {
-                        console.error("View increment failed", err);
-                    }
+                // Increment view count (only once per slug)
+                if (countedSlugRef.current !== slug) {
+                    countedSlugRef.current = slug;
+                    incrementVideoView(currentVideo.id).catch(console.error);
                 }
 
                 setRelatedVideos(mappedVideos
@@ -81,11 +74,14 @@ const VideoDetailPage = () => {
     return (
         <div className="bg-gray-100 min-h-screen pb-12">
             <SEO
-                title={video.title}
-                description={`${video.title} videosunu izle. Haberfoni Video Galeri.`}
+                title={video.seo_title || video.title}
+                description={video.seo_description || `${video.title} videosunu izle.`}
                 url={`/video-galeri/${slug}`}
                 image={video.thumbnail}
                 type="video.other"
+                publishedTime={video.published_at}
+                modifiedTime={video.created_at} // or updated_at if available
+                tags={video.seo_keywords ? video.seo_keywords.split(',') : ['Video', 'Haber', 'Galeri']}
             />
 
             <div className="container mx-auto px-4 py-8">

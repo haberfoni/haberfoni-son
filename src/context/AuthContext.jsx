@@ -65,6 +65,8 @@ export const AuthProvider = ({ children }) => {
     };
 
     const isAdmin = profile?.role === 'admin';
+    // Allow authors and editors to access the panel, but maybe restrict specific actions later
+    const canAccessAdmin = profile?.role === 'admin' || profile?.role === 'author' || profile?.role === 'editor';
 
     const value = {
         session,
@@ -72,6 +74,7 @@ export const AuthProvider = ({ children }) => {
         profile,
         loading,
         isAdmin,
+        canAccessAdmin,
         signOut,
         signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
     };

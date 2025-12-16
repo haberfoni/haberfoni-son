@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Save, Key, CheckCircle, XCircle } from 'lucide-react';
-import { supabase } from '../../services/supabase';
+import { adminService } from '../../services/adminService';
 
 const EmailSettingsPage = () => {
     const [settings, setSettings] = useState({
@@ -18,13 +18,7 @@ const EmailSettingsPage = () => {
 
     const loadSettings = async () => {
         try {
-            const { data, error } = await supabase
-                .from('email_settings')
-                .select('*')
-                .single();
-
-            if (error && error.code !== 'PGRST116') throw error;
-
+            const data = await adminService.getEmailSettings();
             if (data) {
                 setSettings(data);
             }
@@ -43,17 +37,11 @@ const EmailSettingsPage = () => {
 
         setSaving(true);
         try {
-            const { error } = await supabase
-                .from('email_settings')
-                .upsert({
-                    id: 1,
-                    api_key: settings.api_key,
-                    from_email: settings.from_email,
-                    service: settings.service,
-                    updated_at: new Date().toISOString()
-                });
-
-            if (error) throw error;
+            await adminService.updateEmailSettings({
+                api_key: settings.api_key,
+                from_email: settings.from_email,
+                service: settings.service
+            });
 
             setMessage({ type: 'success', text: 'Email ayarları kaydedildi!' });
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);

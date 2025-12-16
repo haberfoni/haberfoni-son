@@ -1,6 +1,8 @@
 import React, { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import { HelmetProvider } from 'react-helmet-async';
+import { SiteSettingsProvider } from './context/SiteSettingsContext';
 import App from './App.jsx'
 
 class ErrorBoundary extends React.Component {
@@ -37,7 +39,11 @@ class ErrorBoundary extends React.Component {
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <HelmetProvider>
+        <SiteSettingsProvider>
+          <App />
+        </SiteSettingsProvider>
+      </HelmetProvider>
     </ErrorBoundary>
   </StrictMode>,
 )

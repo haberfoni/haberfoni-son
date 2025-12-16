@@ -4,12 +4,15 @@ import { FileText, Edit2, Trash2, Plus, Eye, Copy, Trash, RefreshCw } from 'luci
 import { adminService } from '../../services/adminService';
 import { formatDate } from '../../utils/mappers';
 import { slugify } from '../../utils/slugify';
+import { useAuth } from '../../context/AuthContext';
 
 const NewsListPage = () => {
+    const { user, profile } = useAuth();
     const [news, setNews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(0);
     const [total, setTotal] = useState(0);
+    const [headlineNewsIds, setHeadlineNewsIds] = useState(new Set());
     const pageSize = 20;
 
     const [filters, setFilters] = useState({
@@ -19,20 +22,18 @@ const NewsListPage = () => {
     });
 
     const [sortConfig, setSortConfig] = useState({
-        key: 'created_at', // Default sort by date
-        direction: 'desc' // desc = newest first
+        key: 'created_at',
+        direction: 'desc'
     });
 
     const [selectedIds, setSelectedIds] = useState([]);
 
-    // Categories for filter
     const categories = ['gundem', 'siyaset', 'ekonomi', 'dunya', 'spor', 'magazin', 'teknoloji', 'saglik'];
 
     useEffect(() => {
         loadNews();
     }, [page, filters, sortConfig]);
 
-    // Reset selection when content changes
     useEffect(() => {
         setSelectedIds([]);
     }, [news]);
@@ -40,9 +41,20 @@ const NewsListPage = () => {
     const loadNews = async () => {
         try {
             setLoading(true);
-            const { data, count } = await adminService.getNewsList(page, pageSize, filters);
+            const queryFilters = { ...filters };
 
-            // Sort data on frontend
+            // If user is an author, force filter by their ID
+            if (profile?.role === 'author') {
+                queryFilters.authorId = user.id;
+            }
+
+            const { data, count } = await adminService.getNewsList(page, pageSize, queryFilters);
+
+            // Load headlines
+            const headlines = await adminService.getHeadlines();
+            const headlineIds = new Set(headlines.map(h => h.news?.id).filter(Boolean));
+            setHeadlineNewsIds(headlineIds);
+
             const sortedData = [...data].sort((a, b) => {
                 const aVal = a[sortConfig.key];
                 const bVal = b[sortConfig.key];
@@ -83,7 +95,6 @@ const NewsListPage = () => {
     };
 
     const handleDuplicate = async (id) => {
-        console.log('Duplicate clicked for id:', id);
         if (!window.confirm('Bu haberi kopyalamak istediğinize emin misiniz?')) return;
         try {
             await adminService.duplicateNews(id);
@@ -96,7 +107,6 @@ const NewsListPage = () => {
     };
 
     const handleBulkDuplicate = async () => {
-        console.log('Bulk duplicate clicked');
         if (!window.confirm(`${selectedIds.length} haberi çoğaltmak istediğinize emin misiniz?`)) return;
         try {
             await adminService.duplicateNewsBulk(selectedIds);
@@ -135,6 +145,34 @@ const NewsListPage = () => {
         }
     };
 
+    const handleToggleHeadline = async (newsId, isInHeadline) => {
+        try {
+            if (isInHeadline) {
+                const headlines = await adminService.getHeadlines();
+                const headline = headlines.find(h => h.news?.id === newsId);
+                if (headline) {
+                    await adminService.removeFromHeadline(headline.slot_number);
+                    await adminService.updateNews(newsId, { is_slider: false });
+                    alert('Haber manşetten kaldırıldı.');
+                }
+            } else {
+                const nextSlot = await adminService.getNextAvailableSlot();
+                if (nextSlot) {
+                    await adminService.addToHeadline(newsId, nextSlot);
+                    await adminService.updateNews(newsId, { is_slider: true });
+                    alert('Haber manşete eklendi.');
+                } else {
+                    alert('Tüm manşet slotları dolu (maksimum 10).');
+                    return;
+                }
+            }
+            loadNews();
+        } catch (error) {
+            console.error('Error toggling headline:', error);
+            alert('İşlem başarısız.');
+        }
+    };
+
     const totalPages = Math.ceil(total / pageSize);
 
     const handleSort = (key) => {
@@ -162,7 +200,6 @@ const NewsListPage = () => {
                 </h1>
 
                 <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                    {/* Search */}
                     <input
                         type="text"
                         placeholder="Başlık ara..."
@@ -171,7 +208,6 @@ const NewsListPage = () => {
                         onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value, page: 0 }))}
                     />
 
-                    {/* Category Filter */}
                     <select
                         className="px-3 py-2 border rounded-lg text-sm bg-white"
                         value={filters.category}
@@ -183,7 +219,6 @@ const NewsListPage = () => {
                         ))}
                     </select>
 
-                    {/* Status Filter */}
                     <select
                         className="px-3 py-2 border rounded-lg text-sm bg-white"
                         value={filters.status}
@@ -210,7 +245,6 @@ const NewsListPage = () => {
                 </div>
             </div>
 
-            {/* Bulk Actions Bar */}
             {selectedIds.length > 0 && (
                 <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
                     <span className="text-blue-800 font-medium text-sm flex items-center gap-2">
@@ -319,28 +353,37 @@ const NewsListPage = () => {
                                         <td className="p-4 capitalize text-sm text-gray-600">{item.category}</td>
                                         <td className="p-4 text-sm text-gray-500">{formatDate(item.created_at)}</td>
                                         <td className="p-4">
-                                            <button
-                                                type="button"
-                                                onClick={async (e) => {
-                                                    e.stopPropagation();
-                                                    try {
-                                                        const isPublished = !!item.published_at;
-                                                        const newPublishedAt = isPublished ? null : new Date().toISOString();
-
-                                                        // Update DB
-                                                        await adminService.updateNews(item.id, { published_at: newPublishedAt });
-
-                                                        // Update Local State
-                                                        setNews(news.map(n => n.id === item.id ? { ...n, published_at: newPublishedAt } : n));
-                                                    } catch (error) {
-                                                        console.error('Update failed:', error);
-                                                        alert('Güncelleme başarısız');
-                                                    }
-                                                }}
-                                                className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold cursor-pointer transition-colors ${item.published_at ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                                            >
-                                                {item.published_at ? 'Aktif' : 'Pasif'}
-                                            </button>
+                                            <div className="flex flex-col gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        try {
+                                                            const isPublished = !!item.published_at;
+                                                            const newPublishedAt = isPublished ? null : new Date().toISOString();
+                                                            await adminService.updateNews(item.id, { published_at: newPublishedAt });
+                                                            setNews(news.map(n => n.id === item.id ? { ...n, published_at: newPublishedAt } : n));
+                                                        } catch (error) {
+                                                            console.error('Update failed:', error);
+                                                            alert('Güncelleme başarısız');
+                                                        }
+                                                    }}
+                                                    className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold cursor-pointer transition-colors ${item.published_at ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                                >
+                                                    {item.published_at ? 'Aktif' : 'Pasif'}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); handleToggleHeadline(item.id, headlineNewsIds.has(item.id)); }}
+                                                    className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold cursor-pointer transition-colors ${headlineNewsIds.has(item.id)
+                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                        : 'bg-red-100 text-red-600 hover:bg-red-200'
+                                                        }`}
+                                                    title={headlineNewsIds.has(item.id) ? 'Manşetten Kaldır' : 'Manşete Sabitle'}
+                                                >
+                                                    {headlineNewsIds.has(item.id) ? 'Sabitlemeyi Kaldır' : 'Manşete Sabitle'}
+                                                </button>
+                                            </div>
                                         </td>
                                         <td className="p-4 text-center">
                                             <div className="flex items-center justify-center gap-1">
@@ -382,7 +425,6 @@ const NewsListPage = () => {
                     </table>
                 </div>
 
-                {/* Pagination */}
                 {totalPages > 1 && (
                     <div className="flex justify-center p-4 border-t border-gray-100 space-x-2">
                         <button

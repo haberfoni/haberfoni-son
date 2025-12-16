@@ -6,7 +6,13 @@ import { fetchCategories, fetchFinancialData } from '../services/api';
 import { SOCIAL_MEDIA_LINKS } from '../constants/socialMedia';
 import { slugify } from '../utils/slugify';
 
+import { getSocialLinksFromSettings, getIcon } from '../utils/iconMapper';
+import { useSiteSettings } from '../context/SiteSettingsContext';
+
 const Header = () => {
+    const { settings } = useSiteSettings();
+    const socialLinks = getSocialLinksFromSettings(settings); // Get normalized links
+
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [currencyData, setCurrencyData] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -16,7 +22,8 @@ const Header = () => {
     useEffect(() => {
         const loadCategories = async () => {
             const data = await fetchCategories();
-            setCategories(data.map(c => c.name));
+            // Store full objects now: { id, name, slug, ... }
+            setCategories(data);
         };
         loadCategories();
     }, []);
@@ -101,6 +108,20 @@ const Header = () => {
 
     return (
         <header className="bg-white sticky top-0 z-50 shadow-sm">
+            {/* Mobile Top Bar - Galleries Only */}
+            <div className="md:hidden bg-gray-100 border-b border-gray-200 py-1.5 px-4 overflow-x-auto no-scrollbar">
+                <div className="flex items-center justify-end space-x-4">
+                    <Link to="/foto-galeri" className="flex items-center space-x-1 text-gray-700 hover:text-primary font-bold uppercase text-[10px] tracking-tight">
+                        <Camera size={12} />
+                        <span>FOTO GALERİ</span>
+                    </Link>
+                    <Link to="/video-galeri" className="flex items-center space-x-1 text-gray-700 hover:text-primary font-bold uppercase text-[10px] tracking-tight">
+                        <Video size={12} />
+                        <span>VİDEO GALERİ</span>
+                    </Link>
+                </div>
+            </div>
+
             {/* Top Bar - Financial Data & Utilities */}
             <div className="bg-gray-50 border-b border-gray-200 text-xs py-1.5">
                 <div className="container mx-auto px-4 flex items-center justify-between">
@@ -143,16 +164,22 @@ const Header = () => {
                         </div>
                     </div>
 
-                    {/* Right Side: Social, Galleries, Weather */}
-                    <div className="flex items-center space-x-4 shrink-0">
+                    {/* Right Side: Social, Galleries, Weather (Desktop Only) */}
+                    <div className="hidden md:flex items-center space-x-4 shrink-0">
                         {/* Social Icons */}
-                        <div className="hidden md:flex items-center space-x-3 border-r border-gray-300 pr-4">
-                            <a href={SOCIAL_MEDIA_LINKS.facebook} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors" aria-label="Facebook"><Facebook size={14} /></a>
-                            <a href={SOCIAL_MEDIA_LINKS.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors" aria-label="Twitter"><Twitter size={14} /></a>
+                        <div className="flex items-center space-x-3 border-r border-gray-300 pr-4">
+                            {socialLinks.map((link, index) => {
+                                const Icon = getIcon(link.platform);
+                                return (
+                                    <a key={index} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-black transition-colors" aria-label={link.platform}>
+                                        <Icon size={14} />
+                                    </a>
+                                );
+                            })}
                         </div>
 
                         {/* Gallery Links */}
-                        <div className="hidden lg:flex items-center space-x-4 border-r border-gray-300 pr-4">
+                        <div className="flex items-center space-x-4 border-r border-gray-300 pr-4">
                             <Link to="/foto-galeri" className="flex items-center space-x-1 text-gray-700 hover:text-primary font-bold uppercase tracking-tight">
                                 <Camera size={14} />
                                 <span>FOTO GALERİ</span>
@@ -175,8 +202,35 @@ const Header = () => {
                     <div className="flex items-center justify-between h-16">
                         {/* Logo */}
                         <div className="flex items-center">
-                            <Link to="/" className="text-3xl font-black tracking-tighter italic" onClick={() => window.scrollTo(0, 0)}>
-                                HABER<span className="text-primary">FONİ</span>
+                            <Link to="/" className="flex items-center" onClick={() => window.scrollTo(0, 0)}>
+                                {settings.logo_desktop ? (
+                                    <>
+                                        {/* Desktop Logo */}
+                                        <img
+                                            src={settings.logo_desktop}
+                                            alt={settings.site_title || "Haberfoni"}
+                                            className="hidden md:block h-12 w-auto object-contain"
+                                        />
+                                        {/* Mobile Logo (if exists, else desktop, else text) */}
+                                        {settings.logo_mobile ? (
+                                            <img
+                                                src={settings.logo_mobile}
+                                                alt={settings.site_title || "Haberfoni"}
+                                                className="block md:hidden h-10 w-auto object-contain"
+                                            />
+                                        ) : (
+                                            <img
+                                                src={settings.logo_desktop}
+                                                alt={settings.site_title || "Haberfoni"}
+                                                className="block md:hidden h-10 w-auto object-contain"
+                                            />
+                                        )}
+                                    </>
+                                ) : (
+                                    <span className="text-3xl font-black tracking-tighter italic block">
+                                        HABER<span className="text-primary">FONİ</span>
+                                    </span>
+                                )}
                             </Link>
                         </div>
 
@@ -213,12 +267,13 @@ const Header = () => {
                 <div className="container mx-auto px-4">
                     <ul className="flex items-center justify-between text-sm font-bold text-gray-700 h-10">
                         {categories.map((category) => (
-                            <li key={category}>
+                            <li key={category.id || category.name}>
                                 <Link
-                                    to={`/kategori/${slugify(category)}`}
+                                    // Use DB slug if available, else generate from name
+                                    to={`/kategori/${category.slug || slugify(category.name)}`}
                                     className="hover:text-primary hover:bg-white px-3 py-2 rounded-t-md transition-all block border-b-2 border-transparent hover:border-primary"
                                 >
-                                    {category.toUpperCase()}
+                                    {category.name.toUpperCase()}
                                 </Link>
                             </li>
                         ))}
@@ -232,12 +287,12 @@ const Header = () => {
                     <div className="container mx-auto px-4 py-4 flex flex-col space-y-2">
                         {categories.map((category) => (
                             <Link
-                                key={category}
-                                to={`/kategori/${slugify(category)}`}
+                                key={category.id || category.name}
+                                to={`/kategori/${category.slug || slugify(category.name)}`}
                                 className="text-gray-700 font-bold py-3 border-b border-gray-100 hover:text-primary hover:pl-2 transition-all"
                                 onClick={() => setIsMenuOpen(false)}
                             >
-                                {category.toUpperCase()}
+                                {category.name.toUpperCase()}
                             </Link>
                         ))}
                     </div>

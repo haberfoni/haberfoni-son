@@ -10,31 +10,51 @@ import { categories } from '../data/mockData';
 
 const CategoryPage = () => {
     const { categoryName } = useParams();
+    const ITEMS_PER_PAGE = 6;
     const scrollRef = React.useRef(null);
-    const [visibleCount, setVisibleCount] = React.useState(16);
-    const [prevCount, setPrevCount] = React.useState(16);
+    const [visibleCount, setVisibleCount] = React.useState(ITEMS_PER_PAGE);
+    const [prevCount, setPrevCount] = React.useState(ITEMS_PER_PAGE);
 
     const [categoryNews, setCategoryNews] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
 
+    const [categoryInfo, setCategoryInfo] = React.useState(null);
+
     React.useEffect(() => {
-        const loadCategoryNews = async () => {
+        const loadCategoryData = async () => {
             setLoading(true);
-            const data = await fetchNewsByCategory(categoryName);
-            setCategoryNews(data.map(mapNewsItem));
-            setLoading(false);
+            try {
+                // Import adminService dynamically to avoid circular deps if any, or just import top level
+                const { adminService } = await import('../services/adminService');
+
+                // 1. Fetch Category Info
+                const catInfo = await adminService.getCategoryBySlug(categoryName);
+                setCategoryInfo(catInfo);
+
+                // 2. Fetch News
+                const data = await fetchNewsByCategory(categoryName);
+                setCategoryNews(data.map(mapNewsItem));
+            } catch (err) {
+                console.error('Error loading category page:', err);
+            } finally {
+                setLoading(false);
+            }
         };
-        loadCategoryNews();
+        loadCategoryData();
     }, [categoryName]);
 
-    // Find the proper display name (e.g. "gundem" -> "Gündem")
+    // Display Name Logic: Database Name > Mock Data > URL param
     const matchedCategory = categories.find(c => slugify(c) === categoryName);
-    const displayCategoryName = matchedCategory || categoryName?.charAt(0).toUpperCase() + categoryName?.slice(1);
+    const displayCategoryName = categoryInfo?.name || matchedCategory || categoryName?.charAt(0).toUpperCase() + categoryName?.slice(1);
+
+    // SEO Data Logic
+    const seoTitle = categoryInfo?.seo_title || `${displayCategoryName} Haberleri`;
+    const seoDesc = categoryInfo?.seo_description || `${displayCategoryName} kategorisindeki en güncel haberler ve son dakika gelişmeleri Haberfoni'de.`;
 
     // Reset visible count when category changes
     React.useEffect(() => {
-        setVisibleCount(16);
-        setPrevCount(16);
+        setVisibleCount(ITEMS_PER_PAGE);
+        setPrevCount(ITEMS_PER_PAGE);
         window.scrollTo(0, 0);
     }, [categoryName]);
 
@@ -49,7 +69,7 @@ const CategoryPage = () => {
     const observerTarget = React.useRef(null);
 
     const handleLoadMore = React.useCallback(() => {
-        setVisibleCount((prev) => prev + 16);
+        setVisibleCount((prev) => prev + ITEMS_PER_PAGE);
     }, []);
 
     React.useEffect(() => {
@@ -76,14 +96,15 @@ const CategoryPage = () => {
     const displayedNews = categoryNews.slice(0, visibleCount);
 
     // Calculate total chunks based on visible count
-    const totalChunks = Math.ceil(Math.min(visibleCount, categoryNews.length) / 16);
+    const totalChunks = Math.ceil(Math.min(visibleCount, categoryNews.length) / ITEMS_PER_PAGE);
 
     return (
         <div className="container mx-auto px-4 py-8">
             <SEO
-                title={`${displayCategoryName} Haberleri`}
-                description={`${displayCategoryName} kategorisindeki en güncel haberler ve son dakika gelişmeleri Haberfoni'de.`}
+                title={seoTitle}
+                description={seoDesc}
                 url={`/kategori/${categoryName}`}
+                tags={categoryInfo?.seo_keywords ? categoryInfo.seo_keywords.split(',') : []}
             />
             <h1 className="text-3xl font-bold text-gray-900 mb-8 border-l-4 border-primary pl-4">
                 {displayCategoryName} Haberleri
@@ -100,16 +121,16 @@ const CategoryPage = () => {
             ) : categoryNews.length > 0 ? (
                 <div className="flex flex-col gap-8">
                     {Array.from({ length: totalChunks }).map((_, chunkIndex) => {
-                        const chunkStart = chunkIndex * 16;
-                        const chunkEnd = Math.min(chunkStart + 16, visibleCount);
+                        const chunkStart = chunkIndex * ITEMS_PER_PAGE;
+                        const chunkEnd = Math.min(chunkStart + ITEMS_PER_PAGE, visibleCount);
                         const chunkItems = categoryNews.slice(chunkStart, chunkEnd);
 
-                        const newChunkIndex = Math.ceil(prevCount / 16);
+                        const newChunkIndex = Math.ceil(prevCount / ITEMS_PER_PAGE);
                         const isPreviousChunk = chunkIndex === newChunkIndex - 1;
                         const isNewChunk = chunkIndex === newChunkIndex;
 
-                        // Horizontal ad logic: show after chunk if not the last chunk of data and within limit (64 items / 4 chunks)
-                        const showHorizontalAd = chunkEnd < visibleCount && chunkEnd < 64;
+                        // Horizontal ad logic: show after chunk if within limit (4 chunks)
+                        const showHorizontalAd = chunkIndex < 4;
 
                         // Sidebar ad logic: show for every chunk up to 4 chunks
                         const showSidebarAd = chunkIndex < 4;
@@ -122,7 +143,7 @@ const CategoryPage = () => {
                                     <div className="lg:w-3/4">
                                         <div
                                             className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4 mb-8 scroll-mt-40"
-                                            ref={isNewChunk && !((chunkIndex * 16) < 64) ? scrollRef : null}
+                                            ref={isNewChunk && !((chunkIndex * ITEMS_PER_PAGE) < (ITEMS_PER_PAGE * 4)) ? scrollRef : null}
                                         >
                                             {chunkItems.map((news) => (
                                                 <div key={news.id} className="contents">
@@ -138,7 +159,7 @@ const CategoryPage = () => {
                                             {isLastSidebarAd && chunkIndex > 0 ? (
                                                 <div className="sticky top-40">
                                                     <AdBanner
-                                                        placementCode="sidebar_sticky"
+                                                        placementCode="category_sidebar_sticky"
                                                         vertical={true}
                                                         customDimensions="300x600"
                                                         customHeight="h-[250px] md:h-[600px]"
@@ -147,13 +168,13 @@ const CategoryPage = () => {
                                             ) : (
                                                 <div className="flex flex-col gap-4">
                                                     <AdBanner
-                                                        placementCode="sidebar_1"
+                                                        placementCode="category_sidebar_1"
                                                         vertical={true}
                                                         customDimensions="300x250"
                                                         customHeight="h-[250px] md:h-[250px]"
                                                     />
                                                     <AdBanner
-                                                        placementCode="sidebar_2"
+                                                        placementCode="category_sidebar_2"
                                                         vertical={true}
                                                         customDimensions="300x250"
                                                         customHeight="h-[250px] md:h-[250px]"

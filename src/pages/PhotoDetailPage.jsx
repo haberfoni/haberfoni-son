@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Clock, Eye, Share2, Camera, Image as ImageIcon } from 'lucide-react';
-import { fetchPhotoGalleries, fetchGalleryImages } from '../services/api';
+import { fetchPhotoGalleries, fetchGalleryImages, incrementPhotoGalleryView } from '../services/api';
 import { mapPhotoGalleryItem } from '../utils/mappers';
 import SEO from '../components/SEO';
 import { slugify } from '../utils/slugify';
@@ -13,11 +13,9 @@ const PhotoDetailPage = () => {
     const [images, setImages] = React.useState([]);
     const [relatedAlbums, setRelatedAlbums] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
-    const viewCountedRef = React.useRef(false);
+    const countedSlugRef = React.useRef(null);
 
     React.useEffect(() => {
-        let incrementCalled = false;
-
         const loadAlbum = async () => {
             setLoading(true);
             const galleries = await fetchPhotoGalleries();
@@ -26,11 +24,12 @@ const PhotoDetailPage = () => {
             const currentAlbum = mappedGalleries.find(item => slugify(item.title) === slug);
             setAlbum(currentAlbum);
 
-            if (currentAlbum && !incrementCalled) {
-                // Increment view count only once
-                incrementCalled = true;
-                const { adminService } = await import('../services/adminService');
-                await adminService.incrementGalleryViews(currentAlbum.id);
+            if (currentAlbum) {
+                // Increment view count (only once per slug)
+                if (countedSlugRef.current !== slug) {
+                    countedSlugRef.current = slug;
+                    incrementPhotoGalleryView(currentAlbum.id).catch(console.error);
+                }
 
                 const galleryImages = await fetchGalleryImages(currentAlbum.id);
                 setImages(galleryImages.map(img => ({
@@ -82,11 +81,14 @@ const PhotoDetailPage = () => {
     return (
         <div className="bg-gray-100 min-h-screen pb-12">
             <SEO
-                title={album.title}
-                description={`${album.title} fotoğraf galerisi. Haberfoni Foto Galeri.`}
+                title={album.seo_title || album.title}
+                description={album.seo_description || `${album.title} fotoğraf galerisi.`}
                 url={`/foto-galeri/${slug}`}
                 image={album.thumbnail}
                 type="article"
+                publishedTime={album.published_at}
+                modifiedTime={album.created_at}
+                tags={album.seo_keywords ? album.seo_keywords.split(',') : ['Foto', 'Galeri', 'Haber']}
             />
 
             <div className="container mx-auto px-4 py-8">
