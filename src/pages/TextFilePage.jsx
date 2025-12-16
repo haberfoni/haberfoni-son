@@ -11,7 +11,14 @@ const TextFilePage = ({ type }) => {
                 // Fetch settings directly from Supabase to skip caching if possible or use service
                 const settings = await adminService.getSettings();
                 if (type === 'robots') {
-                    setContent(settings.robots_txt || 'User-agent: *\nAllow: /');
+                    const baseUrl = window.location.origin;
+                    const defaultRobots = `User-agent: *
+Allow: /
+
+Sitemap: ${baseUrl}/sitemap.xml
+Sitemap: ${baseUrl}/sitemap-news.xml
+Sitemap: ${baseUrl}/rss.xml`;
+                    setContent(settings.robots_txt || defaultRobots);
                 } else if (type === 'ads') {
                     setContent(settings.ads_txt || '');
                 }

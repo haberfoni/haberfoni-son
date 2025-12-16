@@ -77,18 +77,13 @@ const AdsPage = () => {
         'home_list_top': { name: 'Ana Sayfa Liste Üstü', w: 970, h: 250, mobile: '300x250' },
         'home_multimedia_bottom': { name: 'Ana Sayfa Multimedya Altı', w: 970, h: 250, mobile: '300x250' },
         'home_horizontal': { name: 'Ana Sayfa Yatay', w: 970, h: 250, mobile: '300x250' },
-        'home_horizontal_2': { name: 'Ana Sayfa Yatay (2. Yükleme)', w: 970, h: 250, mobile: '300x250' },
-        'home_horizontal_3': { name: 'Ana Sayfa Yatay (3. Yükleme)', w: 970, h: 250, mobile: '300x250' },
-        'home_horizontal_4': { name: 'Ana Sayfa Yatay (4. Yükleme)', w: 970, h: 250, mobile: '300x250' },
+
         'category_top': { name: 'Kategori Üst', w: 970, h: 250, mobile: '300x250' },
         'category_horizontal': { name: 'Kategori Yatay', w: 970, h: 250, mobile: '300x250' },
         'category_horizontal_2': { name: 'Kategori Yatay (2. Yükleme)', w: 970, h: 250, mobile: '300x250' },
         'category_horizontal_3': { name: 'Kategori Yatay (3. Yükleme)', w: 970, h: 250, mobile: '300x250' },
         'category_horizontal_4': { name: 'Kategori Yatay (4. Yükleme)', w: 970, h: 250, mobile: '300x250' },
-        'sidebar_1': { name: 'Ana Sayfa Yan Menü 1', w: 300, h: 250, mobile: 'Gizli' },
-        'sidebar_2': { name: 'Ana Sayfa Yan Menü 2', w: 300, h: 250, mobile: 'Gizli' },
-        'sidebar_3': { name: 'Ana Sayfa Yan Menü 3', w: 300, h: 250, mobile: 'Gizli' },
-        'sidebar_sticky': { name: 'Ana Sayfa Yan Menü Yapışkan', w: 300, h: 600, mobile: 'Gizli' },
+
         'category_sidebar_1': { name: 'Kategori Yan Menü 1', w: 300, h: 250, mobile: 'Gizli' },
         'category_sidebar_2': { name: 'Kategori Yan Menü 2', w: 300, h: 250, mobile: 'Gizli' },
         'category_sidebar_3': { name: 'Kategori Yan Menü 3', w: 300, h: 250, mobile: 'Gizli' },
@@ -182,6 +177,22 @@ const AdsPage = () => {
                 // If news.category stores 'Gündem', slug is 'gundem'.
 
                 return isEnabledInLayout && effectiveCount >= 4;
+            });
+
+            // Sort activeSlugs based on layoutConfig order
+            activeSlugs.sort((a, b) => {
+                const indexA = layoutConfig.findIndex(c => c.id === a);
+                const indexB = layoutConfig.findIndex(c => c.id === b);
+
+                // If both are in config, sort by index
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+
+                // If one is in config, it comes first
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+
+                // If neither, keep original order (or alphabetical)
+                return 0;
             });
 
             setActiveCategorySlugs(activeSlugs);
@@ -292,6 +303,14 @@ const AdsPage = () => {
                     } catch (err) {
                         console.error('Error auto-assigning slot:', err);
                     }
+                } else if (payload.placement_code === 'manset_2_slider') {
+                    try {
+                        const slot = await adminService.getNextAvailableManset2Slot();
+                        payload.is_manset_2 = true;
+                        payload.manset_2_slot = slot;
+                    } catch (err) {
+                        console.error('Error auto-assigning manset 2 slot:', err);
+                    }
                 }
                 await adminService.createAdPlacement(payload);
                 setMessage({ type: 'success', text: 'Yeni reklam alanı oluşturuldu.' });
@@ -304,6 +323,14 @@ const AdsPage = () => {
                     } catch (err) {
                         console.error('Error auto-assigning slot:', err);
                     }
+                } else if (payload.placement_code === 'manset_2_slider' && !editingAd.manset_2_slot) {
+                    try {
+                        const slot = await adminService.getNextAvailableManset2Slot();
+                        payload.is_manset_2 = true;
+                        payload.manset_2_slot = slot;
+                    } catch (err) {
+                        console.error('Error auto-assigning manset 2 slot:', err);
+                    }
                 }
                 await adminService.updateAdPlacement(editingAd.id, payload);
                 const tabName = STANDARD_PLACEMENTS[payload.placement_code] ? STANDARD_PLACEMENTS[payload.placement_code].name.split(' ')[0] : 'Özel Alanlar';
@@ -312,7 +339,7 @@ const AdsPage = () => {
 
             setEditingAd(null);
             setIsCreating(false);
-            loadAds();
+            loadData();
         } catch (error) {
             console.error('Error saving ad:', error);
             setMessage({ type: 'error', text: 'Hata: ' + (error.message || error.details || 'Bilinmeyen hata') });
@@ -335,7 +362,7 @@ const AdsPage = () => {
             setPlacements(prev => prev.filter(p => p.id !== ad.id));
             setMessage({ type: 'success', text: 'Reklam alanı tamamen silindi.' });
 
-            await loadAds();
+            await loadData();
         } catch (error) {
             console.error('Error removing ad:', error);
             setMessage({ type: 'error', text: 'İşlem sırasında hata oluştu: ' + (error.message || 'Bilinmeyen hata') });
@@ -398,7 +425,7 @@ const AdsPage = () => {
             }
 
             // Reload ads to sync UI
-            await loadAds();
+            await loadData();
         } catch (error) {
             console.error('Drag end error:', error);
             setMessage({ type: 'error', text: 'Taşıma işleminde hata oluştu.' });
@@ -648,45 +675,61 @@ const AdsPage = () => {
 
                                 {/* Scrollable List */}
                                 <div className="flex-1 overflow-y-auto p-2 space-y-1.5 custom-scrollbar relative">
-                                    {ads.map((ad, index) => (
-                                        <Draggable key={ad.id} draggableId={String(ad.id)} index={index}>
-                                            {(providedSnapshot, snapshot) => (
-                                                <div
-                                                    ref={providedSnapshot.innerRef}
-                                                    {...providedSnapshot.draggableProps}
-                                                    {...providedSnapshot.dragHandleProps}
-                                                    style={{ ...providedSnapshot.draggableProps.style }}
-                                                    onClick={(e) => { e.stopPropagation(); startEdit(ad); }}
-                                                    className={`
+                                    {ads.map((ad, index) => {
+                                        const isExpired = ad.end_date && new Date() > new Date(ad.end_date);
+                                        const isScheduled = ad.start_date && new Date() < new Date(ad.start_date);
+
+                                        let statusClass = '';
+                                        if (!ad.is_active) {
+                                            statusClass = 'bg-red-50 hover:border-red-400 border-red-200 opacity-75';
+                                        } else if (isExpired) {
+                                            statusClass = 'bg-red-50 hover:border-red-400 border-red-200 border-l-4 border-l-red-500';
+                                        } else if (isScheduled) {
+                                            statusClass = 'bg-yellow-50 hover:border-yellow-400 border-yellow-200';
+                                        } else {
+                                            statusClass = 'bg-white hover:border-blue-400 border-gray-200';
+                                        }
+
+                                        return (
+                                            <Draggable key={ad.id} draggableId={String(ad.id)} index={index}>
+                                                {(providedSnapshot, snapshot) => (
+                                                    <div
+                                                        ref={providedSnapshot.innerRef}
+                                                        {...providedSnapshot.draggableProps}
+                                                        {...providedSnapshot.dragHandleProps}
+                                                        style={{ ...providedSnapshot.draggableProps.style }}
+                                                        onClick={(e) => { e.stopPropagation(); startEdit(ad); }}
+                                                        className={`
                                                         flex items-center gap-2 p-1.5 rounded border shadow-sm cursor-grab active:cursor-grabbing transition-colors
-                                                        ${ad.is_active ? 'bg-white hover:border-blue-400 border-gray-200' : 'bg-red-50 hover:border-red-400 border-red-200'}
+                                                        ${statusClass}
                                                         ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500 z-50 opacity-90' : ''}
                                                     `}
-                                                >
-                                                    <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
-                                                        <GripVertical size={14} />
-                                                    </div>
-                                                    <div className={`w-2.5 h-2.5 rounded-full ${ad.is_active ? 'bg-green-500' : 'bg-red-500'} flex-shrink-0 shadow-sm`}></div>
-                                                    <span className="text-xs font-medium truncate flex-1 text-left">
-                                                        {ad.name || 'İsimsiz'}
-                                                    </span>
-                                                    <div className="text-[9px] text-gray-400 font-mono bg-gray-50 px-1 rounded border mr-1">{ad.type === 'image' ? 'IMG' : 'CODE'}</div>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            if (window.confirm('Bu reklamı silmek istediğinize emin misiniz?')) {
-                                                                handleRemoveAd(e, ad);
-                                                            }
-                                                        }}
-                                                        className="p-1 hover:bg-red-100 text-gray-400 hover:text-red-500 rounded transition-colors"
-                                                        title="Reklamı Sil"
                                                     >
-                                                        <Trash2 size={12} />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </Draggable>
-                                    ))}
+                                                        <div className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600">
+                                                            <GripVertical size={14} />
+                                                        </div>
+                                                        <div className={`w-2.5 h-2.5 rounded-full ${ad.is_active ? 'bg-green-500' : 'bg-red-500'} flex-shrink-0 shadow-sm`}></div>
+                                                        <span className="text-xs font-medium truncate flex-1 text-left">
+                                                            {ad.name || 'İsimsiz'}
+                                                        </span>
+                                                        <div className="text-[9px] text-gray-400 font-mono bg-gray-50 px-1 rounded border mr-1">{ad.type === 'image' ? 'IMG' : 'CODE'}</div>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (window.confirm('Bu reklamı silmek istediğinize emin misiniz?')) {
+                                                                    handleRemoveAd(e, ad);
+                                                                }
+                                                            }}
+                                                            className="p-1 hover:bg-red-100 text-gray-400 hover:text-red-500 rounded transition-colors"
+                                                            title="Reklamı Sil"
+                                                        >
+                                                            <Trash2 size={12} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </Draggable>
+                                        );
+                                    })}
                                     {provided.placeholder}
 
                                     {/* Add New Button (Inside List) */}
@@ -809,17 +852,10 @@ const AdsPage = () => {
                                     <SectionHeader title="Manşetler Arası Reklam" />
                                     <AdSlot code="home_between_mansets" h="h-28" />
 
-                                    {/* Manşet 2 (Sürmanşet) Section with Sidebar Ads */}
+                                    {/* Manşet 2 (Sürmanşet) Section (Full Width) */}
                                     <SectionHeader title="Manşet 2 (Sürmanşet) Bölümü" />
-                                    <div className="flex gap-6">
-                                        <div className="w-2/3">
-                                            <AdSlot code="manset_2_slider" h="h-[400px]" />
-                                        </div>
-                                        <div className="w-1/3 flex flex-col justify-between min-h-[400px]">
-                                            <AdSlot code="home_surmanset_sidebar_1" h="h-[250px]" />
-                                            <AdSlot code="home_surmanset_sidebar_2" h="h-[250px]" />
-                                            <AdSlot code="home_surmanset_sidebar_3" h="h-[250px]" />
-                                        </div>
+                                    <div className="w-full">
+                                        <AdSlot code="manset_2_slider" h="h-[400px]" />
                                     </div>
 
                                     <AdSlot code="home_list_top" h="h-28" />
@@ -831,9 +867,10 @@ const AdsPage = () => {
                                             <ContentBlock h="h-[700px]" label="Son Dakika (8 Haber - 2 Sütun)" />
                                         </div>
                                         <div className="w-1/3 flex flex-col justify-between min-h-[700px]">
-                                            <AdSlot code="home_breaking_news_sidebar_1" h="h-[250px]" />
-                                            <AdSlot code="home_breaking_news_sidebar_2" h="h-[250px]" />
-                                            <AdSlot code="home_breaking_news_sidebar_3" h="h-[250px]" />
+                                            {/* Moved Surmanset Sidebar Ads here per user request */}
+                                            <AdSlot code="home_surmanset_sidebar_1" h="h-[250px]" />
+                                            <AdSlot code="home_surmanset_sidebar_2" h="h-[250px]" />
+                                            <AdSlot code="home_surmanset_sidebar_3" h="h-[250px]" />
                                         </div>
                                     </div>
 
@@ -845,77 +882,30 @@ const AdsPage = () => {
 
                                     <AdSlot code="home_horizontal" h="h-28" />
 
-                                    {/* Gündem Category */}
-                                    <SectionHeader title="Gündem Kategorisi" />
-                                    <div className="flex gap-6">
-                                        <div className="w-2/3">
-                                            <ContentBlock h="h-[700px]" label="Gündem Haberleri (8 Haber - 2 Sütun)" />
-                                        </div>
-                                        <div className="w-1/3 flex flex-col justify-between min-h-[700px]">
-                                            <AdSlot code="home_gundem_sidebar_1" h="h-[250px]" />
-                                            <AdSlot code="home_gundem_sidebar_2" h="h-[250px]" />
-                                            <AdSlot code="home_gundem_sidebar_3" h="h-[250px]" />
-                                        </div>
-                                    </div>
+                                    {/* Dynamic Category Sections */}
+                                    {activeCategorySlugs.map(slug => {
+                                        const category = categories.find(c => c.slug === slug);
+                                        const displayName = category ? category.name : slug;
+                                        const upperName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
 
-                                    {/* Ekonomi Category */}
-                                    <SectionHeader title="Ekonomi Kategorisi" />
-                                    <div className="flex gap-6">
-                                        <div className="w-2/3">
-                                            <ContentBlock h="h-[700px]" label="Ekonomi Haberleri (8 Haber - 2 Sütun)" />
-                                        </div>
-                                        <div className="w-1/3 flex flex-col justify-between min-h-[700px]">
-                                            <AdSlot code="home_ekonomi_sidebar_1" h="h-[250px]" />
-                                            <AdSlot code="home_ekonomi_sidebar_2" h="h-[250px]" />
-                                            <AdSlot code="home_ekonomi_sidebar_3" h="h-[250px]" />
-                                        </div>
-                                    </div>
-
-                                    {/* Spor Category */}
-                                    <SectionHeader title="Spor Kategorisi" />
-                                    <div className="flex gap-6">
-                                        <div className="w-2/3">
-                                            <ContentBlock h="h-[700px]" label="Spor Haberleri (8 Haber - 2 Sütun)" />
-                                        </div>
-                                        <div className="w-1/3 flex flex-col justify-between min-h-[700px]">
-                                            <AdSlot code="home_spor_sidebar_1" h="h-[250px]" />
-                                            <AdSlot code="home_spor_sidebar_2" h="h-[250px]" />
-                                            <AdSlot code="home_spor_sidebar_3" h="h-[250px]" />
-                                        </div>
-                                    </div>
-
-                                    <SectionHeader title="Haber Listesi (Infinite Scroll)" />
-                                    <div className="flex gap-6">
-                                        {/* Left: News Grid (3/4) */}
-                                        <div className="w-3/4 space-y-6">
-                                            <div className="grid grid-cols-3 gap-4">
-                                                <ContentBlock h="h-32" label="Haber" />
-                                                <ContentBlock h="h-32" label="Haber" />
-                                                <ContentBlock h="h-32" label="Haber" />
-                                                <ContentBlock h="h-32" label="Haber" />
-                                                <ContentBlock h="h-32" label="Haber" />
-                                                <ContentBlock h="h-32" label="Haber" />
+                                        return (
+                                            <div key={slug}>
+                                                <SectionHeader title={`${upperName} Kategorisi`} />
+                                                <div className="flex gap-6">
+                                                    <div className="w-2/3">
+                                                        <ContentBlock h="h-[700px]" label={`${upperName} Haberleri (8 Haber - 2 Sütun)`} />
+                                                    </div>
+                                                    <div className="w-1/3 flex flex-col justify-between min-h-[700px]">
+                                                        <AdSlot code={`home_${slug}_sidebar_1`} h="h-[250px]" />
+                                                        <AdSlot code={`home_${slug}_sidebar_2`} h="h-[250px]" />
+                                                        <AdSlot code={`home_${slug}_sidebar_3`} h="h-[250px]" />
+                                                    </div>
+                                                </div>
                                             </div>
+                                        );
+                                    })}
 
-                                            <AdSlot code="home_horizontal_2" h="h-28" />
 
-                                            <div className="grid grid-cols-3 gap-4">
-                                                <ContentBlock h="h-32" label="Haber" />
-                                                <ContentBlock h="h-32" label="Haber" />
-                                                <ContentBlock h="h-32" label="Haber" />
-                                            </div>
-
-                                            <AdSlot code="home_horizontal_3" h="h-28" />
-                                            <AdSlot code="home_horizontal_4" h="h-28" />
-                                        </div>
-
-                                        {/* Right: Sidebar Ads (1/4) */}
-                                        <div className="w-1/4 space-y-4">
-                                            <AdSlot code="sidebar_1" h="h-64" />
-                                            <AdSlot code="sidebar_2" h="h-64" />
-                                            <AdSlot code="sidebar_sticky" h="h-[600px]" label="Sticky (Yapışkan)" />
-                                        </div>
-                                    </div>
                                 </div>
                             )}
 
@@ -1114,8 +1104,8 @@ const AdsPage = () => {
                                                         statusBadge = <span className="bg-red-100 text-red-800 px-2.5 py-0.5 rounded text-xs font-semibold">Pasif</span>;
                                                         rowClass = 'bg-red-50 hover:bg-red-100';
                                                     } else if (endDate && now > endDate) {
-                                                        statusBadge = <span className="bg-gray-200 text-gray-800 px-2.5 py-0.5 rounded text-xs font-semibold">Süresi Doldu</span>;
-                                                        rowClass = 'bg-gray-100 hover:bg-gray-200 opacity-75';
+                                                        statusBadge = <span className="bg-red-100 text-red-800 px-2.5 py-0.5 rounded text-xs font-semibold">Süresi Doldu</span>;
+                                                        rowClass = 'bg-red-50 hover:bg-red-100 border-l-4 border-red-500';
                                                     } else if (startDate && now < startDate) {
                                                         statusBadge = <span className="bg-yellow-100 text-yellow-800 px-2.5 py-0.5 rounded text-xs font-semibold">Planlandı</span>;
                                                         rowClass = 'bg-yellow-50 hover:bg-yellow-100';
@@ -1263,6 +1253,18 @@ const AdsPage = () => {
                                             </svg>
                                             <p className="text-sm text-purple-700">
                                                 <strong>🎯 Manşet Slider Reklamı:</strong> Bu reklam otomatik olarak <strong>Manşet Yönetimi</strong> sayfasında görünecek ve sürükleyerek sıralanabilir olacaktır.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                                {editingAd.placement_code === 'manset_2_slider' && (
+                                    <div className="bg-indigo-50 border border-indigo-200 p-3 rounded-lg mb-4">
+                                        <div className="flex items-start gap-2">
+                                            <svg className="h-5 w-5 text-indigo-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                            </svg>
+                                            <p className="text-sm text-indigo-700">
+                                                <strong>🎯 Manşet 2 (Sürmanşet) Reklamı:</strong> Bu reklam otomatik olarak <strong>Manşet Yönetimi (Manşet 2)</strong> sekmesinde görünecek ve yönetilebilir olacaktır.
                                             </p>
                                         </div>
                                     </div>
@@ -1435,23 +1437,7 @@ const AdsPage = () => {
                                     <h4 className="text-sm font-bold text-gray-900 mb-3">Hedefleme ve Zamanlama</h4>
 
                                     {/* Sticky Toggle */}
-                                    <div className="flex items-center gap-2 mb-4 p-3 bg-purple-50 border border-purple-100 rounded-lg">
-                                        <input
-                                            type="checkbox"
-                                            id="is_sticky"
-                                            checked={editingAd.is_sticky || false}
-                                            onChange={(e) => setEditingAd({ ...editingAd, is_sticky: e.target.checked })}
-                                            className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
-                                        />
-                                        <div className="flex flex-col">
-                                            <label htmlFor="is_sticky" className="text-sm font-medium text-gray-900 cursor-pointer">
-                                                Yapışkan Reklam (Sticky)
-                                            </label>
-                                            <span className="text-xs text-gray-500">
-                                                Bu seçenek işaretlenirse, kullanıcı sayfayı aşağı kaydırdığında reklam sabit kalır.
-                                            </span>
-                                        </div>
-                                    </div>
+
 
                                     {/* Date Scheduling */}
                                     <div className="grid grid-cols-2 gap-4 mb-4">

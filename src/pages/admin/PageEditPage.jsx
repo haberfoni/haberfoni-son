@@ -1399,6 +1399,7 @@ const PageEditPage = () => {
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
                                 placeholder="Google'da görünecek başlık"
                             />
+                            <p className="text-xs text-gray-500 mt-1">Sona otomatik olarak " | Site Adı" eklenir.</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">SEO Açıklaması</label>

@@ -243,14 +243,14 @@ const UsersPage = () => {
                     <Shield className="text-blue-600 mt-1 mr-3" size={20} />
                     <div>
                         <h3 className="text-blue-800 font-semibold mb-1">Yetkilendirme Hakkında</h3>
-                        <p className="text-sm text-blue-600">
+                        <div className="text-sm text-blue-600">
                             Roller şu an sadece bilgilendirme amaçlıdır. İleride şu şekilde kısıtlamalar eklenebilir:
                             <ul className="list-disc ml-4 mt-2">
                                 <li><strong>Yönetici:</strong> Tüm ayarlara ve kullanıcılara erişebilir.</li>
                                 <li><strong>Editör:</strong> Sadece haber, galeri ve yorum yönetebilir.</li>
                                 <li><strong>Yazar:</strong> Sadece kendi yazılarını görebilir ve düzenleyebilir.</li>
                             </ul>
-                        </p>
+                        </div>
                     </div>
                 </div>
             </div>

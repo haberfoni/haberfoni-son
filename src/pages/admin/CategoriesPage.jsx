@@ -156,6 +156,46 @@ const CategoriesPage = () => {
         });
     };
 
+    // Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(null);
+
+    const openEditModal = (cat) => {
+        setEditingCategory({
+            ...cat,
+            seo_title: cat.seo_title || '',
+            seo_description: cat.seo_description || '',
+            seo_keywords: cat.seo_keywords || ''
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalOpen(false);
+        setEditingCategory(null);
+    };
+
+    const saveEditModal = async (e) => {
+        e.preventDefault();
+        try {
+            await adminService.updateCategory(editingCategory.id, {
+                name: editingCategory.name,
+                slug: editingCategory.slug,
+                seo_title: editingCategory.seo_title,
+                seo_description: editingCategory.seo_description,
+                seo_keywords: editingCategory.seo_keywords
+            });
+
+            // Optimistic update
+            setCategories(categories.map(c => c.id === editingCategory.id ? editingCategory : c));
+            setMessage({ type: 'success', text: 'Kategori güncellendi.' });
+            closeEditModal();
+        } catch (err) {
+            console.error('Update error:', err);
+            setMessage({ type: 'error', text: 'Güncelleme hatası.' });
+        }
+    };
+
     if (loading) return <div className="p-8 text-center">Yükleniyor...</div>;
 
     return (
@@ -209,6 +249,46 @@ const CategoriesPage = () => {
                             readOnly={!manualSlug}
                         />
                     </div>
+
+                    {/* SEO Fields */}
+                    <div className="md:col-span-2 space-y-4 pt-4 border-t border-gray-100 mt-2">
+                        <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                            <span className="bg-gray-100 px-2 py-1 rounded text-xs mr-2">SEO (Opsiyonel)</span>
+                            Arama Motoru Ayarları
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">SEO Başlık (Title)</label>
+                                <input
+                                    type="text"
+                                    value={formData.seo_title || ''}
+                                    onChange={(e) => setFormData({ ...formData, seo_title: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                                    placeholder="Örn: Güncel Ekonomi Haberleri"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Sona otomatik olarak " | Site Adı" eklenir.</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">SEO Anahtar Kelimeler</label>
+                                <input
+                                    type="text"
+                                    value={formData.seo_keywords || ''}
+                                    onChange={(e) => setFormData({ ...formData, seo_keywords: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                                    placeholder="Örn: ekonomi, dolar, borsa"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">SEO Açıklama (Description)</label>
+                                <textarea
+                                    value={formData.seo_description || ''}
+                                    onChange={(e) => setFormData({ ...formData, seo_description: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm h-20 resize-none"
+                                    placeholder="Kategori için meta açıklama..."
+                                />
+                            </div>
+                        </div>
+                    </div>
                     <div className="md:col-span-2">
                         <button
                             type="submit"
@@ -243,6 +323,8 @@ const CategoriesPage = () => {
                                         <th className="p-4 font-medium">Kategori Adı</th>
                                         <th className="p-4 font-medium">Link (Slug)</th>
                                         <th className="p-4 font-medium text-center">Durum</th>
+                                        <th className="p-4 font-medium text-center">Haber Sayısı</th>
+                                        <th className="p-4 font-medium text-center">Ana Sayfa</th>
                                         <th className="p-4 font-medium text-right">İşlemler</th>
                                     </tr>
                                 </thead>
@@ -267,60 +349,56 @@ const CategoriesPage = () => {
                                                             <td className="p-4 text-gray-400 cursor-grab active:cursor-grabbing" {...provided.dragHandleProps}>
                                                                 <GripVertical size={20} />
                                                             </td>
-                                                            {isEditing === cat.id ? (
-                                                                <>
-                                                                    <td className="p-4">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={editForm.name}
-                                                                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value, slug: slugify(e.target.value) })}
-                                                                            className="w-full px-2 py-1 border rounded"
-                                                                        />
-                                                                    </td>
-                                                                    <td className="p-4">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={editForm.slug}
-                                                                            onChange={(e) => setEditForm({ ...editForm, slug: slugify(e.target.value) })}
-                                                                            className="w-full px-2 py-1 border rounded font-mono text-xs"
-                                                                        />
-                                                                    </td>
-                                                                    <td className="p-4 text-center text-gray-400">-</td>
-                                                                    <td className="p-4 text-right space-x-2">
-                                                                        <button onClick={() => saveEdit(cat.id)} className="text-green-600 hover:text-green-800 p-1"><Check size={18} /></button>
-                                                                        <button onClick={cancelEdit} className="text-gray-500 hover:text-gray-700 p-1"><X size={18} /></button>
-                                                                    </td>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <td className="p-4 font-medium text-gray-900">{cat.name}</td>
-                                                                    <td className="p-4 text-gray-500 font-mono text-sm">{cat.slug}</td>
-                                                                    <td className="p-4 text-center">
-                                                                        <button
-                                                                            onClick={() => toggleStatus(cat)}
-                                                                            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${cat.is_active !== false ? 'text-green-700 bg-green-100 hover:bg-green-200' : 'text-gray-600 bg-gray-200 hover:bg-gray-300'}`}
-                                                                        >
-                                                                            {cat.is_active !== false ? 'Aktif' : 'Pasif'}
-                                                                        </button>
-                                                                    </td>
-                                                                    <td className="p-4 text-right space-x-2">
-                                                                        <button
-                                                                            onClick={() => startEdit(cat)}
-                                                                            className="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded"
-                                                                            title="Düzenle"
-                                                                        >
-                                                                            <Edit2 size={18} />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => handleDelete(cat.id)}
-                                                                            className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
-                                                                            title="Sil"
-                                                                        >
-                                                                            <Trash2 size={18} />
-                                                                        </button>
-                                                                    </td>
-                                                                </>
-                                                            )}
+                                                            <td className="p-4 font-medium text-gray-900">{cat.name}</td>
+                                                            <td className="p-4 text-gray-500 font-mono text-sm">{cat.slug}</td>
+                                                            <td className="p-4 text-center">
+                                                                <button
+                                                                    onClick={() => toggleStatus(cat)}
+                                                                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${cat.is_active !== false ? 'text-green-700 bg-green-100 hover:bg-green-200' : 'text-gray-600 bg-gray-200 hover:bg-gray-300'}`}
+                                                                >
+                                                                    {cat.is_active !== false ? 'Aktif' : 'Pasif'}
+                                                                </button>
+                                                            </td>
+                                                            <td className="p-4 text-center">
+                                                                <span className="text-sm font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded">
+                                                                    {cat.news_count || 0}
+                                                                </span>
+                                                            </td>
+                                                            <td className="p-4 text-center">
+                                                                {cat.is_visible_on_homepage ? (
+                                                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                        <Check size={12} className="mr-1" />
+                                                                        Görünüyor
+                                                                    </span>
+                                                                ) : (
+                                                                    <div className="flex flex-col items-center gap-1 group relative">
+                                                                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${!cat.homepage_config_enabled ? 'bg-gray-100 text-gray-600' : 'bg-yellow-100 text-yellow-800'}`}>
+                                                                            {!cat.homepage_config_enabled ? 'Devre Dışı' : 'Yetersiz'}
+                                                                        </span>
+                                                                        {cat.news_count < 4 && cat.homepage_config_enabled && (
+                                                                            <span className="absolute -top-8 w-32 bg-black text-white text-xs p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                                                                                En az 4 haber gerekli
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                            <td className="p-4 text-right space-x-2">
+                                                                <button
+                                                                    onClick={() => openEditModal(cat)}
+                                                                    className="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded"
+                                                                    title="Düzenle"
+                                                                >
+                                                                    <Edit2 size={18} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDelete(cat.id)}
+                                                                    className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 rounded"
+                                                                    title="Sil"
+                                                                >
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            </td>
                                                         </tr>
                                                     )}
                                                 </Draggable>
@@ -334,6 +412,97 @@ const CategoriesPage = () => {
                     </DragDropContext>
                 )}
             </div>
+
+            {/* Edit Modal */}
+            {isEditModalOpen && editingCategory && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-gray-800">Kategori Düzenle</h2>
+                            <button onClick={closeEditModal} className="text-gray-500 hover:text-gray-800">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={saveEditModal} className="p-6 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Kategori Adı</label>
+                                    <input
+                                        type="text"
+                                        value={editingCategory.name}
+                                        onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Slug (Link)</label>
+                                    <input
+                                        type="text"
+                                        value={editingCategory.slug}
+                                        onChange={(e) => setEditingCategory({ ...editingCategory, slug: slugify(e.target.value) })}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm bg-gray-50"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {/* SEO Fields in Modal */}
+                            <div className="space-y-4 pt-4 border-t border-gray-100">
+                                <h3 className="text-sm font-semibold text-gray-900 flex items-center">
+                                    <span className="bg-gray-100 px-2 py-1 rounded text-xs mr-2">SEO</span>
+                                    Arama Motoru Ayarları
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">SEO Başlık</label>
+                                        <input
+                                            type="text"
+                                            value={editingCategory.seo_title || ''}
+                                            onChange={(e) => setEditingCategory({ ...editingCategory, seo_title: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">Sona otomatik olarak " | Site Adı" eklenir.</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">SEO Anahtar Kelimeler</label>
+                                        <input
+                                            type="text"
+                                            value={editingCategory.seo_keywords || ''}
+                                            onChange={(e) => setEditingCategory({ ...editingCategory, seo_keywords: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">SEO Açıklama</label>
+                                        <textarea
+                                            value={editingCategory.seo_description || ''}
+                                            onChange={(e) => setEditingCategory({ ...editingCategory, seo_description: e.target.value })}
+                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm h-24 resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={closeEditModal}
+                                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                    İptal
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800"
+                                >
+                                    Değişiklikleri Kaydet
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

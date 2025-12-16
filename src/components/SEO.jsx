@@ -18,7 +18,11 @@ const SEO = ({ title, description, image, url, type = 'website', publishedTime, 
     // Derived values
     const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
     const metaImage = image || defaultImage;
-    const fullUrl = url ? (url.startsWith('http') ? url : `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`) : siteUrl;
+
+    // URL Logic: Use provided URL prop > Current Location > Site URL
+    const currentPath = location.pathname + location.search;
+    const fallbackUrl = `${siteUrl}${currentPath}`;
+    const fullUrl = url ? (url.startsWith('http') ? url : `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`) : fallbackUrl;
 
     console.log('%c SEO DATA ', 'background: #007bff; color: white; padding: 2px 5px; border-radius: 2px;', {
         Title: fullTitle,

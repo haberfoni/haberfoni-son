@@ -6,11 +6,42 @@ import AdBanner from '../components/AdBanner';
 import SEO from '../components/SEO';
 import MultimediaRow from '../components/MultimediaRow';
 import ImageWithFallback from '../components/ImageWithFallback';
-import { TrendingUp, ArrowRight, Clock } from 'lucide-react';
+import { TrendingUp, ArrowRight, Clock, Globe, Trophy, Cpu, HeartPulse, Palette, Landmark, Coffee, GraduationCap, Sparkles, Car, Banknote, Newspaper, Layout } from 'lucide-react';
 import { fetchNews, fetchHeadlines, fetchSurmanset, fetchHomeVideos, fetchHomePhotoGalleries, fetchCategories } from '../services/api';
 import { mapNewsItem } from '../utils/mappers';
 import { slugify } from '../utils/slugify';
 import { toTurkishTitleCase } from '../utils/turkishCase';
+
+// Helper to get icon for category (case-insensitive)
+const getCategoryIcon = (categoryName) => {
+    if (!categoryName) return Layout;
+
+    const normalized = categoryName.toString().trim().toLowerCase();
+
+    // Explicit override for Dünya and Gündem to handle edge cases and typos
+    if (normalized.includes('dunya') || normalized.includes('dünya')) return Globe;
+    if (normalized.includes('gundem') || normalized.includes('gündem')) return Newspaper;
+
+    // Map of normalized keys to icons
+    const iconMap = {
+        'ekonomi': Banknote,
+        'spor': Trophy,
+        'teknoloji': Cpu,
+        'saglik': HeartPulse,
+        'sağlık': HeartPulse,
+        'kultur': Palette,
+        'kültür': Palette,
+        'politika': Landmark,
+        'yasam': Coffee,
+        'yaşam': Coffee,
+        'egitim': GraduationCap,
+        'eğitim': GraduationCap,
+        'magazin': Sparkles,
+        'otomobil': Car
+    };
+
+    return iconMap[normalized] || Layout;
+};
 
 const HomePage = () => {
     const [heroItems, setHeroItems] = React.useState([]);
@@ -134,7 +165,10 @@ const HomePage = () => {
             case 'surmanset':
                 return surmansetItems.length > 0 ? (
                     <div className="container mx-auto px-4 mt-8">
-                        <Surmanset items={surmansetItems} />
+                        {/* Made full width per user request to move ads to Son Dakika sidebar */}
+                        <div className="w-full">
+                            <Surmanset items={surmansetItems} />
+                        </div>
                     </div>
                 ) : null;
 
@@ -186,23 +220,25 @@ const HomePage = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="w-full lg:w-1/3 flex flex-col justify-between items-end min-h-[700px]">
-                                <div className="w-full">
-                                    <AdBanner placementCode="home_breaking_news_sidebar_1" customDimensions="300x250" customMobileDimensions="300x250" customHeight="h-[250px]" noContainer={true} />
-                                </div>
-                                <div className="w-full">
-                                    <AdBanner placementCode="home_breaking_news_sidebar_2" customDimensions="300x250" customMobileDimensions="300x250" customHeight="h-[250px]" noContainer={true} />
-                                </div>
-                                <div className="w-full">
-                                    <AdBanner placementCode="home_breaking_news_sidebar_3" customDimensions="300x250" customMobileDimensions="300x250" customHeight="h-[250px]" noContainer={true} />
-                                </div>
+                            <div className="w-full lg:w-1/3 flex flex-col gap-4 min-h-[700px]">
+                                {/* Moved Surmanset Sidebar Ads here per user request */}
+                                <AdBanner placementCode="home_surmanset_sidebar_1" customDimensions="300x250" customMobileDimensions="300x250" customHeight="h-[250px]" noContainer={true} />
+                                <AdBanner placementCode="home_surmanset_sidebar_2" customDimensions="300x250" customMobileDimensions="300x250" customHeight="h-[250px]" noContainer={true} />
+                                <AdBanner placementCode="home_surmanset_sidebar_3" customDimensions="300x250" customMobileDimensions="300x250" customHeight="h-[250px]" noContainer={true} />
                             </div>
                         </div>
                     </div>
                 );
 
             case 'multimedia':
-                return <MultimediaRow videos={videos} photos={photos} />;
+                return (
+                    <>
+                        <MultimediaRow videos={videos} photos={photos} />
+                        <div className="container mx-auto px-4 mt-8">
+                            <AdBanner placementCode="home_horizontal" customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px]" />
+                        </div>
+                    </>
+                );
 
             case 'categories':
                 // Dynamic rendering based on config if available
@@ -231,12 +267,15 @@ const HomePage = () => {
                                 'Politika': 'gray',
                                 'Yaşam': 'teal',
                                 'Eğitim': 'yellow',
-                                'Magazin': 'fuchsia'
+                                'Magazin': 'fuchsia',
+                                'Otomobil': 'red'
                             };
                             const color = categoryColors[mappedName] || 'blue';
                             const categorySlug = config.id; // Use slug from config
 
                             const displayTitle = config.title || mappedName; // Use custom title from config if set
+
+                            const IconComponent = getCategoryIcon(mappedName);
 
                             return (
                                 <div key={config.id} className="container mx-auto px-4 mb-12">
@@ -246,7 +285,7 @@ const HomePage = () => {
                                                 <div className={`flex items-center justify-between mb-6 pb-4 border-b-2 border-${color}-600`}>
                                                     <div className="flex items-center gap-3">
                                                         <div className={`bg-${color}-600 text-white p-2 rounded-lg`}>
-                                                            <TrendingUp size={24} />
+                                                            <IconComponent size={24} />
                                                         </div>
                                                         <h2 className="text-2xl font-bold text-gray-900">{displayTitle}</h2>
                                                     </div>
@@ -317,10 +356,13 @@ const HomePage = () => {
                                 'Politika': 'gray',
                                 'Yaşam': 'teal',
                                 'Eğitim': 'yellow',
-                                'Magazin': 'fuchsia'
+                                'Magazin': 'fuchsia',
+                                'Otomobil': 'red'
                             };
                             const color = categoryColors[category] || 'blue';
                             const categorySlug = slugify(category);
+
+                            const IconComponent = getCategoryIcon(category);
 
                             return (
                                 <div key={category} className="container mx-auto px-4 mb-12">
@@ -330,7 +372,7 @@ const HomePage = () => {
                                                 <div className={`flex items-center justify-between mb-6 pb-4 border-b-2 border-${color}-600`}>
                                                     <div className="flex items-center gap-3">
                                                         <div className={`bg-${color}-600 text-white p-2 rounded-lg`}>
-                                                            <TrendingUp size={24} />
+                                                            <IconComponent size={24} />
                                                         </div>
                                                         <h2 className="text-2xl font-bold text-gray-900">{category}</h2>
                                                     </div>

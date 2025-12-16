@@ -4,6 +4,7 @@ import { Save, ArrowLeft, Image as ImageIcon, Plus, Trash2, GripVertical } from 
 import { adminService } from '../../services/adminService';
 import RichTextEditor from '../../components/RichTextEditor';
 import SeoPreview from '../../components/admin/SeoPreview';
+import { slugify } from '../../utils/slugify';
 
 const PhotoGalleryEditPage = () => {
     const { id } = useParams();
@@ -226,7 +227,8 @@ const PhotoGalleryEditPage = () => {
                 seo_title: formData.seo_title || null,
                 seo_description: formData.seo_description || null,
                 seo_keywords: formData.seo_keywords || null,
-                views: 0
+                // Add views for new records if not present
+                ...(!isEditing && { views: 0 })
             };
 
             if (isEditing) {
@@ -342,28 +344,30 @@ const PhotoGalleryEditPage = () => {
                                 />
                             </label>
 
-                            <div className="mt-3 relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <span className="text-gray-400 text-sm">URL:</span>
+                            {!thumbnailPreview && (
+                                <div className="mt-3 relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span className="text-gray-400 text-sm">URL:</span>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="veya görsel adresi yapıştırın..."
+                                        className="pl-12 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
+                                        value={!thumbnailFile ? (formData.thumbnail_url || '') : ''}
+                                        disabled={!!thumbnailFile}
+                                        onChange={(e) => {
+                                            const url = e.target.value;
+                                            setFormData(prev => ({ ...prev, thumbnail_url: url }));
+                                            setThumbnailPreview(url);
+                                        }}
+                                    />
+                                    {thumbnailFile && (
+                                        <p className="text-xs text-orange-500 mt-1">
+                                            * Dosya seçiliyken işlem yapamazsınız. Önce dosyayı kaldırın.
+                                        </p>
+                                    )}
                                 </div>
-                                <input
-                                    type="text"
-                                    placeholder="veya görsel adresi yapıştırın..."
-                                    className="pl-12 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
-                                    value={!thumbnailFile ? (formData.thumbnail_url || '') : ''}
-                                    disabled={!!thumbnailFile}
-                                    onChange={(e) => {
-                                        const url = e.target.value;
-                                        setFormData(prev => ({ ...prev, thumbnail_url: url }));
-                                        setThumbnailPreview(url);
-                                    }}
-                                />
-                                {thumbnailFile && (
-                                    <p className="text-xs text-orange-500 mt-1">
-                                        * Dosya seçiliyken işlem yapamazsınız. Önce dosyayı kaldırın.
-                                    </p>
-                                )}
-                            </div>
+                            )}
 
                             <p className="text-xs text-gray-500 mt-2">Boş bırakılırsa ilk fotoğraf kapak olarak kullanılır.</p>
                         </div>
@@ -384,7 +388,7 @@ const PhotoGalleryEditPage = () => {
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
                                     placeholder="Google'da görünecek başlık"
                                 />
-                                <p className="text-xs text-gray-500 mt-1">Otomatik olarak galeri başlığından alınır.</p>
+                                <p className="text-xs text-gray-500 mt-1">Otomatik olarak galeri başlığından alınır. Sona otomatik olarak " | Site Adı" eklenir.</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">SEO Anahtar Kelimeler</label>
@@ -414,7 +418,7 @@ const PhotoGalleryEditPage = () => {
                                 title={formData.seo_title || formData.title}
                                 description={formData.seo_description || formData.title + ' fotoğraf galerisi.'}
                                 image={formData.thumbnail_url}
-                                url={`/foto-galeri/${formData.title ? formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'galeri'}`}
+                                url={`/foto-galeri/${formData.title ? slugify(formData.title) : 'galeri'}`}
                                 date={new Date().toISOString()}
                             />
                         </div>

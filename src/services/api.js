@@ -230,6 +230,21 @@ export const fetchSurmanset = async () => {
         });
     });
 
+    // Add slider ads to map
+    sliderAds?.forEach(ad => {
+        if (ad.manset_2_slot) {
+            slotMap.set(ad.manset_2_slot, {
+                ...ad,
+                type: 'slider-ad',
+                title: ad.name || 'Slider Reklamı',
+                image_url: ad.image_url,
+                id: `slider-ad-${ad.id}`,
+                adPlacementId: ad.id,
+                link_url: ad.link_url
+            });
+        }
+    });
+
     // 4. Get latest news for auto-fill
 
     // Fetch specifically toggled news first

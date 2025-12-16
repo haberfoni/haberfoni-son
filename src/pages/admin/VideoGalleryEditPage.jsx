@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Video, PlayCircle, Image as ImageIcon, X, Link } from 'lucide-react';
+import { slugify } from '../../utils/slugify';
 import { adminService } from '../../services/adminService';
 import RichTextEditor from '../../components/RichTextEditor';
 import SeoPreview from '../../components/admin/SeoPreview';
@@ -154,8 +155,8 @@ const VideoGalleryEditPage = () => {
             setFormData(prev => ({
                 ...prev,
                 video_url: url,
-                // If title is empty, use filename
-                title: prev.title || file.name.replace(/\.[^/.]+$/, "")
+                // If title is empty, use filename (without extension)
+                title: prev.title ? prev.title : file.name.substring(0, file.name.lastIndexOf('.'))
             }));
 
             // AUTO-GENERATE THUMBNAIL & DURATION
@@ -438,6 +439,7 @@ const VideoGalleryEditPage = () => {
                                     onChange={(e) => setFormData({ ...formData, seo_title: e.target.value })}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm"
                                 />
+                                <p className="text-xs text-gray-500 mt-1">Sona otomatik olarak " | Site Adı" eklenir.</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">SEO Anahtar Kelimeler</label>
@@ -465,7 +467,7 @@ const VideoGalleryEditPage = () => {
                                 title={formData.seo_title || formData.title}
                                 description={formData.seo_description || formData.description?.replace(/<[^>]*>?/gm, '').slice(0, 160)}
                                 image={formData.thumbnail_url}
-                                url={`/video-galeri/${formData.title ? formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'video'}`}
+                                url={`/video-galeri/${formData.title ? slugify(formData.title) : 'video'}`}
                                 date={new Date().toISOString()}
                             />
                         </div>
@@ -517,33 +519,35 @@ const VideoGalleryEditPage = () => {
                                 />
                             </label>
 
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Link className="text-gray-400" size={16} />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="veya görsel adresi yapıştırın..."
-                                    className={`pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm ${thumbnailFile ? 'bg-gray-100 text-gray-400' : ''}`}
-                                    value={!thumbnailFile ? (formData.thumbnail_url || '') : ''}
-                                    disabled={!!thumbnailFile}
-                                    onChange={(e) => {
-                                        const url = e.target.value;
-                                        // If user pastes a YouTube VIDEO URL into the IMAGE URL field, convert it smart
-                                        const videoId = extractYoutubeId(url);
-                                        const finalUrl = videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : url;
+                            {!thumbnailPreview && (
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Link className="text-gray-400" size={16} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="veya görsel adresi yapıştırın..."
+                                        className={`pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary text-sm ${thumbnailFile ? 'bg-gray-100 text-gray-400' : ''}`}
+                                        value={!thumbnailFile ? (formData.thumbnail_url || '') : ''}
+                                        disabled={!!thumbnailFile}
+                                        onChange={(e) => {
+                                            const url = e.target.value;
+                                            // If user pastes a YouTube VIDEO URL into the IMAGE URL field, convert it smart
+                                            const videoId = extractYoutubeId(url);
+                                            const finalUrl = videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : url;
 
-                                        setFormData(prev => ({ ...prev, thumbnail_url: finalUrl }));
-                                        setThumbnailPreview(finalUrl);
-                                    }}
-                                />
-                                {thumbnailFile && (
-                                    <p className="text-xs text-orange-500 mt-1 flex items-center gap-1">
-                                        <span className="w-1.5 h-1.5 bg-orange-500 rounded-full inline-block"></span>
-                                        Görsel dosya seçildiği için URL girişi devre dışı.
-                                    </p>
-                                )}
-                            </div>
+                                            setFormData(prev => ({ ...prev, thumbnail_url: finalUrl }));
+                                            setThumbnailPreview(finalUrl);
+                                        }}
+                                    />
+                                    {thumbnailFile && (
+                                        <p className="text-xs text-orange-500 mt-1 flex items-center gap-1">
+                                            <span className="w-1.5 h-1.5 bg-orange-500 rounded-full inline-block"></span>
+                                            Görsel dosya seçildiği için URL girişi devre dışı.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

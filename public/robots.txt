@@ -1,5 +1,6 @@
 User-agent: *
-Disallow: /admin/
-Disallow: /admin/login
+Allow: /
 
 Sitemap: https://haberfoni.com/sitemap.xml
+Sitemap: https://haberfoni.com/sitemap-news.xml
+Sitemap: https://haberfoni.com/rss.xml

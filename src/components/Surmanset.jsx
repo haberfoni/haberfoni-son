@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 
 import { slugify } from '../utils/slugify';
 
+import { adminService } from '../services/adminService';
+
 const Surmanset = ({ items = [] }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -16,11 +18,35 @@ const Surmanset = ({ items = [] }) => {
     }, [items]);
 
     const displayItems = items.slice(0, 10);
+
+    // Track Views for Active Slide
+    React.useEffect(() => {
+        if (displayItems.length === 0) return;
+
+        const currentItem = displayItems[currentIndex];
+        if (currentItem && (currentItem.type === 'ad' || currentItem.type === 'slider-ad')) {
+            const adId = currentItem.adPlacementId || currentItem.adId || currentItem.id.replace('ad-', '').replace('slider-ad-', '');
+
+            // Check session to avoid spamming views in same session if desired, 
+            // OR just count every impression. AdBanner uses session check.
+            const viewedAds = JSON.parse(sessionStorage.getItem('viewed_headlines') || '[]');
+            if (!viewedAds.includes(adId)) {
+                adminService.incrementAdView(adId).catch(console.error);
+                sessionStorage.setItem('viewed_headlines', JSON.stringify([...viewedAds, adId]));
+            }
+        }
+    }, [currentIndex, displayItems]);
+
     if (!displayItems.length) return null;
 
     const goToSlide = (index) => setCurrentIndex(index);
     const nextSlide = () => setCurrentIndex((prev) => (prev + 1) % displayItems.length);
     const prevSlide = () => setCurrentIndex((prev) => (prev - 1 + displayItems.length) % displayItems.length);
+
+    const handleAdClick = (item) => {
+        const adId = item.adPlacementId || item.adId || item.id.replace('ad-', '').replace('slider-ad-', '');
+        adminService.incrementAdClick(adId).catch(console.error);
+    };
 
     return (
         <div className="w-full mb-8 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm group relative">
@@ -66,7 +92,13 @@ const Surmanset = ({ items = [] }) => {
                         return (
                             <div key={item.id} className="min-w-full h-full relative">
                                 {isAd ? (
-                                    <a href={linkUrl} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                                    <a
+                                        href={linkUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full h-full"
+                                        onClick={() => handleAdClick(item)}
+                                    >
                                         {content}
                                     </a>
                                 ) : (

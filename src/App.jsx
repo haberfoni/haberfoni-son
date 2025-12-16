@@ -163,7 +163,9 @@ function App() {
               </Route>
 
               {/* System Routes */}
-              <Route path="/sitemap.xml" element={<SitemapPage />} />
+              <Route path="/sitemap.xml" element={<SitemapPage type="sitemap" />} />
+              <Route path="/sitemap-news.xml" element={<SitemapPage type="news-sitemap" />} />
+              <Route path="/rss.xml" element={<SitemapPage type="rss" />} />
               <Route path="/robots.txt" element={<TextFilePage type="robots" />} />
               <Route path="/ads.txt" element={<TextFilePage type="ads" />} />
 

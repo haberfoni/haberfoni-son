@@ -18,19 +18,38 @@ const CategoryPage = () => {
     const [categoryNews, setCategoryNews] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
 
+    const [categoryInfo, setCategoryInfo] = React.useState(null);
+
     React.useEffect(() => {
-        const loadCategoryNews = async () => {
+        const loadCategoryData = async () => {
             setLoading(true);
-            const data = await fetchNewsByCategory(categoryName);
-            setCategoryNews(data.map(mapNewsItem));
-            setLoading(false);
+            try {
+                // Import adminService dynamically to avoid circular deps if any, or just import top level
+                const { adminService } = await import('../services/adminService');
+
+                // 1. Fetch Category Info
+                const catInfo = await adminService.getCategoryBySlug(categoryName);
+                setCategoryInfo(catInfo);
+
+                // 2. Fetch News
+                const data = await fetchNewsByCategory(categoryName);
+                setCategoryNews(data.map(mapNewsItem));
+            } catch (err) {
+                console.error('Error loading category page:', err);
+            } finally {
+                setLoading(false);
+            }
         };
-        loadCategoryNews();
+        loadCategoryData();
     }, [categoryName]);
 
-    // Find the proper display name (e.g. "gundem" -> "Gündem")
+    // Display Name Logic: Database Name > Mock Data > URL param
     const matchedCategory = categories.find(c => slugify(c) === categoryName);
-    const displayCategoryName = matchedCategory || categoryName?.charAt(0).toUpperCase() + categoryName?.slice(1);
+    const displayCategoryName = categoryInfo?.name || matchedCategory || categoryName?.charAt(0).toUpperCase() + categoryName?.slice(1);
+
+    // SEO Data Logic
+    const seoTitle = categoryInfo?.seo_title || `${displayCategoryName} Haberleri`;
+    const seoDesc = categoryInfo?.seo_description || `${displayCategoryName} kategorisindeki en güncel haberler ve son dakika gelişmeleri Haberfoni'de.`;
 
     // Reset visible count when category changes
     React.useEffect(() => {
@@ -82,9 +101,10 @@ const CategoryPage = () => {
     return (
         <div className="container mx-auto px-4 py-8">
             <SEO
-                title={`${displayCategoryName} Haberleri`}
-                description={`${displayCategoryName} kategorisindeki en güncel haberler ve son dakika gelişmeleri Haberfoni'de.`}
+                title={seoTitle}
+                description={seoDesc}
                 url={`/kategori/${categoryName}`}
+                tags={categoryInfo?.seo_keywords ? categoryInfo.seo_keywords.split(',') : []}
             />
             <h1 className="text-3xl font-bold text-gray-900 mb-8 border-l-4 border-primary pl-4">
                 {displayCategoryName} Haberleri

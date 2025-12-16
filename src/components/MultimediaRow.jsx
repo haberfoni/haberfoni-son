@@ -114,10 +114,6 @@ const MultimediaRow = ({ videos = [], photos = [] }) => {
                 </div>
             </section>
 
-            {/* Ad Banner Below Multimedia */}
-            <div className="container mx-auto px-4">
-                <AdBanner placementCode="home_multimedia_bottom" customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px]" />
-            </div>
         </>
     );
 };

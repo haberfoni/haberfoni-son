@@ -1198,20 +1198,15 @@ export const adminService = {
 
     async deleteUser(id) {
         // Supabase Auth admin API interaction is not directly possible from client-side
-        // However, we can delete the profile entry which is the application-level user
+        // However, we can delete the profile entry.
 
         // 1. Manually Cascade: Delete/Unlink dependencies to avoid Foreign Key errors
-        // Delete user's comments
-        await supabase.from('comments').delete().eq('user_id', id);
-
         // Delete user's activity logs
         await supabase.from('activity_logs').delete().eq('user_id', id);
 
-        // For News, if there is a strict FK, we might need to handle it. 
-        // Assuming loose coupling or we want to keep news. 
-        // If strict FK exists, this might still fail for authors of news.
-        // Let's try to set author_id to null if it exists (safe check)
-        // await supabase.from('news').update({ author_id: null }).eq('author_id', id);
+        // For News, if there is a strict FK, we should handle it. 
+        // Set author_id to null instead of deleting news
+        await supabase.from('news').update({ author_id: null }).eq('author_id', id);
 
         // 2. Delete the profile
         const { error } = await supabase
@@ -1404,9 +1399,11 @@ export const adminService = {
             throw new Error(`Desteklenmeyen video formatı. Sadece MP4, WebM, OGG ve MOV yüklenebilir.`);
         }
 
-        // Generate unique filename
+        // Generate unique and readable filename
         const fileExt = file.name.split('.').pop();
-        const fileName = `video_${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        const baseName = file.name.substring(0, file.name.lastIndexOf('.'));
+        const safeName = this._slugify(baseName);
+        const fileName = `${safeName}_${Date.now()}.${fileExt}`;
         const filePath = `${fileName}`;
 
         // Upload to Supabase Storage
@@ -1654,7 +1651,8 @@ export const adminService = {
     },
 
     async getNextAvailableHeadlineSlot() {
-        const { data: headlines } = await supabase.from('headlines').select('slot_number');
+        // Type 1 = Manşet 1 (Default)
+        const { data: headlines } = await supabase.from('headlines').select('slot_number').eq('type', 1);
         const { data: ads } = await supabase.from('ads').select('headline_slot').eq('is_headline', true).not('headline_slot', 'is', null);
 
         const usedSlots = new Set();
@@ -1665,26 +1663,148 @@ export const adminService = {
         for (let i = 1; i <= 20; i++) {
             if (!usedSlots.has(i)) return i;
         }
-        // If all full, return null or next (but UI supports 20)
-        // Return 21 to append at end if possible, though HeadlinesPage only renders 20 fixed.
-        // It's better to return null if full? Or just return loop end.
+        return 21;
+    },
+
+    async getNextAvailableManset2Slot() {
+        // Type 2 = Manşet 2 (Sürmanşet)
+        const { data: headlines } = await supabase.from('headlines').select('slot_number').eq('type', 2);
+        const { data: ads } = await supabase.from('ads').select('manset_2_slot').eq('is_manset_2', true).not('manset_2_slot', 'is', null);
+
+        const usedSlots = new Set();
+        headlines?.forEach(h => usedSlots.add(h.slot_number));
+        ads?.forEach(a => usedSlots.add(a.manset_2_slot));
+
+        // Check slots 1 to 20
+        for (let i = 1; i <= 20; i++) {
+            if (!usedSlots.has(i)) return i;
+        }
         return 21;
     },
 
 
 
     // Categories
-    async getCategories() {
+    async getCategoryBySlug(slug) {
         const { data, error } = await supabase
+            .from('categories')
+            .select('*')
+            .eq('slug', slug)
+            .single();
+
+        if (error) {
+            console.error('Error fetching category by slug:', error);
+            return null;
+        }
+        return data;
+    },
+
+    async getCategories() {
+        // 1. Fetch Categories
+        const { data: categories, error } = await supabase
             .from('categories')
             .select('*')
             .order('order_index', { ascending: true });
 
         if (error) throw error;
-        return data || [];
+        if (!categories) return [];
+
+        try {
+            // 2. Fetch Home Layout settings to see what is enabled
+            // We use 'getHomeLayout' but since we are inside adminService, we can just call it if 'this' binding works,
+            // or re-fetch manually to avoid 'this' context issues if called strangely.
+            // Safest is to fetch manually or bind.
+            const { data: layoutData } = await supabase
+                .from('site_settings')
+                .select('value')
+                .eq('key', 'home_layout')
+                .maybeSingle();
+
+            let categoryConfig = [];
+            if (layoutData && layoutData.value) {
+                try {
+                    const parsed = JSON.parse(layoutData.value);
+                    categoryConfig = parsed.categoryConfig || [];
+                } catch (e) { console.error(e); }
+            }
+
+            // 3. Fetch ALL Active News Categories for counting
+            // Warning: fetching all rows 'category' column might be heavy eventually,
+            // but for <10k rows it's fine. For massive scale, use RPC or separate stats table.
+            const { data: newsData, error: newsError } = await supabase
+                .from('news')
+                .select('category')
+                .not('published_at', 'is', null);
+
+            if (!newsError && newsData) {
+                // Count news per category (normalize to Title Case for matching)
+                const counts = {};
+
+                // Helper to normalize category keys similar to HomePage
+                const normalize = (str) => {
+                    if (!str) return 'Diger';
+                    return str.trim().toLowerCase();
+                };
+
+                // Helper to title case for generic matching bucket
+                const toTitleCase = (str) => {
+                    return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+                };
+
+                // Determine counts map
+                // We will try to map news.category to our categories.
+                // Using exact match or slug match.
+
+                // Build a map of our categories for easy lookup
+                // keys: slug, name_lowercase
+                const catLookup = {};
+                categories.forEach(c => {
+                    catLookup[c.slug] = c.id;
+                    catLookup[normalize(c.name)] = c.id;
+                });
+
+                const idCounts = {}; // Counts per Category ID
+
+                newsData.forEach(item => {
+                    if (!item.category) return;
+
+                    // Try to find which category this news belongs to
+                    const norm = normalize(item.category);
+                    const slug = slugify(item.category);
+
+                    let matchedId = catLookup[slug] || catLookup[norm];
+
+                    if (matchedId) {
+                        idCounts[matchedId] = (idCounts[matchedId] || 0) + 1;
+                    }
+                });
+
+                // 4. Merge Data
+                return categories.map(cat => {
+                    // Check if enabled in layout
+                    const config = categoryConfig.find(c => c.id === cat.slug);
+                    const isLayoutEnabled = config ? config.enabled : true; // Default true if not in config? Or false? 
+                    // Actually, if dynamic categories are used, it defaults to showing if > 4 news.
+
+                    const count = idCounts[cat.id] || 0;
+
+                    return {
+                        ...cat,
+                        news_count: count,
+                        is_visible_on_homepage: count >= 4 && isLayoutEnabled,
+                        homepage_config_enabled: isLayoutEnabled
+                    };
+                });
+            }
+        } catch (err) {
+            console.error('Error enriching categories:', err);
+            // Fallback to basic categories if enrichment fails
+        }
+
+        return categories;
     },
 
-    async addCategory(name, slug) {
+    async addCategory(name, slug, extraData = {}) {
         // Get max order_index
         const { data: maxOrderData } = await supabase
             .from('categories')
@@ -1696,7 +1816,13 @@ export const adminService = {
 
         const { data, error } = await supabase
             .from('categories')
-            .insert({ name, slug, order_index: nextOrder, is_active: true })
+            .insert({
+                name,
+                slug,
+                order_index: nextOrder,
+                is_active: true,
+                ...extraData // Spread SEO fields (seo_title, seo_description, seo_keywords)
+            })
             .select()
             .single();
 
@@ -1742,6 +1868,7 @@ export const adminService = {
     },
 
     async reorderCategories(updates) {
+        // 1. Update Categories Table
         for (const update of updates) {
             const { error } = await supabase
                 .from('categories')
@@ -1749,6 +1876,55 @@ export const adminService = {
                 .eq('id', update.id);
             if (error) throw error;
         }
+
+        // 2. Sync with Home Layout
+        try {
+            // Fetch current layout
+            const { data: layoutData } = await supabase
+                .from('site_settings')
+                .select('value')
+                .eq('key', 'home_layout')
+                .maybeSingle();
+
+            if (layoutData && layoutData.value) {
+                const layout = JSON.parse(layoutData.value);
+                const categoryConfig = layout.categoryConfig || [];
+
+                // Fetch all categories to get current slugs (needed for config matching)
+                const { data: allCategories } = await supabase
+                    .from('categories')
+                    .select('id, slug, order_index')
+                    .order('order_index', { ascending: true });
+
+                if (allCategories) {
+                    // Create a new ordered config list based on the DB order
+                    const newCategoryConfig = allCategories.map(cat => {
+                        // Try to find existing config by slug to preserve 'enabled' state
+                        const existing = categoryConfig.find(c => c.id === cat.slug);
+
+                        return {
+                            id: cat.slug,
+                            title: cat.name,
+                            enabled: existing ? existing.enabled : true // Default to true if new/not found
+                        };
+                    });
+
+                    // Update layout
+                    layout.categoryConfig = newCategoryConfig;
+
+                    // Save back
+                    await supabase
+                        .from('site_settings')
+                        .update({ value: JSON.stringify(layout) })
+                        .eq('key', 'home_layout');
+                }
+
+            }
+        } catch (err) {
+            console.error('Error syncing category order to layout:', err);
+            // Non-blocking error, user just won't see update on homepage immediately
+        }
+
         return true;
     },
 
@@ -1897,12 +2073,37 @@ export const adminService = {
     }
     ,
 
-    // Sitemap Generation
+    // ----------------------------------------------------------------------
+    // Sitemap & RSS Generation
+    // ----------------------------------------------------------------------
+
+    // Helper: Slugify for Turkish chars (reused internally)
+    _slugify(text) {
+        if (!text) return '';
+        const trMap = {
+            'ç': 'c', 'Ç': 'C',
+            'ğ': 'g', 'Ğ': 'G',
+            'ş': 's', 'Ş': 'S',
+            'ü': 'u', 'Ü': 'U',
+            'İ': 'i', 'ı': 'i',
+            'ö': 'o', 'Ö': 'O'
+        };
+
+        return text.split('').map(char => trMap[char] || char).join('')
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '')
+            .replace(/\-+/g, '-')
+            .replace(/^-+/, '')
+            .replace(/-+$/, '');
+    },
+
+    // 1. General Sitemap (All Content)
     async generateSitemap() {
-        const baseUrl = window.location.origin;
+        const baseUrl = 'https://haberfoni.com'; // Enforcing production URL for sitemap
         const now = new Date().toISOString();
 
-        // 1. Static Pages - Only include active pages
+        // A. Static Pages
         const staticPages = [
             '/',
             '/tum-haberler',
@@ -1910,40 +2111,18 @@ export const adminService = {
             '/kunye',
             '/iletisim',
             '/reklam',
-            // '/kariyer', // Removed potentially inactive
+            '/kariyer',
             '/kvkk',
             '/cerez-politikasi',
             '/video-galeri',
             '/foto-galeri'
         ];
 
-        // Slugify helper for Turkish characters
-        const slugify = (text) => {
-            if (!text) return '';
-            const trMap = {
-                'ç': 'c', 'Ç': 'C',
-                'ğ': 'g', 'Ğ': 'G',
-                'ş': 's', 'Ş': 'S',
-                'ü': 'u', 'Ü': 'U',
-                'İ': 'i', 'ı': 'i',
-                'ö': 'o', 'Ö': 'O'
-            };
-
-            return text.split('').map(char => trMap[char] || char).join('')
-                .toLowerCase()
-                .replace(/\s+/g, '-')
-                .replace(/[^\w-]+/g, '')
-                .replace(/\-\-+/g, '-')
-                .replace(/^-+/, '')
-                .replace(/-+$/, '');
-        };
-
         let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated at: ${now} -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 `;
 
-        // Add Static Pages
         staticPages.forEach(page => {
             xml += `  <url>
     <loc>${baseUrl}${page}</loc>
@@ -1954,33 +2133,32 @@ export const adminService = {
 `;
         });
 
-        // 2. Fetch News
-        const { data: news, error: newsError } = await supabase
+        // B. News (All published)
+        const { data: news } = await supabase
             .from('news')
             .select('slug, title, published_at, category')
             .not('published_at', 'is', null)
             .order('published_at', { ascending: false });
 
-        if (newsError) throw newsError;
-
         if (news) {
             news.forEach(item => {
-                const itemSlug = item.slug || slugify(item.title);
+                const itemSlug = item.slug || this._slugify(item.title);
+                const categorySlug = this._slugify(item.category);
                 xml += `  <url>
-    <loc>${baseUrl}/kategori/${slugify(item.category)}/${itemSlug}</loc>
+    <loc>${baseUrl}/kategori/${categorySlug}/${itemSlug}</loc>
     <lastmod>${item.published_at || now}</lastmod>
-    <changefreq>weekly</changefreq>
+    <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
 `;
             });
         }
 
-        // 3. Fetch Categories
+        // C. Categories
         const { data: categories } = await supabase.from('categories').select('slug, name');
         if (categories) {
             categories.forEach(cat => {
-                const safeSlug = cat.slug ? slugify(cat.slug) : slugify(cat.name);
+                const safeSlug = cat.slug || this._slugify(cat.name);
                 xml += `  <url>
     <loc>${baseUrl}/kategori/${safeSlug}</loc>
     <lastmod>${now}</lastmod>
@@ -1991,14 +2169,18 @@ export const adminService = {
             });
         }
 
-        // 4. Fetch Tags
-        const { data: tags } = await supabase.from('tags').select('name');
-        if (tags) {
-            tags.forEach(tag => {
-                const slug = slugify(tag.name);
+        // D. Photo Galleries
+        const { data: photoGalleries } = await supabase
+            .from('photo_galleries')
+            .select('slug, title, created_at')
+            .eq('is_active', true);
+
+        if (photoGalleries) {
+            photoGalleries.forEach(gallery => {
+                const itemSlug = gallery.slug || this._slugify(gallery.title);
                 xml += `  <url>
-    <loc>${baseUrl}/etiket/${slug}</loc>
-    <lastmod>${now}</lastmod>
+    <loc>${baseUrl}/foto-galeri/${itemSlug}</loc>
+    <lastmod>${gallery.created_at || now}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2006,7 +2188,157 @@ export const adminService = {
             });
         }
 
+        // E. Video Galleries
+        const { data: videoGalleries } = await supabase
+            .from('video_galleries')
+            .select('slug, title, created_at')
+            .eq('is_active', true);
+
+        if (videoGalleries) {
+            videoGalleries.forEach(video => {
+                const itemSlug = video.slug || this._slugify(video.title);
+                xml += `  <url>
+    <loc>${baseUrl}/video-galeri/${itemSlug}</loc>
+    <lastmod>${video.created_at || now}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+`;
+            });
+        }
+
+        // F. Tags
+        const { data: tags } = await supabase.from('tags').select('name');
+        if (tags) {
+            tags.forEach(tag => {
+                const slug = this._slugify(tag.name);
+                xml += `  <url>
+    <loc>${baseUrl}/etiket/${slug}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+`;
+            });
+        }
+
+        // G. Dynamic Pages
+        const { data: pages } = await supabase.from('pages').select('slug, updated_at').eq('is_active', true);
+        if (pages) {
+            pages.forEach(page => {
+                if (!['hakkimizda', 'kunye', 'iletisim', 'reklam', 'kariyer', 'kvkk', 'cerez-politikasi'].includes(page.slug)) {
+                    xml += `  <url>
+    <loc>${baseUrl}/${page.slug}</loc>
+    <lastmod>${page.updated_at || now}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+`;
+                }
+            });
+        }
+
         xml += '</urlset>';
+        return xml;
+    },
+
+    // 2. Google News Sitemap (Last 48 Hours)
+    async generateNewsSitemap() {
+        const baseUrl = 'https://haberfoni.com';
+        const now = new Date();
+        const twoDaysAgo = new Date(now.getTime() - (48 * 60 * 60 * 1000)).toISOString();
+
+        const { data: news } = await supabase
+            .from('news')
+            .select('slug, title, published_at, category')
+            .not('published_at', 'is', null)
+            .gte('published_at', twoDaysAgo)
+            .order('published_at', { ascending: false });
+
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+`;
+
+        if (news) {
+            news.forEach(item => {
+                const itemSlug = item.slug || this._slugify(item.title);
+                const categorySlug = this._slugify(item.category);
+                const date = item.published_at ? new Date(item.published_at).toISOString() : new Date().toISOString();
+
+                xml += `  <url>
+    <loc>${baseUrl}/kategori/${categorySlug}/${itemSlug}</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Haberfoni</news:name>
+        <news:language>tr</news:language>
+      </news:publication>
+      <news:publication_date>${date}</news:publication_date>
+      <news:title>${item.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')}</news:title>
+    </news:news>
+  </url>
+`;
+            });
+        }
+
+        xml += '</urlset>';
+        return xml;
+    },
+
+    // 3. RSS Feed
+    async generateRSS() {
+        const baseUrl = 'https://haberfoni.com';
+        const now = new Date().toUTCString();
+
+        // Fetch latest 50 items
+        const { data: news } = await supabase
+            .from('news')
+            .select('slug, title, summary, content, published_at, category, image_url')
+            .not('published_at', 'is', null)
+            .order('published_at', { ascending: false })
+            .limit(50);
+
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
+<channel>
+  <title>Haberfoni</title>
+  <link>${baseUrl}</link>
+  <description>Haberfoni - Güncel Haberler, Son Dakika Gelişmeleri</description>
+  <language>tr</language>
+  <lastBuildDate>${now}</lastBuildDate>
+  <atom:link href="${baseUrl}/rss.xml" rel="self" type="application/rss+xml" />
+`;
+
+        if (news) {
+            news.forEach(item => {
+                const itemSlug = item.slug || this._slugify(item.title);
+                const categorySlug = this._slugify(item.category);
+                const link = `${baseUrl}/kategori/${categorySlug}/${itemSlug}`;
+                const pubDate = item.published_at ? new Date(item.published_at).toUTCString() : now;
+
+                // Construct absolute image URL
+                let imageUrl = item.image_url;
+                if (imageUrl && !imageUrl.startsWith('http')) {
+                    // Assuming standard supabase storage or local path, best effort to make it absolute
+                    imageUrl = `${baseUrl}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+                }
+
+                xml += `  <item>
+    <title>${item.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</title>
+    <link>${link}</link>
+    <guid isPermaLink="true">${link}</guid>
+    <description><![CDATA[${item.summary || ''}]]></description>
+    <pubDate>${pubDate}</pubDate>
+    <category>${item.category}</category>
+    ${imageUrl ? `<media:content url="${imageUrl}" medium="image" />` : ''}
+    ${imageUrl ? `<enclosure url="${imageUrl}" type="image/jpeg" />` : ''}
+  </item>
+`;
+            });
+        }
+
+        xml += `</channel>
+</rss>`;
         return xml;
     },
 
