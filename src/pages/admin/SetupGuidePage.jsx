@@ -139,7 +139,7 @@ const SetupGuidePage = () => {
                         </div>
 
                         <p className="text-sm text-gray-500 mt-3">
-                            * Bu bilgileri kullandığınız veritabanı servisinin (örn: Supabase) ayarlar sayfasından ("Project Settings" -> "API") bulabilirsiniz.
+                            * Bu bilgileri kullandığınız veritabanı servisinin (örn: Supabase) ayarlar sayfasından ("Project Settings" &rarr; "API") bulabilirsiniz.
                         </p>
                     </div>
                 </div>
@@ -173,7 +173,7 @@ const SetupGuidePage = () => {
                                     Veritabanı servisiniz (Supabase vb.), güvenlik nedeniyle sadece izin verilen sitelerden gelen girişleri kabul eder. Yeni adresinizi eklemezseniz <strong>Admin paneline giremezsiniz.</strong>
                                 </p>
                                 <ul className="list-disc list-inside text-xs text-gray-500 ml-1">
-                                    <li>Supabase Paneli -> Authentication -> URL Configuration</li>
+                                    <li>Supabase Paneli &rarr; Authentication &rarr; URL Configuration</li>
                                     <li>Site URL: <code>https://yenisite.com</code></li>
                                     <li>Redirect URLs: <code>https://yenisite.com/**</code> ekleyin.</li>
                                 </ul>
