@@ -11,34 +11,35 @@ import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 
 // Admin Import
-import AdminLayout from './components/admin/AdminLayout';
-import ProtectedRoute from './components/admin/ProtectedRoute';
-import LoginPage from './pages/admin/LoginPage';
-import DashboardPage from './pages/admin/DashboardPage';
-import NewsListPage from './pages/admin/NewsListPage';
-import NewsEditPage from './pages/admin/NewsEditPage';
-import PhotoGalleryListPage from './pages/admin/PhotoGalleryListPage';
-import PhotoGalleryEditPage from './pages/admin/PhotoGalleryEditPage';
-import VideoGalleryListPage from './pages/admin/VideoGalleryListPage';
-import VideoGalleryEditPage from './pages/admin/VideoGalleryEditPage';
-import SubscribersPage from './pages/admin/SubscribersPage';
-import UsersPage from './pages/admin/UsersPage';
-import CommentsPage from './pages/admin/CommentsPage';
-import AdsPage from './pages/admin/AdsPage';
-import HomeLayoutPage from './pages/admin/HomeLayoutPage';
-import HeadlinesPage from './pages/admin/HeadlinesPage';
-import CategoriesPage from './pages/admin/CategoriesPage';
-import TagsPage from './pages/admin/TagsPage';
-import RedirectsPage from './pages/admin/RedirectsPage';
-import SeoFilesPage from './pages/admin/SeoFilesPage';
-import SettingsPage from './pages/admin/SettingsPage';
-import EmailSettingsPage from './pages/admin/EmailSettingsPage';
-import PagesPage from './pages/admin/PagesPage';
-import PageEditPage from './pages/admin/PageEditPage';
-import FooterLinksPage from './pages/admin/FooterLinksPage';
-import ContactMessagesPage from './pages/admin/ContactMessagesPage';
-import ActivityLogsPage from './pages/admin/ActivityLogsPage';
-import SetupGuidePage from './pages/admin/SetupGuidePage';
+// Admin Lazy Imports
+const AdminLayout = lazy(() => import('./components/admin/AdminLayout'));
+const ProtectedRoute = lazy(() => import('./components/admin/ProtectedRoute'));
+const LoginPage = lazy(() => import('./pages/admin/LoginPage'));
+const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
+const NewsListPage = lazy(() => import('./pages/admin/NewsListPage'));
+const NewsEditPage = lazy(() => import('./pages/admin/NewsEditPage'));
+const PhotoGalleryListPage = lazy(() => import('./pages/admin/PhotoGalleryListPage'));
+const PhotoGalleryEditPage = lazy(() => import('./pages/admin/PhotoGalleryEditPage'));
+const VideoGalleryListPage = lazy(() => import('./pages/admin/VideoGalleryListPage'));
+const VideoGalleryEditPage = lazy(() => import('./pages/admin/VideoGalleryEditPage'));
+const SubscribersPage = lazy(() => import('./pages/admin/SubscribersPage'));
+const UsersPage = lazy(() => import('./pages/admin/UsersPage'));
+const CommentsPage = lazy(() => import('./pages/admin/CommentsPage'));
+const AdsPage = lazy(() => import('./pages/admin/AdsPage'));
+const HomeLayoutPage = lazy(() => import('./pages/admin/HomeLayoutPage'));
+const HeadlinesPage = lazy(() => import('./pages/admin/HeadlinesPage'));
+const CategoriesPage = lazy(() => import('./pages/admin/CategoriesPage'));
+const TagsPage = lazy(() => import('./pages/admin/TagsPage'));
+const RedirectsPage = lazy(() => import('./pages/admin/RedirectsPage'));
+const SeoFilesPage = lazy(() => import('./pages/admin/SeoFilesPage'));
+const SettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
+const EmailSettingsPage = lazy(() => import('./pages/admin/EmailSettingsPage'));
+const PagesPage = lazy(() => import('./pages/admin/PagesPage'));
+const PageEditPage = lazy(() => import('./pages/admin/PageEditPage'));
+const FooterLinksPage = lazy(() => import('./pages/admin/FooterLinksPage'));
+const ContactMessagesPage = lazy(() => import('./pages/admin/ContactMessagesPage'));
+const ActivityLogsPage = lazy(() => import('./pages/admin/ActivityLogsPage'));
+const SetupGuidePage = lazy(() => import('./pages/admin/SetupGuidePage'));
 
 // Public Lazy loaded pages
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -120,11 +121,17 @@ function App() {
               </Route>
 
               {/* Admin Routes */}
-              <Route path="/admin/login" element={<LoginPage />} />
+              <Route path="/admin/login" element={
+                <Suspense fallback={<PageLoader />}>
+                  <LoginPage />
+                </Suspense>
+              } />
               <Route path="/admin" element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedRoute>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                </Suspense>
               }>
                 <Route index element={<Navigate to="/admin/dashboard" replace />} />
                 <Route path="dashboard" element={<DashboardPage />} />

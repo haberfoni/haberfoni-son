@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import './RichTextEditor.css';
 import { Code, Eye } from 'lucide-react';
 import BlotFormatter from '@enzedonline/quill-blot-formatter2';
 
