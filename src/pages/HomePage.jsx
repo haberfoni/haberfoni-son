@@ -82,6 +82,20 @@ const HomePage = () => {
     React.useEffect(() => {
         const loadNews = async () => {
             try {
+                // 1. Try to load simplified initial data from standard localStorage check
+                // This is critical for LCP (Largest Contentful Paint) optimization
+                const cachedHeadlines = localStorage.getItem('headlines_cache');
+                if (cachedHeadlines) {
+                    try {
+                        const parsed = JSON.parse(cachedHeadlines);
+                        if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+                            setHeroItems(parsed.map(mapNewsItem));
+                        }
+                    } catch (e) {
+                        console.warn('Cache parse error', e);
+                    }
+                }
+
                 // Execute fetches in parallel
                 const [headlinesData, surmansetData, allNews, videoData, photoData, categoriesData] = await Promise.all([
                     fetchHeadlines().catch(e => { console.error(e); return []; }),
@@ -102,7 +116,11 @@ const HomePage = () => {
                 });
                 setCategoryMap(map);
 
-                setHeroItems(headlinesData.map(mapNewsItem));
+                // Update state and cache with fresh data
+                if (headlinesData && headlinesData.length > 0) {
+                    localStorage.setItem('headlines_cache', JSON.stringify(headlinesData));
+                    setHeroItems(headlinesData.map(mapNewsItem));
+                }
                 setSurmansetItems(surmansetData.map(mapNewsItem));
                 setGridItems(allNews.map(mapNewsItem));
                 setVideos(videoData);

@@ -97,7 +97,7 @@ const Hero = ({ items = [] }) => {
                                         className="w-full h-full object-cover"
                                         loading={index === 0 ? "eager" : "lazy"}
                                         fetchPriority={index === 0 ? "high" : "auto"}
-                                        width="800"
+                                        width={1200}
                                         height="500"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />

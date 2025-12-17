@@ -212,6 +212,8 @@ const Header = () => {
                                             src={settings.logo_desktop}
                                             alt={settings.site_title || "Haberfoni"}
                                             className="hidden md:block h-12 w-auto object-contain"
+                                            width="200"
+                                            height="48"
                                         />
                                         {/* Mobile Logo (if exists, else desktop, else text) */}
                                         {settings.logo_mobile ? (
@@ -219,12 +221,16 @@ const Header = () => {
                                                 src={settings.logo_mobile}
                                                 alt={settings.site_title || "Haberfoni"}
                                                 className="block md:hidden h-10 w-auto object-contain"
+                                                width="150"
+                                                height="40"
                                             />
                                         ) : (
                                             <img
                                                 src={settings.logo_desktop}
                                                 alt={settings.site_title || "Haberfoni"}
                                                 className="block md:hidden h-10 w-auto object-contain"
+                                                width="150"
+                                                height="40"
                                             />
                                         )}
                                     </>

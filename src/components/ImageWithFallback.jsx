@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { ImageOff } from 'lucide-react';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
-const ImageWithFallback = ({ src, alt, className, ...props }) => {
+const ImageWithFallback = ({ src, alt, className, width, ...props }) => {
     const [error, setError] = useState(false);
+
+    // Optimize the URL if it's a Supabase URL
+    const optimizedSrc = getOptimizedImageUrl(src, { width: width || 800 });
 
     if (!src || error) {
         return (
@@ -15,7 +19,7 @@ const ImageWithFallback = ({ src, alt, className, ...props }) => {
 
     return (
         <img
-            src={src}
+            src={optimizedSrc}
             alt={alt}
             className={className}
             onError={() => setError(true)}

@@ -111,6 +111,8 @@ const Footer = () => {
                                     src={settings.logo_desktop}
                                     alt={settings.site_title || "Haberfoni"}
                                     className="h-10 w-auto object-contain"
+                                    width="160"
+                                    height="40"
                                 />
                             ) : (
                                 <span className="text-2xl font-bold tracking-tighter text-white">

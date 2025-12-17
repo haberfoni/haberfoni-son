@@ -310,6 +310,16 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
         );
     }
 
+    // Helper to parse dimensions string
+    const getEnds = (dimStr) => {
+        if (!dimStr) return { w: undefined, h: undefined };
+        const [w, h] = dimStr.split('x');
+        return { w, h };
+    }
+
+    const desktopDims = getEnds(desktopDimensions);
+    const mobileDims = getEnds(mobileDimensions);
+
     // Default Fallback (Existing Logic)
     return (
         <div className={`${noContainer ? '' : 'container mx-auto px-4'} ${vertical ? 'py-0' : 'py-2 md:pt-8 md:pb-4'}`}>
@@ -326,6 +336,8 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                             src={desktopImage}
                             alt="Reklam Alanı"
                             className="w-full h-full object-cover transition-opacity opacity-100"
+                            width={desktopDims.w}
+                            height={desktopDims.h}
                         />
                     ) : (
                         <div className="flex flex-col items-center justify-center p-4 text-center">
@@ -341,6 +353,8 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                             src={mobileImage}
                             alt="Reklam Alanı"
                             className="w-full h-full object-cover transition-opacity opacity-100"
+                            width={mobileDims.w}
+                            height={mobileDims.h}
                         />
                     ) : (
                         <div className="flex flex-col items-center justify-center p-4 text-center">

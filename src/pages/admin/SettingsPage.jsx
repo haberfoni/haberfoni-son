@@ -262,7 +262,7 @@ const SettingsPage = () => {
                                                 file:bg-black file:text-white
                                                 hover:file:bg-gray-800"
                                         />
-                                        <p className="mt-1 text-xs text-gray-500">Önerilen boyut: 200x60px (PNG veya SVG)</p>
+                                        <p className="mt-1 text-xs text-gray-500">Önerilen boyut: 200x48px (PNG veya SVG)</p>
                                     </div>
                                     <div className="w-full md:w-1/2 min-h-[100px] flex items-center justify-center bg-gray-200 border-2 border-dashed border-gray-300 rounded-lg relative overflow-hidden">
                                         {uploading.logo_desktop ? (
@@ -303,7 +303,7 @@ const SettingsPage = () => {
                                                 file:bg-black file:text-white
                                                 hover:file:bg-gray-800"
                                         />
-                                        <p className="mt-1 text-xs text-gray-500">Önerilen boyut: 160x50px (PNG veya SVG)</p>
+                                        <p className="mt-1 text-xs text-gray-500">Önerilen boyut: 150x40px (PNG veya SVG)</p>
                                     </div>
                                     <div className="w-full md:w-1/2 min-h-[100px] flex items-center justify-center bg-gray-200 border-2 border-dashed border-gray-300 rounded-lg relative overflow-hidden">
                                         {uploading.logo_mobile ? (
