@@ -97,8 +97,11 @@ const HomePage = () => {
                 }
 
                 // Execute fetches in parallel
+                // Use pre-fetched headlines promise if available (LCP Optimization)
+                const headlinesPromise = window.headlinesPromise || fetchHeadlines();
+
                 const [headlinesData, surmansetData, allNews, videoData, photoData, categoriesData] = await Promise.all([
-                    fetchHeadlines().catch(e => { console.error(e); return []; }),
+                    headlinesPromise.catch(e => { console.error(e); return []; }),
                     fetchSurmanset().catch(e => { console.error(e); return []; }),
                     fetchNews().catch(e => { console.error(e); return []; }),
                     fetchHomeVideos().catch(e => { console.error(e); return []; }),
