@@ -35,7 +35,7 @@ const AdminLoginPage = () => {
         <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                 <div className="bg-black p-8 text-center">
-                    <h1 className="text-3xl font-black text-white tracking-wider mb-2">HABERFONİ</h1>
+                    <h1 className="text-3xl font-bold text-white tracking-wider mb-2">HABERFONİ</h1>
                     <p className="text-gray-400 text-sm">Yönetim Paneli Girişi</p>
                 </div>
 

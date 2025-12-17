@@ -11,7 +11,7 @@ import NewsArticle from '../components/NewsArticle';
 import { slugify } from '../utils/slugify';
 
 const NewsDetailPage = () => {
-    const { category, slug } = useParams();
+    const { category, slug, id } = useParams();
     const location = useLocation();
     const isFromSlider = new URLSearchParams(location.search).get('from') === 'slider';
     // Start with empty list
@@ -23,54 +23,69 @@ const NewsDetailPage = () => {
     const observerTarget = useRef(null);
     const viewedIds = useRef(new Set());
 
-    // Initial load: Fetch all category news and set the initial article based on slug
+    // Initial load: Fetch specific news first, then category news
     useEffect(() => {
-        // Reset displayed news when slug/cat changes (MUST be first, before async load)
+        // Reset displayed news when slug/cat changes
+        // Only reset if we are navigating to a completely new article context
+        if (displayedNews.length > 0 && String(displayedNews[0].id) === String(id)) {
+            return; // Already showing this article
+        }
+
         setDisplayedNews([]);
         setIsLoadingMore(false);
 
         const loadInitialNews = async () => {
             setLoading(true);
 
-            // If coming from slider, load popular news from all categories
-            // Otherwise, load news from the specific category
-            const data = isFromSlider
-                ? await fetchPopularNews(100)
-                : await fetchNewsByCategory(category);
+            try {
+                let initialNewsItem = null;
 
-            const mappedData = data.map(mapNewsItem);
-            setAllCategoryNews(mappedData);
+                // 1. Try to fetch specific item by ID (Best)
+                if (id) {
+                    const detail = await fetchNewsDetail(id);
+                    if (detail) {
+                        initialNewsItem = mapNewsItem(detail);
+                    }
+                }
 
-            // Find the requested news item from the list
-            // Match custom slug OR generated slug (backward compatibility)
-            const matchedItem = mappedData.find(item =>
-                (item.slug && item.slug === slug) ||
-                (!item.slug && slugify(item.title) === slug)
-            );
+                // 2. Fetch Category News (for Infinite Scroll)
+                const listData = isFromSlider
+                    ? await fetchPopularNews(100)
+                    : await fetchNewsByCategory(category);
 
-            if (matchedItem) {
-                // Fetch FULL details (including content) for this item
-                const fullNewsData = await fetchNewsDetail(matchedItem.id);
+                const mappedList = listData.map(mapNewsItem);
+                setAllCategoryNews(mappedList);
 
-                // Map the full data (handling the case where fetchNewsDetail might fail or return different structure)
-                const currentNews = fullNewsData ? mapNewsItem(fullNewsData) : matchedItem;
+                // 3. Fallback matching if ID didn't work or wasn't present
+                if (!initialNewsItem) {
+                    initialNewsItem = mappedList.find(item =>
+                        (item.slug && item.slug === slug) ||
+                        (!item.slug && slugify(item.title) === slug)
+                    );
 
-                // If not published, noindex is handled via prop in SEO component
+                    // If found in list, we might want to fetch full details
+                    if (initialNewsItem) {
+                        const fullDetail = await fetchNewsDetail(initialNewsItem.id);
+                        if (fullDetail) initialNewsItem = mapNewsItem(fullDetail);
+                    }
+                }
 
-                // View count will be incremented by handleArticleVisible when the article becomes visible
+                if (initialNewsItem) {
+                    setDisplayedNews([initialNewsItem]);
 
-                // Initialize displayed news with the current one
-                setDisplayedNews([currentNews]);
-
-                // Load related news
-                const relatedData = await fetchRelatedNews(currentNews.id, currentNews.category);
-                const mappedRelated = relatedData.map(mapNewsItem);
-                setRelatedNews(mappedRelated);
+                    // Load related news
+                    const relatedData = await fetchRelatedNews(initialNewsItem.id, initialNewsItem.category);
+                    const mappedRelated = relatedData.map(mapNewsItem);
+                    setRelatedNews(mappedRelated);
+                }
+            } catch (err) {
+                console.error("Error loading news detail:", err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         loadInitialNews();
-    }, [category, slug]);
+    }, [category, slug, id]);
 
     // Scroll to top only on initial Mount/Slug change if it is the FIRST article
     useEffect(() => {

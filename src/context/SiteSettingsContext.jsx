@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { adminService } from '../services/adminService';
+import { fetchCategories } from '../services/api';
 
 const SiteSettingsContext = createContext();
 
@@ -7,6 +8,7 @@ export const SiteSettingsProvider = ({ children }) => {
     const [settings, setSettings] = useState({});
     const [ads, setAds] = useState([]);
     const [redirects, setRedirects] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -15,16 +17,21 @@ export const SiteSettingsProvider = ({ children }) => {
 
     const loadData = async () => {
         try {
-            // Load settings, ads, and redirects in parallel
-            const [settingsData, adsData, redirectsData] = await Promise.all([
+            // Load settings, ads, redirects, and categories in parallel
+            // Use window.adsPromise if available (LCP Optimization)
+            const adsPromise = window.adsPromise || adminService.getAdPlacements();
+
+            const [settingsData, adsData, redirectsData, categoriesData] = await Promise.all([
                 adminService.getSettings(),
-                adminService.getAdPlacements(),
-                adminService.getRedirects()
+                adsPromise,
+                adminService.getRedirects(),
+                fetchCategories()
             ]);
 
             setSettings(settingsData);
             setAds(adsData);
             setRedirects(redirectsData);
+            setCategories(categoriesData);
 
         } catch (error) {
             console.error('Error loading site data:', error);
@@ -34,7 +41,7 @@ export const SiteSettingsProvider = ({ children }) => {
     };
 
     return (
-        <SiteSettingsContext.Provider value={{ settings, ads, redirects, loading, reloadSettings: loadData }}>
+        <SiteSettingsContext.Provider value={{ settings, ads, redirects, categories, loading, reloadSettings: loadData }}>
             {children}
         </SiteSettingsContext.Provider>
     );

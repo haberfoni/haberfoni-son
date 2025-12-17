@@ -102,7 +102,9 @@ function App() {
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/kategori/:categoryName" element={<CategoryPage />} />
+                {/* Support both URL patterns */}
                 <Route path="/kategori/:category/:slug" element={<NewsDetailPage />} />
+                <Route path="/:category/:slug/:id" element={<NewsDetailPage />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/etiket/:tagSlug" element={<TagPage />} />
                 <Route path="/tum-haberler" element={<AllNewsPage />} />
@@ -115,8 +117,11 @@ function App() {
                 <Route path="/cerez-politikasi" element={<CookiePolicyPage />} />
                 <Route path="/video-galeri" element={<VideoGalleryPage />} />
                 <Route path="/video-galeri/:slug" element={<VideoDetailPage />} />
+                <Route path="/video-galeri/:slug/:id" element={<VideoDetailPage />} />
+
                 <Route path="/foto-galeri" element={<PhotoGalleryPage />} />
                 <Route path="/foto-galeri/:slug" element={<PhotoDetailPage />} />
+                <Route path="/foto-galeri/:slug/:id" element={<PhotoDetailPage />} />
                 <Route path="/kurumsal/:slug" element={<DynamicPage />} />
               </Route>
 

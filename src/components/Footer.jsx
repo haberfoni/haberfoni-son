@@ -11,23 +11,16 @@ import { getSocialLinksFromSettings, getIcon } from '../utils/iconMapper';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 
 const Footer = () => {
-    const { settings, loading } = useSiteSettings();
+    const { settings, categories, loading } = useSiteSettings();
     const socialLinks = getSocialLinksFromSettings(settings); // Get normalized links
 
     const [email, setEmail] = useState('');
     const [status, setStatus] = useState('idle'); // idle, loading, success, error
     const [message, setMessage] = useState('');
-    const [categories, setCategories] = useState([]);
     const [footerSections, setFooterSections] = useState([]);
     const [sectionLinks, setSectionLinks] = useState({});
 
-    useEffect(() => {
-        const loadCategories = async () => {
-            const data = await fetchCategories();
-            setCategories(data.map(c => c.name));
-        };
-        loadCategories();
-    }, []);
+
 
     useEffect(() => {
         // Fetch Footer Sections and Links
@@ -110,9 +103,10 @@ const Footer = () => {
                                 <img
                                     src={settings.logo_desktop}
                                     alt={settings.site_title || "Haberfoni"}
-                                    className="h-10 w-auto object-contain"
+                                    className="h-10 object-contain"
                                     width="160"
                                     height="40"
+                                    style={{ aspectRatio: '160/40' }}
                                 />
                             ) : (
                                 <span className="text-2xl font-bold tracking-tighter text-white">
@@ -143,9 +137,9 @@ const Footer = () => {
                                 {section.type === 'dynamic_categories' ? (
                                     // Categories Logic
                                     categories.map((category) => (
-                                        <li key={category}>
-                                            <Link to={`/kategori/${slugify(category)}`} className="hover:text-primary transition-colors">
-                                                {category}
+                                        <li key={category.id || category.name}>
+                                            <Link to={`/kategori/${slugify(category.name)}`} className="hover:text-primary transition-colors">
+                                                {category.name}
                                             </Link>
                                         </li>
                                     ))

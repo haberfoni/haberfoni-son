@@ -87,7 +87,7 @@ const MultimediaRow = ({ videos = [], photos = [] }) => {
                                         className="group block relative rounded-lg overflow-hidden aspect-[4/3] bg-gray-100"
                                     >
                                         <ImageWithFallback
-                                            src={photo.image_url}
+                                            src={photo.thumbnail_url || photo.image_url}
                                             alt={photo.title}
                                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                             width="320"

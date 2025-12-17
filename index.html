@@ -8,12 +8,20 @@
   <title>Haberfoni</title>
   <script src="/config.js" defer></script>
 
-  <link rel="preconnect" href="https://elrxpnzihsjugndbgvrv.supabase.co" />
+  <link rel="preconnect" href="https://elrxpnzihsjugndbgvrv.supabase.co" crossorigin />
+  <link rel="preconnect" href="https://api.open-meteo.com" crossorigin />
   <script>
     // Critical LCP Optimization: Pre-fetch headlines immediately
     // Uses hardcoded public anon key for maximum speed (no waiting for config.js)
     try {
-      window.headlinesPromise = fetch('https://elrxpnzihsjugndbgvrv.supabase.co/rest/v1/news?is_active=eq.true&is_headline=eq.true&select=id,title,image_url,video_url,is_video,headline_order,is_headline&order=headline_order.asc&limit=20', {
+      window.headlinesPromise = fetch('https://elrxpnzihsjugndbgvrv.supabase.co/rest/v1/news?select=id,title,image_url,slug,category,published_at&order=created_at.desc&limit=20', {
+        headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVscnhwbnppaHNqdWduZGJndnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzY2ODMsImV4cCI6MjA4MDUxMjY4M30.SeWT_Jc4SrM5WWsaK1Ss3Ry36rdHatq1GoUyfqVJD5o',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVscnhwbnppaHNqdWduZGJndnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzY2ODMsImV4cCI6MjA4MDUxMjY4M30.SeWT_Jc4SrM5WWsaK1Ss3Ry36rdHatq1GoUyfqVJD5o'
+        }
+      }).then(r => r.json()).catch(e => []);
+
+      window.adsPromise = fetch('https://elrxpnzihsjugndbgvrv.supabase.co/rest/v1/ads?is_active=eq.true&select=*', {
         headers: {
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVscnhwbnppaHNqdWduZGJndnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzY2ODMsImV4cCI6MjA4MDUxMjY4M30.SeWT_Jc4SrM5WWsaK1Ss3Ry36rdHatq1GoUyfqVJD5o',
           'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVscnhwbnppaHNqdWduZGJndnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzY2ODMsImV4cCI6MjA4MDUxMjY4M30.SeWT_Jc4SrM5WWsaK1Ss3Ry36rdHatq1GoUyfqVJD5o'

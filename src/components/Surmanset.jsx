@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { slugify } from '../utils/slugify';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 import { adminService } from '../services/adminService';
 

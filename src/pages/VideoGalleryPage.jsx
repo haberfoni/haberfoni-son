@@ -54,7 +54,7 @@ const VideoGalleryPage = () => {
             <div className="bg-black text-white py-4 mb-6">
                 <div className="container mx-auto px-4 flex items-center space-x-2">
                     <div className="w-2 h-8 bg-red-600"></div>
-                    <h1 className="text-2xl font-black tracking-wider">VİDEO GALERİ</h1>
+                    <h1 className="text-2xl font-bold tracking-wider">VİDEO GALERİ</h1>
                 </div>
             </div>
 

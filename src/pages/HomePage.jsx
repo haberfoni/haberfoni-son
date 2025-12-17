@@ -169,7 +169,13 @@ const HomePage = () => {
             case 'home_top':
                 return (
                     <div className="container mx-auto px-4 pt-4">
-                        <AdBanner placementCode="home_top" customMobileDimensions="320x100" customHeight="h-[100px] md:h-[250px]" />
+                        <AdBanner
+                            placementCode="home_top"
+                            customMobileDimensions="320x100"
+                            customHeight="h-[100px] md:h-[250px]"
+                            fetchPriority="high"
+                            loading="eager"
+                        />
                     </div>
                 );
 

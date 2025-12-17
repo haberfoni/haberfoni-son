@@ -7,7 +7,7 @@ import SEO from '../components/SEO';
 import { slugify } from '../utils/slugify';
 
 const VideoDetailPage = () => {
-    const { slug } = useParams();
+    const { slug, id } = useParams();
 
     const [video, setVideo] = React.useState(null);
     const [relatedVideos, setRelatedVideos] = React.useState([]);
@@ -18,28 +18,48 @@ const VideoDetailPage = () => {
     React.useEffect(() => {
         const loadVideo = async () => {
             setLoading(true);
-            const videos = await fetchVideos();
-            const mappedVideos = videos.map(mapVideoItem);
+            try {
+                let currentVideo = null;
 
-            const currentVideo = mappedVideos.find(item => slugify(item.title) === slug);
-            setVideo(currentVideo);
-
-            if (currentVideo) {
-                // Increment view count (only once per slug)
-                if (countedSlugRef.current !== slug) {
-                    countedSlugRef.current = slug;
-                    incrementVideoView(currentVideo.id).catch(console.error);
+                // 1. Try to fetch by ID (Efficient & Reliable)
+                if (id) {
+                    const detail = await import('../services/api').then(m => m.fetchVideoDetail(id));
+                    if (detail) {
+                        currentVideo = mapVideoItem(detail);
+                    }
                 }
 
-                setRelatedVideos(mappedVideos
-                    .filter(item => item.id !== currentVideo.id)
-                    .sort(() => 0.5 - Math.random()) // Randomize for "Recommended" feel
-                    .slice(0, 5));
+                // 2. Fallback: Fetch all if ID missing or failed
+                if (!currentVideo) {
+                    const videos = await fetchVideos();
+                    const mappedVideos = videos.map(mapVideoItem);
+                    currentVideo = mappedVideos.find(item => slugify(item.title) === slug);
+                }
+
+                setVideo(currentVideo);
+
+                if (currentVideo) {
+                    // Increment view count
+                    if (countedSlugRef.current !== (id || slug)) {
+                        countedSlugRef.current = (id || slug);
+                        incrementVideoView(currentVideo.id).catch(console.error);
+                    }
+
+                    // Load related (Fetch fresh list for recommendations)
+                    const allVideos = await fetchVideos();
+                    setRelatedVideos(allVideos.map(mapVideoItem)
+                        .filter(item => item.id !== currentVideo.id)
+                        .sort(() => 0.5 - Math.random())
+                        .slice(0, 5));
+                }
+            } catch (err) {
+                console.error("Error loading video:", err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
         loadVideo();
-    }, [slug]);
+    }, [slug, id]);
 
     const handleShare = async () => {
         if (navigator.share) {

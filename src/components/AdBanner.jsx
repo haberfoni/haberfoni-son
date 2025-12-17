@@ -2,8 +2,9 @@ import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import { adminService } from '../services/adminService';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
-const AdBanner = ({ vertical = false, small = false, image = null, href = null, customHeight = null, customDimensions = null, customMobileDimensions = null, text = null, placementCode = null, newsId = null, noContainer = false }) => {
+const AdBanner = ({ vertical = false, small = false, image = null, href = null, customHeight = null, customDimensions = null, customMobileDimensions = null, text = null, placementCode = null, newsId = null, noContainer = false, fetchPriority = "auto", loading = "lazy" }) => {
     // Refs for IntersectionObserver
     const desktopRef = useRef(null);
     const mobileRef = useRef(null);
@@ -13,6 +14,16 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
 
     // Dimensions for Mobile
     const mobileDimensions = customMobileDimensions || customDimensions || (vertical ? "300x250" : (small ? "300x250" : "300x250"));
+
+    // Helper to parse dimensions string
+    const getEnds = (dimStr) => {
+        if (!dimStr) return { w: undefined, h: undefined };
+        const [w, h] = dimStr.split('x');
+        return { w, h };
+    }
+
+    const desktopDims = getEnds(desktopDimensions);
+    const mobileDims = getEnds(mobileDimensions);
 
     const heightClass = customHeight || (vertical ? "h-[250px] md:h-[600px]" : (small ? "h-[250px] md:h-[125px]" : "h-[250px] md:h-[250px]"));
     const widthClass = "w-full";
@@ -206,9 +217,11 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                         onClick={() => handleClick(ad)}
                         className="flex w-full h-full items-center justify-center">
                         <img
-                            src={ad.image_url}
+                            src={getOptimizedImageUrl(ad.image_url, { width: parseInt(ad.width) || (isMobile ? 300 : 970) })}
                             alt={ad.name}
                             className="w-full h-full object-cover"
+                            fetchPriority={fetchPriority}
+                            loading={loading}
                         />
                     </a>
                 </div>
@@ -266,7 +279,7 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                         <div className={`flex justify-center items-center ${widthClass} ${heightClass} bg-gray-100 border-2 border-dashed border-gray-300 relative group`}>
                             <Link to={targetLink} target={isCustomAd && href ? "_blank" : "_self"} className="flex flex-col items-center justify-center w-full h-full text-gray-400">
                                 {isCustomAd ? (
-                                    <img src={image} alt="Reklam" className="w-full h-full object-cover opacity-100" />
+                                    <img src={getOptimizedImageUrl(image, { width: parseInt(desktopDims.w) || 970 })} alt="Reklam" className="w-full h-full object-cover opacity-100" />
                                 ) : (
                                     <div className="flex flex-col items-center justify-center p-4 text-center">
                                         <span className="text-sm font-medium text-gray-400 break-all">{desktopText.replace(/\+/g, ' ')}</span>
@@ -291,7 +304,7 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                         <div className={`flex justify-center items-center ${widthClass} ${heightClass} bg-gray-100 border-2 border-dashed border-gray-300 relative group`}>
                             <Link to={targetLink} target={isCustomAd && href ? "_blank" : "_self"} className="flex flex-col items-center justify-center w-full h-full text-gray-400">
                                 {isCustomAd ? (
-                                    <img src={image} alt="Reklam" className="w-full h-full object-cover opacity-100" />
+                                    <img src={getOptimizedImageUrl(image, { width: parseInt(mobileDims.w) || 300 })} alt="Reklam" className="w-full h-full object-cover opacity-100" />
                                 ) : (
                                     <div className="flex flex-col items-center justify-center p-4 text-center">
                                         <span className="text-sm font-medium text-gray-400 break-all">{mobileText.replace(/\+/g, ' ')}</span>
@@ -310,15 +323,7 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
         );
     }
 
-    // Helper to parse dimensions string
-    const getEnds = (dimStr) => {
-        if (!dimStr) return { w: undefined, h: undefined };
-        const [w, h] = dimStr.split('x');
-        return { w, h };
-    }
 
-    const desktopDims = getEnds(desktopDimensions);
-    const mobileDims = getEnds(mobileDimensions);
 
     // Default Fallback (Existing Logic)
     return (
@@ -333,11 +338,13 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                 <div className="hidden md:flex w-full h-full items-center justify-center">
                     {isCustomAd && desktopImage ? (
                         <img
-                            src={desktopImage}
+                            src={getOptimizedImageUrl(desktopImage, { width: parseInt(desktopDims.w) || 970 })}
                             alt="Reklam Alanı"
                             className="w-full h-full object-cover transition-opacity opacity-100"
                             width={desktopDims.w}
                             height={desktopDims.h}
+                            fetchPriority={fetchPriority}
+                            loading={loading}
                         />
                     ) : (
                         <div className="flex flex-col items-center justify-center p-4 text-center">
@@ -350,11 +357,13 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                 <div className="flex md:hidden w-full h-full items-center justify-center">
                     {isCustomAd && mobileImage ? (
                         <img
-                            src={mobileImage}
+                            src={getOptimizedImageUrl(mobileImage, { width: parseInt(mobileDims.w) || 300 })}
                             alt="Reklam Alanı"
                             className="w-full h-full object-cover transition-opacity opacity-100"
                             width={mobileDims.w}
                             height={mobileDims.h}
+                            fetchPriority={fetchPriority}
+                            loading={loading}
                         />
                     ) : (
                         <div className="flex flex-col items-center justify-center p-4 text-center">

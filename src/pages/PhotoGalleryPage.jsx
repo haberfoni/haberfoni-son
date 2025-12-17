@@ -54,7 +54,7 @@ const PhotoGalleryPage = () => {
             <div className="bg-black text-white py-4 mb-6">
                 <div className="container mx-auto px-4 flex items-center space-x-2">
                     <div className="w-2 h-8 bg-yellow-500"></div>
-                    <h1 className="text-2xl font-black tracking-wider">FOTO GALERİ</h1>
+                    <h1 className="text-2xl font-bold tracking-wider">FOTO GALERİ</h1>
                 </div>
             </div>
 

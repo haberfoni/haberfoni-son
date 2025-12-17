@@ -10,23 +10,15 @@ import { getSocialLinksFromSettings, getIcon } from '../utils/iconMapper';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 
 const Header = () => {
-    const { settings, loading } = useSiteSettings();
+    const { settings, categories, loading } = useSiteSettings();
     const socialLinks = getSocialLinksFromSettings(settings); // Get normalized links
 
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [currencyData, setCurrencyData] = useState([]);
-    const [categories, setCategories] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const loadCategories = async () => {
-            const data = await fetchCategories();
-            // Store full objects now: { id, name, slug, ... }
-            setCategories(data);
-        };
-        loadCategories();
-    }, []);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [currencyData, setCurrencyData] = useState([]);
+
 
     useEffect(() => {
         const loadFinancialData = async () => {
@@ -211,26 +203,29 @@ const Header = () => {
                                         <img
                                             src={settings.logo_desktop}
                                             alt={settings.site_title || "Haberfoni"}
-                                            className="hidden md:block h-12 w-auto object-contain"
+                                            className="hidden md:block h-12 object-contain"
                                             width="200"
                                             height="48"
+                                            style={{ aspectRatio: '200/48' }}
                                         />
                                         {/* Mobile Logo (if exists, else desktop, else text) */}
                                         {settings.logo_mobile ? (
                                             <img
                                                 src={settings.logo_mobile}
                                                 alt={settings.site_title || "Haberfoni"}
-                                                className="block md:hidden h-10 w-auto object-contain"
+                                                className="block md:hidden h-10 object-contain"
                                                 width="150"
                                                 height="40"
+                                                style={{ aspectRatio: '150/40' }}
                                             />
                                         ) : (
                                             <img
                                                 src={settings.logo_desktop}
                                                 alt={settings.site_title || "Haberfoni"}
-                                                className="block md:hidden h-10 w-auto object-contain"
+                                                className="block md:hidden h-10 object-contain"
                                                 width="150"
                                                 height="40"
+                                                style={{ aspectRatio: '150/40' }}
                                             />
                                         )}
                                     </>

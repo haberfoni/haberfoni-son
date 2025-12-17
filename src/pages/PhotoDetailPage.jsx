@@ -7,7 +7,7 @@ import SEO from '../components/SEO';
 import { slugify } from '../utils/slugify';
 
 const PhotoDetailPage = () => {
-    const { slug } = useParams();
+    const { slug, id } = useParams();
 
     const [album, setAlbum] = React.useState(null);
     const [images, setImages] = React.useState([]);
@@ -18,35 +18,67 @@ const PhotoDetailPage = () => {
     React.useEffect(() => {
         const loadAlbum = async () => {
             setLoading(true);
-            const galleries = await fetchPhotoGalleries();
-            const mappedGalleries = galleries.map(mapPhotoGalleryItem);
+            try {
+                let currentAlbum = null;
+                let galleryImages = [];
 
-            const currentAlbum = mappedGalleries.find(item => slugify(item.title) === slug);
-            setAlbum(currentAlbum);
-
-            if (currentAlbum) {
-                // Increment view count (only once per slug)
-                if (countedSlugRef.current !== slug) {
-                    countedSlugRef.current = slug;
-                    incrementPhotoGalleryView(currentAlbum.id).catch(console.error);
+                // 1. Try to fetch by ID (Efficient & Reliable)
+                if (id) {
+                    const detail = await import('../services/api').then(m => m.fetchPhotoGalleryDetail(id));
+                    if (detail) {
+                        currentAlbum = mapPhotoGalleryItem(detail);
+                        // Fetch images directly if not included (though fetchPhotoGalleryDetail usually includes them)
+                        // If detail includes images (gallery_images), map them
+                        if (detail.gallery_images) {
+                            galleryImages = detail.gallery_images;
+                        } else {
+                            galleryImages = await fetchGalleryImages(id);
+                        }
+                    }
                 }
 
-                const galleryImages = await fetchGalleryImages(currentAlbum.id);
-                setImages(galleryImages.map(img => ({
-                    image_url: img.image_url,
-                    caption: img.caption
-                })));
+                // 2. Fallback: Fetch all if ID missing or failed (Legacy Slug support)
+                if (!currentAlbum) {
+                    const galleries = await fetchPhotoGalleries();
+                    const mappedGalleries = galleries.map(mapPhotoGalleryItem);
+                    currentAlbum = mappedGalleries.find(item => slugify(item.title) === slug);
 
-                setRelatedAlbums(mappedGalleries
-                    .filter(item => item.id !== currentAlbum.id)
-                    .sort(() => 0.5 - Math.random()) // Randomize for "Recommended" feel
-                    .slice(0, 5));
+                    if (currentAlbum) {
+                        galleryImages = await fetchGalleryImages(currentAlbum.id);
+                    }
+                }
+
+                setAlbum(currentAlbum);
+
+                if (currentAlbum) {
+                    // Increment view count
+                    if (countedSlugRef.current !== (id || slug)) {
+                        countedSlugRef.current = (id || slug);
+                        incrementPhotoGalleryView(currentAlbum.id).catch(console.error);
+                    }
+
+                    setImages(galleryImages.map(img => ({
+                        image_url: img.image_url,
+                        caption: img.caption
+                    })));
+
+                    // Load related (need to fetch list if not already fetched)
+                    // Optimization: We can just fetch 5 latest galleries for related
+                    const related = await fetchPhotoGalleries();
+                    setRelatedAlbums(related.map(mapPhotoGalleryItem)
+                        .filter(item => item.id !== currentAlbum.id)
+                        .sort(() => 0.5 - Math.random())
+                        .slice(0, 5));
+                }
+            } catch (err) {
+                console.error("Error loading photo gallery:", err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         loadAlbum();
-    }, [slug]);
+    }, [slug, id]);
 
     const handleShare = async () => {
         if (navigator.share) {
