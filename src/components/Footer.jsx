@@ -11,7 +11,7 @@ import { getSocialLinksFromSettings, getIcon } from '../utils/iconMapper';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 
 const Footer = () => {
-    const { settings } = useSiteSettings();
+    const { settings, loading } = useSiteSettings();
     const socialLinks = getSocialLinksFromSettings(settings); // Get normalized links
 
     const [email, setEmail] = useState('');
@@ -104,7 +104,9 @@ const Footer = () => {
                     {/* Brand */}
                     <div>
                         <a href="/" className="block mb-6">
-                            {settings.logo_desktop ? (
+                            {loading ? (
+                                <div className="h-10 w-32 bg-gray-800 animate-pulse rounded"></div>
+                            ) : settings.logo_desktop ? (
                                 <img
                                     src={settings.logo_desktop}
                                     alt={settings.site_title || "Haberfoni"}
@@ -112,7 +114,7 @@ const Footer = () => {
                                 />
                             ) : (
                                 <span className="text-2xl font-bold tracking-tighter text-white">
-                                    HABER<span className="text-primary">FONİ</span>
+                                    {settings.site_title || "Logo"}
                                 </span>
                             )}
                         </a>

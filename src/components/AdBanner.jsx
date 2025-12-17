@@ -25,8 +25,8 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
     // Image URLs
     const desktopText = text || `Reklam + Alani + ${desktopDimensions} `;
     const mobileText = text || `Reklam + Alani + ${mobileDimensions} `;
-    const desktopImage = isCustomAd ? image : `https://placehold.co/${desktopDimensions}/e0e0e0/666666?text=${desktopText}`;
-    const mobileImage = isCustomAd ? image : `https://placehold.co/${mobileDimensions}/e0e0e0/666666?text=${mobileText}`;
+    const desktopImage = isCustomAd ? image : null;
+    const mobileImage = isCustomAd ? image : null;
 
     const { ads, settings } = useSiteSettings();
     const showEmptyAds = settings?.show_empty_ads !== 'false';
@@ -265,11 +265,19 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                         // Placeholder
                         <div className={`flex justify-center items-center ${widthClass} ${heightClass} bg-gray-100 border-2 border-dashed border-gray-300 relative group`}>
                             <Link to={targetLink} target={isCustomAd && href ? "_blank" : "_self"} className="flex flex-col items-center justify-center w-full h-full text-gray-400">
-                                <img src={desktopImage} alt="Reklam" className="w-full h-full object-cover opacity-50 group-hover:opacity-75 transition-opacity" />
+                                {isCustomAd ? (
+                                    <img src={image} alt="Reklam" className="w-full h-full object-cover opacity-100" />
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center p-4 text-center">
+                                        <span className="text-sm font-medium text-gray-400 break-all">{desktopText.replace(/\+/g, ' ')}</span>
+                                    </div>
+                                )}
                             </Link>
-                            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                <span className="text-primary font-bold text-base bg-white/80 px-4 py-2 rounded shadow-sm">Reklam Ver</span>
-                            </div>
+                            {!isCustomAd && (
+                                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                    <span className="text-primary font-bold text-base bg-white/80 px-4 py-2 rounded shadow-sm">Reklam Ver</span>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -282,15 +290,23 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                         // Placeholder
                         <div className={`flex justify-center items-center ${widthClass} ${heightClass} bg-gray-100 border-2 border-dashed border-gray-300 relative group`}>
                             <Link to={targetLink} target={isCustomAd && href ? "_blank" : "_self"} className="flex flex-col items-center justify-center w-full h-full text-gray-400">
-                                <img src={mobileImage} alt="Reklam" className="w-full h-full object-cover opacity-50 group-hover:opacity-75 transition-opacity" />
+                                {isCustomAd ? (
+                                    <img src={image} alt="Reklam" className="w-full h-full object-cover opacity-100" />
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center p-4 text-center">
+                                        <span className="text-sm font-medium text-gray-400 break-all">{mobileText.replace(/\+/g, ' ')}</span>
+                                    </div>
+                                )}
                             </Link>
-                            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                <span className="text-primary font-bold text-xs bg-white/80 px-2 py-1 rounded shadow-sm">Reklam Ver</span>
-                            </div>
+                            {!isCustomAd && (
+                                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                    <span className="text-primary font-bold text-xs bg-white/80 px-2 py-1 rounded shadow-sm">Reklam Ver</span>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
         );
     }
 
@@ -303,19 +319,35 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                 target={isCustomAd && href ? "_blank" : "_self"}
                 rel={defaultRel}
             >
-                {/* Desktop Image */}
-                <img
-                    src={desktopImage}
-                    alt="Reklam Alanı"
-                    className={`hidden md:block w-full h-full object-cover transition-opacity ${isCustomAd ? 'opacity-100' : 'opacity-50 group-hover:opacity-75'}`}
-                />
+                {/* Desktop Content */}
+                <div className="hidden md:flex w-full h-full items-center justify-center">
+                    {isCustomAd && desktopImage ? (
+                        <img
+                            src={desktopImage}
+                            alt="Reklam Alanı"
+                            className="w-full h-full object-cover transition-opacity opacity-100"
+                        />
+                    ) : (
+                        <div className="flex flex-col items-center justify-center p-4 text-center">
+                            <span className="text-sm font-medium text-gray-400 break-all">{desktopText.replace(/\+/g, ' ')}</span>
+                        </div>
+                    )}
+                </div>
 
-                {/* Mobile Image */}
-                <img
-                    src={mobileImage}
-                    alt="Reklam Alanı"
-                    className={`block md:hidden w-full h-full object-cover transition-opacity ${isCustomAd ? 'opacity-100' : 'opacity-50 group-hover:opacity-75'}`}
-                />
+                {/* Mobile Content */}
+                <div className="flex md:hidden w-full h-full items-center justify-center">
+                    {isCustomAd && mobileImage ? (
+                        <img
+                            src={mobileImage}
+                            alt="Reklam Alanı"
+                            className="w-full h-full object-cover transition-opacity opacity-100"
+                        />
+                    ) : (
+                        <div className="flex flex-col items-center justify-center p-4 text-center">
+                            <span className="text-sm font-medium text-gray-400 break-all">{mobileText.replace(/\+/g, ' ')}</span>
+                        </div>
+                    )}
+                </div>
 
                 {/* Hover Effect Overlay - Only for placeholders */}
                 {!isCustomAd && (

@@ -10,7 +10,7 @@ import { getSocialLinksFromSettings, getIcon } from '../utils/iconMapper';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 
 const Header = () => {
-    const { settings } = useSiteSettings();
+    const { settings, loading } = useSiteSettings();
     const socialLinks = getSocialLinksFromSettings(settings); // Get normalized links
 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -203,7 +203,9 @@ const Header = () => {
                         {/* Logo */}
                         <div className="flex items-center">
                             <Link to="/" className="flex items-center" onClick={() => window.scrollTo(0, 0)}>
-                                {settings.logo_desktop ? (
+                                {loading ? (
+                                    <div className="h-12 w-48 bg-gray-200 animate-pulse rounded"></div>
+                                ) : settings.logo_desktop ? (
                                     <>
                                         {/* Desktop Logo */}
                                         <img
@@ -227,8 +229,8 @@ const Header = () => {
                                         )}
                                     </>
                                 ) : (
-                                    <span className="text-3xl font-black tracking-tighter italic block">
-                                        HABER<span className="text-primary">FONİ</span>
+                                    <span className="text-xl font-bold">
+                                        {settings.site_title || "Logo"}
                                     </span>
                                 )}
                             </Link>
