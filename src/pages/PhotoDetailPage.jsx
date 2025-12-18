@@ -6,6 +6,8 @@ import { mapPhotoGalleryItem } from '../utils/mappers';
 import SEO from '../components/SEO';
 import { slugify } from '../utils/slugify';
 
+import ShareModal from '../components/common/ShareModal';
+
 const PhotoDetailPage = () => {
     const { slug, id } = useParams();
 
@@ -13,9 +15,11 @@ const PhotoDetailPage = () => {
     const [images, setImages] = React.useState([]);
     const [relatedAlbums, setRelatedAlbums] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
+    const [showShareModal, setShowShareModal] = React.useState(false);
     const countedSlugRef = React.useRef(null);
 
     React.useEffect(() => {
+        // ... (existing useEffect logic unchanged) 
         const loadAlbum = async () => {
             setLoading(true);
             try {
@@ -81,19 +85,21 @@ const PhotoDetailPage = () => {
     }, [slug, id]);
 
     const handleShare = async () => {
-        if (navigator.share) {
-            try {
+        try {
+            if (navigator.share) {
                 await navigator.share({
                     title: album.title,
                     text: album.title,
                     url: window.location.href,
                 });
-            } catch (err) {
-                console.log('Error sharing:', err);
+            } else {
+                setShowShareModal(true);
             }
-        } else {
-            navigator.clipboard.writeText(window.location.href);
-            alert('Link kopyalandı!');
+        } catch (err) {
+            console.log('Error sharing:', err);
+            if (err.name !== 'AbortError') {
+                setShowShareModal(true);
+            }
         }
     };
 
@@ -242,6 +248,12 @@ const PhotoDetailPage = () => {
                     </div>
                 </div>
             </div>
+            <ShareModal
+                isOpen={showShareModal}
+                onClose={() => setShowShareModal(false)}
+                title={album.title}
+                url={window.location.href}
+            />
         </div>
     );
 };

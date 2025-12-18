@@ -512,8 +512,8 @@ export const adminService = {
     },
 
     async addTag(name) {
-        // Basic slug generation
-        const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, '');
+        // Use the robust slugify utility that handles Turkish characters
+        const slug = slugify(name);
 
         const { data, error } = await supabase
             .from('tags')
@@ -539,6 +539,58 @@ export const adminService = {
         await this.logActivity('DELETE', 'TAG', `Etiket silindi: ${id}`, id);
 
         return true;
+    },
+
+    async deleteTags(ids) {
+        if (!ids || ids.length === 0) return;
+
+        const { error } = await supabase
+            .from('tags')
+            .delete()
+            .in('id', ids);
+
+        if (error) throw error;
+
+        await this.logActivity('DELETE', 'TAG', `${ids.length} adet etiket silindi.`, null);
+
+        return true;
+    },
+
+    async getActiveTags() {
+        // Fetch tags that are associated with at least one published news item
+        // querying news_tags -> news (filter published_at is not null)
+        const { data, error } = await supabase
+            .from('tags')
+            .select(`
+                *,
+                news_tags!inner (
+                    news!inner (
+                        published_at
+                    )
+                )
+            `)
+            .not('news_tags.news.published_at', 'is', null);
+
+        if (error) throw error;
+
+        // Remove duplicates if any (though relational query shouldn't return dupes of parent unless structure implies it)
+        // supabase js select might return multiple rows if relation is one-to-many? 
+        // Actually .select('*, ...') on parent usually returns unique parents.
+        // But to be safe against data multiplication from inner join behavior in some clients:
+        const uniqueTags = [];
+        const map = new Map();
+        if (data) {
+            for (const item of data) {
+                if (!map.has(item.id)) {
+                    map.set(item.id, true);
+                    // Remove the joined data to keep object clean
+                    const { news_tags, ...tag } = item;
+                    uniqueTags.push(tag);
+                }
+            }
+        }
+
+        return uniqueTags.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
     },
 
     // Service: Redirects
