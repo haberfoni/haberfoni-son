@@ -146,63 +146,36 @@ const TagsPage = () => {
                 {tags.length === 0 ? (
                     <p className="text-gray-500 text-center py-8">Henüz hiç etiket eklenmemiş.</p>
                 ) : (
-                    <div className="space-y-8">
-                        {(() => {
-                            // Grouping Logic
-                            const grouped = tags.reduce((acc, tag) => {
-                                let char = tag.name.charAt(0).toLocaleUpperCase('tr');
-                                if (!/^[A-Za-zÇĞİÖŞÜ]/.test(char)) char = '#';
-                                if (!acc[char]) acc[char] = [];
-                                acc[char].push(tag);
-                                return acc;
-                            }, {});
-
-                            // Sort Keys (Turkish aware)
-                            const sortedKeys = Object.keys(grouped).sort((a, b) => a.localeCompare(b, 'tr'));
-
-                            return sortedKeys.map(char => (
-                                <div key={char} className="relative">
-                                    <div className="sticky top-0 bg-gray-50/95 backdrop-blur-sm py-2 px-4 border-b border-gray-200 mb-3 z-10 flex items-center">
-                                        <span className="text-lg font-bold text-primary w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm border border-gray-100">
-                                            {char}
-                                        </span>
-                                        <div className="ml-3 h-px bg-gray-200 flex-1"></div>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2 px-4">
-                                        {grouped[char].map(tag => {
-                                            const isSelected = selectedTags.includes(tag.id);
-                                            return (
-                                                <div
-                                                    key={tag.id}
-                                                    onClick={() => toggleSelect(tag.id)}
-                                                    className={`
-                                                        cursor-pointer inline-flex items-center px-3 py-1.5 rounded-full text-sm transition-all border select-none
-                                                        ${isSelected
-                                                            ? 'bg-red-50 text-red-700 border-red-200 ring-1 ring-red-200 shadow-sm'
-                                                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 hover:border-gray-300 shadow-sm'
-                                                        }
-                                                    `}
-                                                >
-                                                    <span>{tag.name}</span>
-                                                    {isSelected ? (
-                                                        <Check size={14} className="ml-2" />
-                                                    ) : (
-                                                        <button
-                                                            onClick={(e) => handleDelete(tag.id, e)}
-                                                            className="ml-2 text-gray-400 hover:text-red-500 hover:bg-gray-100 rounded-full p-0.5 transition-colors"
-                                                            title="Sil"
-                                                        >
-                                                            <X size={14} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {tags.map(tag => {
+                            const isSelected = selectedTags.includes(tag.id);
+                            return (
+                                <div
+                                    key={tag.id}
+                                    onClick={() => toggleSelect(tag.id)}
+                                    className={`
+                                        cursor-pointer inline-flex items-center px-3 py-1.5 rounded-full text-sm transition-all border select-none
+                                        ${isSelected
+                                            ? 'bg-red-50 text-red-700 border-red-200 ring-1 ring-red-200 shadow-sm'
+                                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                                        }
+                                    `}
+                                >
+                                    <span>{tag.name}</span>
+                                    {isSelected ? (
+                                        <Check size={14} className="ml-2" />
+                                    ) : (
+                                        <button
+                                            onClick={(e) => handleDelete(tag.id, e)}
+                                            className="ml-2 text-gray-400 hover:text-red-500 hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                                            title="Sil"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
                                 </div>
-                            ));
-                        })()}
+                            );
+                        })}
                     </div>
                 )}
             </div>

@@ -9,7 +9,6 @@ const TagSelector = ({ selectedTagIds = [], onChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
-    const [selectedLetter, setSelectedLetter] = useState(null);
     const wrapperRef = useRef(null);
 
     useEffect(() => {
@@ -17,28 +16,18 @@ const TagSelector = ({ selectedTagIds = [], onChange }) => {
     }, []);
 
     useEffect(() => {
-        let filtered = allTags;
-
-        // 1. Filter by Search
-        if (search.trim()) {
-            filtered = filtered.filter(t =>
-                t.name.toLowerCase().includes(search.toLowerCase())
-            );
+        if (!search.trim()) {
+            // Exclude already selected
+            setFilteredTags(allTags.filter(t => !selectedTagIds.includes(t.id)));
         } else {
-            // 2. Filter by Letter (only if no search)
-            if (selectedLetter) {
-                const letter = selectedLetter.toLocaleLowerCase('tr');
-                filtered = filtered.filter(t =>
-                    t.name.toLocaleLowerCase('tr').startsWith(letter)
-                );
-            }
+            setFilteredTags(
+                allTags.filter(t =>
+                    t.name.toLowerCase().includes(search.toLowerCase()) &&
+                    !selectedTagIds.includes(t.id)
+                )
+            );
         }
-
-        // 3. Exclude already selected (Always)
-        filtered = filtered.filter(t => !selectedTagIds.includes(t.id));
-
-        setFilteredTags(filtered);
-    }, [search, allTags, selectedTagIds, selectedLetter]);
+    }, [search, allTags, selectedTagIds]);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -53,7 +42,7 @@ const TagSelector = ({ selectedTagIds = [], onChange }) => {
     const loadTags = async () => {
         try {
             setLoading(true);
-            const data = await adminService.getActiveTags(); // Changed from getTags to getActiveTags
+            const data = await adminService.getTags();
             setAllTags(data || []);
         } catch (error) {
             console.error('Error loading tags:', error);
@@ -81,7 +70,7 @@ const TagSelector = ({ selectedTagIds = [], onChange }) => {
     const createAndSelectTag = async (tagName) => {
         try {
             setLoading(true);
-            // Check if exists in allTags by name (case-insensitive)
+            // Check if exists in allTags first to avoid unnecessary API call
             const existing = allTags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
             if (existing) {
                 if (!selectedTagIds.includes(existing.id)) {
@@ -96,34 +85,14 @@ const TagSelector = ({ selectedTagIds = [], onChange }) => {
             return newTag;
         } catch (error) {
             console.error('Error creating tag:', error);
-            // Check if error is duplicate (Code 23505)
+            // Check if error is duplicate
             if (error.code === '23505' || error.message.includes('unique')) {
-                // Refresh tags to get the one causing conflict (likely conflict on Slug)
+                // Refresh tags and try to find it
                 const latestTags = await adminService.getTags();
                 setAllTags(latestTags);
-
-                // Try to find by Name first
-                let found = latestTags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
-
-                // If not found by name, try finding by generated slug
-                if (!found) {
-                    // Logic must match adminService's slug generation
-                    // Using the same logic as adminService (which now uses our robust slugify)
-                    const normalizedSearch = tagName.toLowerCase()
-                        .replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ş/g, 's')
-                        .replace(/ü/g, 'u').replace(/ı/g, 'i').replace(/ö/g, 'o')
-                        .replace(/[^a-z0-9\s-]/g, '')
-                        .replace(/\s+/g, '-')
-                        .trim();
-
-                    found = latestTags.find(t => t.slug === normalizedSearch);
-                }
-
+                const found = latestTags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
                 if (found && !selectedTagIds.includes(found.id)) {
                     handleSelect(found.id);
-                } else {
-                    // Still fail if we can't find it (weird state)
-                    console.warn('Tag creation failed with duplicate, but could not find existing tag.');
                 }
             } else {
                 alert('Etiket oluşturulurken hata oluştu.');
@@ -208,9 +177,6 @@ const TagSelector = ({ selectedTagIds = [], onChange }) => {
     // Derived list of selected tag objects
     const selectedTags = allTags.filter(t => selectedTagIds.includes(t.id));
 
-    // Turkish additions for A-Z
-    const turkishAlphabet = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ".split("");
-
     return (
         <div className="w-full" ref={wrapperRef}>
             <label className="block text-sm font-medium text-gray-700 mb-2">Etiketler</label>
@@ -249,7 +215,6 @@ const TagSelector = ({ selectedTagIds = [], onChange }) => {
                         onChange={(e) => {
                             setSearch(e.target.value);
                             setIsOpen(true);
-                            if (e.target.value) setSelectedLetter(null); // Clear letter filter on search
                         }}
                         onFocus={() => setIsOpen(true)}
                         className="flex-1 min-w-[100px] outline-none text-sm bg-transparent py-1"
@@ -277,70 +242,36 @@ const TagSelector = ({ selectedTagIds = [], onChange }) => {
             {/* Dropdown */}
             {isOpen && (
                 <div className="relative">
-                    <div className="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-hidden sm:text-sm">
+                    <div className="absolute z-10 w-full mt-1 bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                        {loading && <div className="p-2 text-center text-gray-500">Yükleniyor...</div>}
 
-                        {/* A-Z Filter Bar */}
-                        {!search && (
-                            <div className="flex flex-wrap gap-1 p-2 bg-gray-50 border-b border-gray-200 justify-center">
-                                <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); setSelectedLetter(null); }}
-                                    className={`text-xs px-1.5 py-0.5 rounded ${!selectedLetter ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-200'}`}
+                        {!loading && filteredTags.length > 0 && (
+                            filteredTags.map(tag => (
+                                <div
+                                    key={tag.id}
+                                    className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100 text-gray-900"
+                                    onClick={() => handleSelect(tag.id)}
                                 >
-                                    Tümü
-                                </button>
-                                {turkishAlphabet.map(char => (
-                                    <button
-                                        key={char}
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); setSelectedLetter(char); }}
-                                        className={`text-xs px-1.5 py-0.5 rounded ${selectedLetter === char ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-200'}`}
-                                    >
-                                        {char}
-                                    </button>
-                                ))}
+                                    <span className="block truncate">{tag.name}</span>
+                                </div>
+                            ))
+                        )}
+
+                        {!loading && filteredTags.length === 0 && search && (
+                            <div
+                                className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-50 text-blue-700"
+                                onClick={handleCreateTag}
+                            >
+                                <div className="flex items-center">
+                                    <Plus size={16} className="mr-2" />
+                                    <span>Oluştur: "<b>{search}</b>"</span>
+                                </div>
                             </div>
                         )}
 
-                        <div className="max-h-60 overflow-auto">
-                            {loading && <div className="p-2 text-center text-gray-500">Yükleniyor...</div>}
-
-                            {!loading && filteredTags.length > 0 && (
-                                filteredTags.map(tag => (
-                                    <div
-                                        key={tag.id}
-                                        className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100 text-gray-900"
-                                        onClick={() => handleSelect(tag.id)}
-                                    >
-                                        <span className="block truncate">{tag.name}</span>
-                                    </div>
-                                ))
-                            )}
-
-                            {/* ALWAYS show create option if search is present, to allow creating/selecting exact match if not in active list */}
-                            {!loading && search && (
-                                <div
-                                    className="cursor-pointer select-none relative py-2 pl-3 pr-9 border-t border-gray-100 hover:bg-blue-50 text-blue-700 bg-gray-50"
-                                    onClick={handleCreateTag}
-                                >
-                                    <div className="flex items-center">
-                                        <Plus size={16} className="mr-2" />
-                                        <span>
-                                            {filteredTags.some(t => t.name.toLowerCase() === search.toLowerCase())
-                                                ? <i>Mevcut etiketi seç: </i>
-                                                : <i>Oluştur/Seç: </i>}
-                                            "<b>{search}</b>"
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {!loading && filteredTags.length === 0 && !search && (
-                                <div className="p-4 text-center text-gray-500 text-sm">
-                                    {selectedLetter ? `"${selectedLetter}" ile başlayan etiket bulunamadı.` : 'Gösterilecek etiket yok.'}
-                                </div>
-                            )}
-                        </div>
+                        {!loading && filteredTags.length === 0 && !search && (
+                            <div className="p-2 text-center text-gray-500 text-sm">Gösterilecek etiket yok.</div>
+                        )}
                     </div>
                 </div>
             )}

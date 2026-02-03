@@ -6,15 +6,12 @@ import { mapVideoItem } from '../utils/mappers';
 import SEO from '../components/SEO';
 import { slugify } from '../utils/slugify';
 
-import ShareModal from '../components/common/ShareModal';
-
 const VideoDetailPage = () => {
     const { slug, id } = useParams();
 
     const [video, setVideo] = React.useState(null);
     const [relatedVideos, setRelatedVideos] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
-    const [showShareModal, setShowShareModal] = React.useState(false);
 
     const countedSlugRef = React.useRef(null);
 
@@ -65,21 +62,19 @@ const VideoDetailPage = () => {
     }, [slug, id]);
 
     const handleShare = async () => {
-        try {
-            if (navigator.share) {
+        if (navigator.share) {
+            try {
                 await navigator.share({
                     title: video.title,
                     text: video.title,
                     url: window.location.href,
                 });
-            } else {
-                setShowShareModal(true);
+            } catch (err) {
+                console.log('Error sharing:', err);
             }
-        } catch (err) {
-            console.log('Error sharing:', err);
-            if (err.name !== 'AbortError') {
-                setShowShareModal(true);
-            }
+        } else {
+            navigator.clipboard.writeText(window.location.href);
+            alert('Link kopyalandı!');
         }
     };
 
@@ -251,12 +246,6 @@ const VideoDetailPage = () => {
                     </div>
                 </div>
             </div>
-            <ShareModal
-                isOpen={showShareModal}
-                onClose={() => setShowShareModal(false)}
-                title={video.title}
-                url={window.location.href}
-            />
         </div>
     );
 };

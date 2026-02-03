@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock, Eye, Share2 } from 'lucide-react';
 import AdBanner from './AdBanner';
@@ -7,11 +7,8 @@ import { getEmbedUrl } from '../utils/videoUtils';
 import ImageWithFallback from './ImageWithFallback';
 import { supabase } from '../services/supabase';
 
-import ShareModal from './common/ShareModal';
-
 const NewsArticle = ({ news, onVisible }) => {
     const articleRef = useRef(null);
-    const [showShareModal, setShowShareModal] = useState(false);
 
     useEffect(() => {
         const observer = new IntersectionObserver(
@@ -36,7 +33,6 @@ const NewsArticle = ({ news, onVisible }) => {
 
     const handleShare = async () => {
         try {
-            // Prefer native share if available (Mobile usually)
             if (navigator.share) {
                 await navigator.share({
                     title: news.title,
@@ -44,17 +40,11 @@ const NewsArticle = ({ news, onVisible }) => {
                     url: window.location.href,
                 });
             } else {
-                // Fallback to custom modal (Desktop)
-                setShowShareModal(true);
+                await navigator.clipboard.writeText(window.location.href);
+                alert('Link kopyalandı!');
             }
         } catch (error) {
             console.error('Error sharing:', error);
-            // If native share was cancelled or failed, still offer modal?
-            // Usually error is "AbortError" if user cancelled.
-            // If it failed for other reasons, maybe show modal.
-            if (error.name !== 'AbortError') {
-                setShowShareModal(true);
-            }
         }
     };
 
@@ -164,14 +154,6 @@ const NewsArticle = ({ news, onVisible }) => {
 
             {/* Comment Section */}
             <CommentSection newsId={news.id} />
-
-            {/* Share Modal */}
-            <ShareModal
-                isOpen={showShareModal}
-                onClose={() => setShowShareModal(false)}
-                title={news.title}
-                url={window.location.href}
-            />
         </div>
     );
 };
