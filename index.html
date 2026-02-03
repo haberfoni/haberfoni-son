@@ -8,23 +8,26 @@
   <title>Haberfoni</title>
   <script src="/config.js" defer></script>
 
-  <link rel="preconnect" href="https://elrxpnzihsjugndbgvrv.supabase.co" crossorigin />
+  <link rel="preconnect" href="https://lvbyxrinwkzcjzvbozfu.supabase.co" crossorigin />
   <link rel="preconnect" href="https://api.open-meteo.com" crossorigin />
   <script>
     // Critical LCP Optimization: Pre-fetch headlines immediately
-    // Uses hardcoded public anon key for maximum speed (no waiting for config.js)
+    // Updated to use the NEW Supabase Project
     try {
-      window.headlinesPromise = fetch('https://elrxpnzihsjugndbgvrv.supabase.co/rest/v1/news?select=id,title,image_url,slug,category,published_at&order=created_at.desc&limit=20', {
+      const SUPABASE_URL = "https://lvbyxrinwkzcjzvbozfu.supabase.co";
+      const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2Ynl4cmlud2t6Y2p6dmJvemZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMTEwOTYsImV4cCI6MjA4NTY4NzA5Nn0.b2U6EfdTvZ62ZivP2YstCONCSgoqwlbBvB0nXEsra6s";
+
+      window.headlinesPromise = fetch(`${SUPABASE_URL}/rest/v1/news?select=id,title,image_url,slug,category,published_at&order=created_at.desc&limit=20`, {
         headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVscnhwbnppaHNqdWduZGJndnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzY2ODMsImV4cCI6MjA4MDUxMjY4M30.SeWT_Jc4SrM5WWsaK1Ss3Ry36rdHatq1GoUyfqVJD5o',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVscnhwbnppaHNqdWduZGJndnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzY2ODMsImV4cCI6MjA4MDUxMjY4M30.SeWT_Jc4SrM5WWsaK1Ss3Ry36rdHatq1GoUyfqVJD5o'
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
         }
       }).then(r => r.json()).catch(e => []);
 
-      window.adsPromise = fetch('https://elrxpnzihsjugndbgvrv.supabase.co/rest/v1/ads?is_active=eq.true&select=*', {
+      window.adsPromise = fetch(`${SUPABASE_URL}/rest/v1/ads?is_active=eq.true&select=*`, {
         headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVscnhwbnppaHNqdWduZGJndnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzY2ODMsImV4cCI6MjA4MDUxMjY4M30.SeWT_Jc4SrM5WWsaK1Ss3Ry36rdHatq1GoUyfqVJD5o',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVscnhwbnppaHNqdWduZGJndnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzY2ODMsImV4cCI6MjA4MDUxMjY4M30.SeWT_Jc4SrM5WWsaK1Ss3Ry36rdHatq1GoUyfqVJD5o'
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
         }
       }).then(r => r.json()).catch(e => []);
     } catch (e) { console.error('Prefetch failed', e); }

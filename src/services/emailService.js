@@ -75,7 +75,7 @@ export const blobToBase64 = (blob) => {
  * @returns {Promise<Object>} Gönderim sonucu
  */
 const sendEmailToSubscriber = async (email, newsletterData, pdfBase64) => {
-    const EDGE_FUNCTION_URL = 'https://elrxpnzihsjugndbgvrv.supabase.co/functions/v1/resend-email';
+    const EDGE_FUNCTION_URL = 'https://lvbyxrinwkzcjzvbozfu.supabase.co/functions/v1/resend-email';
 
     try {
         const response = await fetch(EDGE_FUNCTION_URL, {
