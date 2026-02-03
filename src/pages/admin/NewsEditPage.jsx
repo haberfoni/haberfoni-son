@@ -206,10 +206,7 @@ const NewsEditPage = () => {
                 // DATA MAPPING
                 published_at: formData.is_published ? new Date().toISOString() : null,
                 is_slider: formData.is_sticky,
-                published_at: formData.is_published ? new Date().toISOString() : null,
-                // DATA MAPPING
-                published_at: formData.is_published ? new Date().toISOString() : null,
-                is_slider: formData.is_sticky,
+
                 author_id: !isEditing ? user?.id : undefined, // Only set author on creation
                 updater_id: user?.id, // Track who updated it
 
