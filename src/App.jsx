@@ -39,6 +39,7 @@ const PageEditPage = lazy(() => import('./pages/admin/PageEditPage'));
 const FooterLinksPage = lazy(() => import('./pages/admin/FooterLinksPage'));
 const ContactMessagesPage = lazy(() => import('./pages/admin/ContactMessagesPage'));
 const ActivityLogsPage = lazy(() => import('./pages/admin/ActivityLogsPage'));
+const BotSettingsPage = lazy(() => import('./pages/admin/BotSettingsPage'));
 const SetupGuidePage = lazy(() => import('./pages/admin/SetupGuidePage'));
 
 // Public Lazy loaded pages
@@ -92,104 +93,104 @@ const PublicLayout = () => (
 function App() {
   return (
     <HelmetProvider>
-      <SiteSettingsProvider>
-        <AuthProvider>
-          <Router>
-            <RedirectHandler />
-            <ScrollToTop />
-            <Routes>
-              {/* Public Routes */}
-              <Route element={<PublicLayout />}>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/kategori/:categoryName" element={<CategoryPage />} />
-                {/* Support both URL patterns */}
-                <Route path="/kategori/:category/:slug" element={<NewsDetailPage />} />
-                <Route path="/:category/:slug/:id" element={<NewsDetailPage />} />
-                <Route path="/search" element={<SearchPage />} />
-                <Route path="/etiket/:tagSlug" element={<TagPage />} />
-                <Route path="/tum-haberler" element={<AllNewsPage />} />
-                <Route path="/hakkimizda" element={<AboutPage />} />
-                <Route path="/kunye" element={<ImprintPage />} />
-                <Route path="/iletisim" element={<ContactPage />} />
-                <Route path="/reklam" element={<AdvertisePage />} />
-                <Route path="/kariyer" element={<CareersPage />} />
-                <Route path="/kvkk" element={<KvkkPage />} />
-                <Route path="/cerez-politikasi" element={<CookiePolicyPage />} />
-                <Route path="/video-galeri" element={<VideoGalleryPage />} />
-                <Route path="/video-galeri/:slug" element={<VideoDetailPage />} />
-                <Route path="/video-galeri/:slug/:id" element={<VideoDetailPage />} />
+      {/* SiteSettingsProvider is already in main.jsx, removing locally to avoid duplicate context */}
+      <AuthProvider>
+        <Router>
+          <RedirectHandler />
+          <ScrollToTop />
+          <Routes>
+            {/* Public Routes */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/kategori/:categoryName" element={<CategoryPage />} />
+              {/* Support both URL patterns */}
+              <Route path="/kategori/:category/:slug" element={<NewsDetailPage />} />
+              <Route path="/:category/:slug/:id" element={<NewsDetailPage />} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="/etiket/:tagSlug" element={<TagPage />} />
+              <Route path="/tum-haberler" element={<AllNewsPage />} />
+              <Route path="/hakkimizda" element={<AboutPage />} />
+              <Route path="/kunye" element={<ImprintPage />} />
+              <Route path="/iletisim" element={<ContactPage />} />
+              <Route path="/reklam" element={<AdvertisePage />} />
+              <Route path="/kariyer" element={<CareersPage />} />
+              <Route path="/kvkk" element={<KvkkPage />} />
+              <Route path="/cerez-politikasi" element={<CookiePolicyPage />} />
+              <Route path="/video-galeri" element={<VideoGalleryPage />} />
+              <Route path="/video-galeri/:slug" element={<VideoDetailPage />} />
+              <Route path="/video-galeri/:slug/:id" element={<VideoDetailPage />} />
 
-                <Route path="/foto-galeri" element={<PhotoGalleryPage />} />
-                <Route path="/foto-galeri/:slug" element={<PhotoDetailPage />} />
-                <Route path="/foto-galeri/:slug/:id" element={<PhotoDetailPage />} />
-                <Route path="/kurumsal/:slug" element={<DynamicPage />} />
-              </Route>
+              <Route path="/foto-galeri" element={<PhotoGalleryPage />} />
+              <Route path="/foto-galeri/:slug" element={<PhotoDetailPage />} />
+              <Route path="/foto-galeri/:slug/:id" element={<PhotoDetailPage />} />
+              <Route path="/kurumsal/:slug" element={<DynamicPage />} />
+            </Route>
 
-              {/* Admin Routes */}
-              <Route path="/admin/login" element={
-                <Suspense fallback={<PageLoader />}>
-                  <LoginPage />
-                </Suspense>
-              } />
-              <Route path="/admin" element={
-                <Suspense fallback={<PageLoader />}>
-                  <ProtectedRoute>
-                    <AdminLayout />
-                  </ProtectedRoute>
-                </Suspense>
-              }>
-                <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                <Route path="dashboard" element={<DashboardPage />} />
-                <Route path="news" element={<NewsListPage />} />
-                <Route path="news/new" element={<NewsEditPage />} />
-                <Route path="news/edit/:id" element={<NewsEditPage />} />
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={
+              <Suspense fallback={<PageLoader />}>
+                <LoginPage />
+              </Suspense>
+            } />
+            <Route path="/admin" element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedRoute>
+                  <AdminLayout />
+                </ProtectedRoute>
+              </Suspense>
+            }>
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="news" element={<NewsListPage />} />
+              <Route path="news/new" element={<NewsEditPage />} />
+              <Route path="news/edit/:id" element={<NewsEditPage />} />
 
-                <Route path="photo-galleries" element={<PhotoGalleryListPage />} />
-                <Route path="photo-galleries/new" element={<PhotoGalleryEditPage />} />
-                <Route path="photo-galleries/edit/:id" element={<PhotoGalleryEditPage />} />
+              <Route path="photo-galleries" element={<PhotoGalleryListPage />} />
+              <Route path="photo-galleries/new" element={<PhotoGalleryEditPage />} />
+              <Route path="photo-galleries/edit/:id" element={<PhotoGalleryEditPage />} />
 
-                <Route path="video-galleries" element={<VideoGalleryListPage />} />
-                <Route path="video-galleries/new" element={<VideoGalleryEditPage />} />
-                <Route path="video-galleries/edit/:id" element={<VideoGalleryEditPage />} />
+              <Route path="video-galleries" element={<VideoGalleryListPage />} />
+              <Route path="video-galleries/new" element={<VideoGalleryEditPage />} />
+              <Route path="video-galleries/edit/:id" element={<VideoGalleryEditPage />} />
 
-                <Route path="subscribers" element={<SubscribersPage />} />
-                <Route path="users" element={<UsersPage />} />
+              <Route path="subscribers" element={<SubscribersPage />} />
+              <Route path="users" element={<UsersPage />} />
 
-                <Route path="contact-messages" element={<ContactMessagesPage />} />
-                <Route path="comments" element={<CommentsPage />} />
-                <Route path="ads" element={<AdsPage />} />
-                <Route path="home-layout" element={<HomeLayoutPage />} />
-                <Route path="headlines" element={<HeadlinesPage />} />
-                <Route path="categories" element={<CategoriesPage />} />
-                <Route path="pages" element={<PagesPage />} />
-                <Route path="pages/new" element={<PageEditPage />} />
-                <Route path="pages/edit/:id" element={<PageEditPage />} />
-                <Route path="footer-links" element={<FooterLinksPage />} />
-                <Route path="tags" element={<TagsPage />} />
-                <Route path="redirects" element={<RedirectsPage />} />
-                <Route path="seo" element={<SeoFilesPage />} />
-                <Route path="email-settings" element={<EmailSettingsPage />} />
-                <Route path="activity-logs" element={<ActivityLogsPage />} />
-                <Route path="setup-guide" element={<SetupGuidePage />} />
-                <Route path="settings" element={<SettingsPage />} />
-              </Route>
+              <Route path="contact-messages" element={<ContactMessagesPage />} />
+              <Route path="comments" element={<CommentsPage />} />
+              <Route path="ads" element={<AdsPage />} />
+              <Route path="home-layout" element={<HomeLayoutPage />} />
+              <Route path="headlines" element={<HeadlinesPage />} />
+              <Route path="categories" element={<CategoriesPage />} />
+              <Route path="pages" element={<PagesPage />} />
+              <Route path="pages/new" element={<PageEditPage />} />
+              <Route path="pages/edit/:id" element={<PageEditPage />} />
+              <Route path="footer-links" element={<FooterLinksPage />} />
+              <Route path="tags" element={<TagsPage />} />
+              <Route path="redirects" element={<RedirectsPage />} />
+              <Route path="seo" element={<SeoFilesPage />} />
+              <Route path="email-settings" element={<EmailSettingsPage />} />
+              <Route path="activity-logs" element={<ActivityLogsPage />} />
+              <Route path="bot-settings" element={<BotSettingsPage />} />
+              <Route path="setup-guide" element={<SetupGuidePage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
 
-              {/* System Routes */}
-              <Route path="/sitemap.xml" element={<SitemapPage type="sitemap" />} />
-              <Route path="/sitemap-news.xml" element={<SitemapPage type="news-sitemap" />} />
-              <Route path="/rss.xml" element={<SitemapPage type="rss" />} />
-              <Route path="/robots.txt" element={<TextFilePage type="robots" />} />
-              <Route path="/ads.txt" element={<TextFilePage type="ads" />} />
+            {/* System Routes */}
+            <Route path="/sitemap.xml" element={<SitemapPage type="sitemap" />} />
+            <Route path="/sitemap-news.xml" element={<SitemapPage type="news-sitemap" />} />
+            <Route path="/rss.xml" element={<SitemapPage type="rss" />} />
+            <Route path="/robots.txt" element={<TextFilePage type="robots" />} />
+            <Route path="/ads.txt" element={<TextFilePage type="ads" />} />
 
-              {/* Dynamic Pages (Must be last before 404) */}
-              <Route path="/:slug" element={<DynamicPage />} />
+            {/* Dynamic Pages (Must be last before 404) */}
+            <Route path="/:slug" element={<DynamicPage />} />
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Router>
-        </AuthProvider>
-      </SiteSettingsProvider>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </HelmetProvider>
   );
 }

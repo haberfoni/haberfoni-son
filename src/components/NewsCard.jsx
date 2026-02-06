@@ -4,6 +4,7 @@ import ImageWithFallback from './ImageWithFallback';
 import { Link } from 'react-router-dom';
 import { slugify } from '../utils/slugify';
 import { categories } from '../data/mockData';
+import SourceBadge from './SourceBadge';
 
 const NewsCard = ({ news, compact = false }) => {
     // Find display name for category
@@ -40,11 +41,16 @@ const NewsCard = ({ news, compact = false }) => {
                         {!compact && <Clock size={14} className="mr-1 hidden md:block" />}
                         {news.time}
                     </div>
+                    {news.source && (
+                        <div className={`mr-2 ${compact ? 'hidden' : 'hidden md:block'}`}>
+                            <SourceBadge source={news.source} className="h-4" />
+                        </div>
+                    )}
                     {!compact && (
                         <div className="flex items-center">
                             <Eye size={12} className="mr-1 md:hidden" />
                             <Eye size={14} className="mr-1 hidden md:block" />
-                            {news.views || 1250}
+                            {news.views || 0}
                         </div>
                     )}
                 </div>

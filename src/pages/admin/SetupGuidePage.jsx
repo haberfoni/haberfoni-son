@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabaseUrl, supabaseKey } from '../../services/supabase';
 import { BookOpen, Terminal, Database, Server, Settings, Globe, Download, Copy, Check } from 'lucide-react';
 
 const SetupGuidePage = () => {
@@ -13,11 +14,40 @@ const SetupGuidePage = () => {
             .catch(err => console.error('SQL yüklenemedi:', err));
     }, []);
 
+    // Config UI State
+    const [configUrl, setConfigUrl] = useState(supabaseUrl || '');
+    const [configKey, setConfigKey] = useState(supabaseKey || '');
+
     const handleCopy = () => {
         if (sqlContent) {
             navigator.clipboard.writeText(sqlContent);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
+    const handleUpdateConfig = () => {
+        if (!configUrl || !configKey) {
+            alert('Lütfen hem URL hem de Key alanlarını doldurun.');
+            return;
+        }
+
+        const newConfig = {
+            API_URL: configUrl,
+            API_KEY: configKey,
+            VITE_SUPABASE_URL: configUrl,
+            VITE_SUPABASE_ANON_KEY: configKey
+        };
+
+        localStorage.setItem('CUSTOM_APP_CONFIG', JSON.stringify(newConfig));
+        alert('Ayarlar kaydedildi! Sayfa yenileniyor...');
+        window.location.reload();
+    };
+
+    const handleResetConfig = () => {
+        if (confirm('Özel ayarları silip varsayılan config.js dosyasına dönmek istediğinize emin misiniz?')) {
+            localStorage.removeItem('CUSTOM_APP_CONFIG');
+            window.location.reload();
         }
     };
 
@@ -32,6 +62,64 @@ const SetupGuidePage = () => {
             </div>
 
             <div className="space-y-8">
+
+
+
+                {/* ADIM 0: BAĞLANTI AYARLARI (Panelden Düzenleme) */}
+                <div className="bg-white rounded-xl shadow-sm border border-purple-100 p-6 relative overflow-hidden ring-1 ring-purple-100">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-purple-600"></div>
+                    <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <Settings className="mr-3 text-purple-600" size={24} />
+                        Bağlantı Ayarları (Panelden Düzenle)
+                    </h2>
+
+                    <div className="ml-0 pl-4 md:ml-0 md:pl-0">
+                        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200 mb-6 text-sm text-purple-900">
+                            <strong>Dikkat:</strong> Buradan yapacağınız değişiklikler <u>sadece sizin tarayıcınızda</u> (bu bilgisayarda) geçerli olur.
+                            Yönetim paneline buradan erişip siteyi yönetmeye devam edebilirsiniz.
+                            <br /><br />
+                            Siteye giren herkesin (ziyaretçilerin) yeni veritabanını görmesi için aşağıda (3. Adım) anlatılan <code>config.js</code> dosyasını güncellemeniz gerekir.
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Supabase URL</label>
+                                <input
+                                    type="text"
+                                    value={configUrl}
+                                    onChange={(e) => setConfigUrl(e.target.value)}
+                                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 outline-none font-mono text-sm"
+                                    placeholder="https://..."
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Supabase Anon Key</label>
+                                <input
+                                    type="password"
+                                    value={configKey}
+                                    onChange={(e) => setConfigKey(e.target.value)}
+                                    className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 outline-none font-mono text-sm"
+                                    placeholder="eyJ..."
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-4">
+                            <button
+                                onClick={handleUpdateConfig}
+                                className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 transition-colors shadow-sm text-sm font-medium"
+                            >
+                                Ayarları Kaydet ve Bağlan
+                            </button>
+                            <button
+                                onClick={handleResetConfig}
+                                className="bg-white text-gray-600 px-4 py-2 rounded hover:bg-gray-50 border border-gray-300 transition-colors shadow-sm text-sm font-medium"
+                            >
+                                Varsayılanlara Dön (Sıfırla)
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 {/* ADIM 1: GEREKSİNİMLER */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
@@ -133,8 +221,8 @@ const SetupGuidePage = () => {
                         <div className="bg-green-50 border border-green-200 p-4 rounded-lg font-mono text-sm text-gray-800 overflow-x-auto">
                             <span className="text-gray-500">// config.js dosyası</span><br />
                             <span className="text-purple-600">window</span>.<span className="text-blue-600">APP_CONFIG</span> = {'{'}<br />
-                            &nbsp;&nbsp;<span className="text-green-700">API_URL</span>: <span className="text-red-600">"https://sizin-proje-adresiniz.supabase.co"</span>,<br />
-                            &nbsp;&nbsp;<span className="text-green-700">API_KEY</span>: <span className="text-red-600">"eyVhZG..."</span> <span className="text-gray-500">{'// Anon Key buraya'}</span><br />
+                            &nbsp;&nbsp;<span className="text-green-700">API_URL</span>: <span className="text-red-600">"{supabaseUrl || "https://sizin-proje-adresiniz.supabase.co"}"</span>,<br />
+                            &nbsp;&nbsp;<span className="text-green-700">API_KEY</span>: <span className="text-red-600">"{supabaseKey || "KEY_BURAYA"}"</span> <span className="text-gray-500">{'// Anon Key buraya'}</span><br />
                             {'};'}
                         </div>
 
@@ -184,6 +272,7 @@ const SetupGuidePage = () => {
 
             </div>
         </div>
+
     );
 };
 

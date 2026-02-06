@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { fetchNewsByCategory, fetchPopularNews, fetchNews, fetchRelatedNews, fetchNewsDetail, incrementNewsView } from '../services/api';
+import { fetchNewsByCategory, fetchPopularNews, fetchNews, fetchRelatedNews, fetchNewsDetail, incrementNewsView, fetchNewsBySlug } from '../services/api';
 import { mapNewsItem } from '../utils/mappers';
 import NewsCard from '../components/NewsCard';
 import AdBanner from '../components/AdBanner';
@@ -62,6 +62,16 @@ const NewsDetailPage = () => {
                         (item.slug && item.slug === slug) ||
                         (!item.slug && slugify(item.title) === slug)
                     );
+
+                    // If still not found, try explicit fetch by slug
+                    if (!initialNewsItem && slug) {
+                        try {
+                            const bySlug = await fetchNewsBySlug(slug, category);
+                            if (bySlug) initialNewsItem = mapNewsItem(bySlug);
+                        } catch (e) {
+                            console.error("Fallback fetch by slug failed:", e);
+                        }
+                    }
 
                     // If found in list, we might want to fetch full details
                     if (initialNewsItem) {
@@ -126,33 +136,37 @@ const NewsDetailPage = () => {
             displayedCount: displayedNewsRef.current.length
         });
 
-        if (currentIndex !== -1) {
-            let nextIndex = currentIndex + 1;
+
+        let nextIndex;
+
+        // If current article isn't in the list (e.g. opened from slider/search), start from beginning
+        if (currentIndex === -1) {
+            console.log('Current article not in list, starting from first article');
+            nextIndex = 0;
+        } else {
+            nextIndex = currentIndex + 1;
 
             // If we've reached the end, loop back to the beginning
             if (nextIndex >= allCategoryNewsRef.current.length) {
                 nextIndex = 0;
                 console.log('Reached end of category, looping back to start');
             }
+        }
 
-            const nextArticle = allCategoryNewsRef.current[nextIndex];
+        const nextArticle = allCategoryNewsRef.current[nextIndex];
 
-            // Avoid duplicates
-            if (!displayedNewsRef.current.find(d => d.id === nextArticle.id)) {
-                console.log('Loading next article:', nextArticle.title);
-                setIsLoadingMore(true);
-                setDisplayedNews(prev => [...prev, nextArticle]);
-                // Reset loading state immediately after state update
-                setTimeout(() => {
-                    setIsLoadingMore(false);
-                    console.log('Loading state reset');
-                }, 100);
-            } else {
-                console.log('Next article already in list (circular loop detected), stopping');
+        // Avoid duplicates
+        if (!displayedNewsRef.current.find(d => d.id === nextArticle.id)) {
+            console.log('Loading next article:', nextArticle.title);
+            setIsLoadingMore(true);
+            setDisplayedNews(prev => [...prev, nextArticle]);
+            // Reset loading state immediately after state update
+            setTimeout(() => {
                 setIsLoadingMore(false);
-            }
+                console.log('Loading state reset');
+            }, 100);
         } else {
-            console.log('Current article not found in category news');
+            console.log('Next article already in list (circular loop detected), stopping');
             setIsLoadingMore(false);
         }
     }, []); // Empty deps - function is now stable
@@ -211,6 +225,13 @@ const NewsDetailPage = () => {
         if (!viewedIds.current.has(newsItem.id)) {
             incrementNewsView(newsItem.id);
             viewedIds.current.add(newsItem.id);
+
+            // Update local state to show incremented view count immediately
+            setDisplayedNews(prev => prev.map(item =>
+                item.id === newsItem.id
+                    ? { ...item, views: (item.views || 0) + 1 }
+                    : item
+            ));
         }
     }, []);
 

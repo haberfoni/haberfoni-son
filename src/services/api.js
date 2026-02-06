@@ -28,7 +28,7 @@ export const fetchNews = async () => {
     const { data, error } = await supabase
         .from('news')
         .select('id, title, image_url, slug, category, created_at, published_at, views')
-        //.not('published_at', 'is', null)
+        .not('published_at', 'is', null)
         .order('created_at', { ascending: false })
         .limit(30);
 
@@ -44,7 +44,7 @@ export const fetchSliderNews = async () => {
         .from('news')
         .select('id, title, image_url, slug, category, created_at, published_at, views, is_slider')
         .eq('is_slider', true)
-        // .not('published_at', 'is', null)
+        .not('published_at', 'is', null)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -63,17 +63,14 @@ export const fetchHeadlines = async () => {
     // Removed specific select/type filter to debug
     const { data: manualHeadlines } = await supabase
         .from('headlines')
-        .select(`
-            slot_number,
-            news:news_id (id, title, image_url, slug, category, created_at, published_at, views)
-        `)
-        //.not('news.published_at', 'is', null)
-        .order('slot_number', { ascending: true });
+        .select('*, news:news_id (*)')
+        .not('news.published_at', 'is', null)
+        .order('order_index', { ascending: true });
 
     // 2. Fetch headline ads (from ads table)
     const { data: headlineAds } = await supabase
         .from('ads')
-        .select('id, name, title, image_url, link_url, placement_code, is_headline, headline_slot, is_active, views, clicks')
+        .select('*')
         .eq('is_headline', true)
         .not('headline_slot', 'is', null)
         .order('headline_slot', { ascending: true });
@@ -106,7 +103,7 @@ export const fetchHeadlines = async () => {
     manualHeadlines?.forEach(h => {
         // Double check type to be safe, though query handles it
         if (h.news && (h.type === 1 || h.type === null)) {
-            slotMap.set(h.slot_number, { ...h.news, type: 'news' });
+            slotMap.set(h.order_index, { ...h.news, type: 'news' });
             manualNewsIds.add(h.news.id);
         }
     });
@@ -141,7 +138,7 @@ export const fetchHeadlines = async () => {
     const { data: latestNews } = await supabase
         .from('news')
         .select('id, title, image_url, slug, category, created_at, published_at, views')
-        // .not('published_at', 'is', null)
+        .not('published_at', 'is', null)
         .order('created_at', { ascending: false })
         .limit(MAX_HEADLINES + manualNewsIds.size);
 
@@ -175,20 +172,15 @@ export const fetchSurmanset = async () => {
     // 1. Fetch manual headlines (type=2)
     const { data: manualHeadlines } = await supabase
         .from('headlines')
-        .select(`
-            slot_number,
-            news:news_id (
-                id, title, image_url, slug, category, created_at, published_at, views
-            )
-        `)
+        .select('*, news:news_id (*)')
         .eq('type', 2) // Manşet 2
-        //.not('news.published_at', 'is', null)
-        .order('slot_number', { ascending: true });
+        .not('news.published_at', 'is', null)
+        .order('order_index', { ascending: true });
 
     // 2. Fetch Manşet 2 ads
     const { data: headlineAds } = await supabase
         .from('ads')
-        .select('id, name, title, image_url, link_url, placement_code, is_manset_2, manset_2_slot, is_active, views, clicks')
+        .select('*')
         .eq('is_manset_2', true)
         .not('manset_2_slot', 'is', null)
         .order('manset_2_slot', { ascending: true });
@@ -214,7 +206,7 @@ export const fetchSurmanset = async () => {
 
     manualHeadlines?.forEach(h => {
         if (h.news) {
-            slotMap.set(h.slot_number, { ...h.news, type: 'news' });
+            slotMap.set(h.order_index, { ...h.news, type: 'news' });
             manualNewsIds.add(h.news.id);
         }
     });
@@ -252,14 +244,14 @@ export const fetchSurmanset = async () => {
         .from('news')
         .select('id, title, image_url, slug, category, created_at, published_at, views')
         .eq('is_manset_2', true)
-        //.not('published_at', 'is', null)
+        .not('published_at', 'is', null)
         .order('created_at', { ascending: false });
 
     // Then fetch general latest news (offset by 15 to pick up after Manşet 1)
     const { data: latestNews } = await supabase
         .from('news')
         .select('id, title, image_url, slug, category, created_at, published_at, views')
-        //.not('published_at', 'is', null)
+        .not('published_at', 'is', null)
         .order('created_at', { ascending: false })
         .range(15, 15 + MAX_HEADLINES + manualNewsIds.size);
 
@@ -293,22 +285,26 @@ export const fetchSurmanset = async () => {
 };
 
 export const fetchNewsByCategory = async (categorySlug) => {
+    // First, get the category ID from the slug
+    const { data: category, error: catError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('slug', categorySlug)
+        .single();
+
+    if (catError || !category) {
+        console.error('Error fetching category:', catError);
+        return [];
+    }
+
+    // Then fetch news by category_id
     const { data, error } = await supabase
         .from('news')
-        .select(`
-            id, title, summary, image_url, video_url, media_type, slug, category, created_at, published_at, views, seo_title, seo_description, seo_keywords,
-            news_tags (
-                tag_id,
-                tags (
-                    id,
-                    name,
-                    slug
-                )
-            )
-        `)
-        .eq('category', categorySlug)
+        .select('*, news_tags (tag_id, tags (*))')
+        .eq('category_id', category.id)
+        .eq('is_active', true)
         .not('published_at', 'is', null)
-        .order('created_at', { ascending: false });
+        .order('published_at', { ascending: false });
 
     if (error) {
         console.error('Error fetching news by category:', error);
@@ -325,17 +321,7 @@ export const fetchNewsByCategory = async (categorySlug) => {
 export const fetchPopularNews = async (limit = 100) => {
     const { data, error } = await supabase
         .from('news')
-        .select(`
-            id, title, summary, image_url, video_url, media_type, slug, category, created_at, published_at, views, seo_title, seo_description, seo_keywords,
-            news_tags (
-                tag_id,
-                tags (
-                    id,
-                    name,
-                    slug
-                )
-            )
-        `)
+        .select('id, title, summary, image_url, video_url, media_type, slug, category, created_at, published_at, views, seo_title, seo_description, seo_keywords, news_tags (tag_id, tags (id, name, slug))')
         .not('published_at', 'is', null)
         .order('views', { ascending: false, nullsLast: true })
         .order('created_at', { ascending: false })
@@ -356,17 +342,7 @@ export const fetchPopularNews = async (limit = 100) => {
 export const fetchNewsDetail = async (id) => {
     const { data, error } = await supabase
         .from('news')
-        .select(`
-            *,
-            news_tags (
-                tag_id,
-                tags (
-                    id,
-                    name,
-                    slug
-                )
-            )
-        `)
+        .select('*, news_tags (tag_id, tags (id, name, slug))')
         .eq('id', id)
         .single();
 
@@ -384,15 +360,7 @@ export const fetchNewsByTag = async (tagSlug) => {
     // 1. Get Tag ID and News IDs
     const { data: tagData, error: tagError } = await supabase
         .from('tags')
-        .select(`
-            id,
-            name,
-            news_tags (
-                news (
-                    id, title, summary, image_url, video_url, media_type, slug, category, created_at, published_at, views, seo_title, seo_description, seo_keywords
-                )
-            )
-        `)
+        .select('id, name, news_tags (news (id, title, summary, image_url, video_url, media_type, slug, category, created_at, published_at, views, seo_title, seo_description, seo_keywords))')
         .eq('slug', tagSlug)
         .single();
 
@@ -413,8 +381,30 @@ export const fetchNewsByTag = async (tagSlug) => {
 };
 
 export const fetchNewsBySlug = async (slug, categorySlug) => {
-    return null; // Placeholder as logic is implemented in Component
+    // 1. Try exact slug match
+    const { data, error } = await supabase
+        .from('news')
+        .select('*, news_tags (tag_id, tags (id, name, slug))')
+        .eq('slug', slug)
+        //.not('published_at', 'is', null) // Allow drafts/legacy items to be opened if accessed directly
+        .single();
+
+    if (error) {
+        if (error.code !== 'PGRST116') { // PGRST116 is Row not found
+            console.error('Error fetching news by slug:', error);
+        }
+        return null;
+    }
+
+    if (data) {
+        // Flatten tags
+        const tags = data.news_tags?.map(nt => nt.tags).filter(Boolean) || [];
+        return { ...data, tags };
+    }
+
+    return null;
 };
+
 
 export const fetchNewsByTitleSlug = async (slug, category) => {
     const { data: list, error } = await supabase
@@ -478,17 +468,7 @@ export const searchPhotoGalleries = async (query) => {
 export const fetchRelatedNews = async (excludeId) => {
     const { data, error } = await supabase
         .from('news')
-        .select(`
-            id, title, summary, image_url, video_url, media_type, slug, category, created_at, published_at, views, seo_title, seo_description, seo_keywords,
-            news_tags (
-                tag_id,
-                tags (
-                    id,
-                    name,
-                    slug
-                )
-            )
-        `)
+        .select('id, title, summary, image_url, video_url, media_type, slug, category, created_at, published_at, views, seo_title, seo_description, seo_keywords, news_tags (tag_id, tags (id, name, slug))')
         .not('id', 'eq', excludeId)
         .not('published_at', 'is', null)
         .order('created_at', { ascending: false })
@@ -532,7 +512,7 @@ export const fetchHomeVideos = async () => {
     const { data, error } = await supabase
         .from('videos')
         .select('*')
-        //.not('published_at', 'is', null)
+        .not('published_at', 'is', null)
         .order('created_at', { ascending: false })
         .limit(4);
 
@@ -576,7 +556,7 @@ export const fetchHomePhotoGalleries = async () => {
     const { data, error } = await supabase
         .from('photo_galleries')
         .select('*')
-        //.not('published_at', 'is', null)
+        .not('published_at', 'is', null)
         .order('created_at', { ascending: false })
         .limit(4);
 

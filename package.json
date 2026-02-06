@@ -14,17 +14,22 @@
     "@fontsource/inter": "^5.2.8",
     "@hello-pangea/dnd": "^18.0.1",
     "@supabase/supabase-js": "^2.86.2",
+    "axios": "^1.13.4",
+    "cheerio": "^1.2.0",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
     "html-react-parser": "^5.2.10",
     "jspdf": "^3.0.4",
     "lucide-react": "^0.555.0",
+    "node-cron": "^4.2.1",
     "react": "^19.2.0",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "^19.2.0",
     "react-helmet-async": "^2.0.5",
     "react-quill-new": "^3.6.0",
     "react-router-dom": "^7.10.0",
-    "resend": "^6.5.2"
+    "resend": "^6.5.2",
+    "rss-parser": "^3.13.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

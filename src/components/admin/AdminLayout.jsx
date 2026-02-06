@@ -22,7 +22,8 @@ import {
     Mail,
     BookOpen,
     Users,
-    Layers
+    Layers,
+    RefreshCw
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -89,6 +90,7 @@ const AdminLayout = () => {
         { path: '/admin/email-settings', label: 'Email Ayarları', icon: <Mail size={20} />, roles: ['admin'] },
         { path: '/admin/activity-logs', label: 'İşlem Geçmişi', icon: <BarChart size={20} />, roles: ['admin'] },
         { path: '/admin/settings', label: 'Ayarlar & API', icon: <Settings size={20} />, roles: ['admin'] },
+        { path: '/admin/bot-settings', label: 'Bot Ayarları', icon: <RefreshCw size={20} />, roles: ['admin'] },
         {
             path: '/admin/setup-guide',
             label: 'Kurulum Rehberi',

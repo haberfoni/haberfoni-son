@@ -33,7 +33,8 @@ export const mapNewsItem = (item) => {
         seo_description: item.seo_description,
         seo_keywords: item.seo_keywords,
         is_published: !!item.published_at, // Derived from timestamp
-        published_at: item.published_at
+        published_at: item.published_at,
+        source: item.source
     };
 };
 

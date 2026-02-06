@@ -1482,7 +1482,7 @@ export const adminService = {
             .from('headlines')
             .select('*, news:news_id(*)')
             .eq('type', type) // Filter by type
-            .order('slot_number', { ascending: true });
+            .order('order_index', { ascending: true });
 
         const { data, error } = await query;
 
@@ -1614,7 +1614,7 @@ export const adminService = {
     async addToHeadline(newsId, slotNumber, type = 1) {
         const { data, error } = await supabase
             .from('headlines')
-            .upsert({ news_id: newsId, slot_number: slotNumber, type: type }, { onConflict: 'slot_number,type' }) // Requires unique constraint on (slot_number, type)
+            .upsert({ news_id: newsId, order_index: slotNumber, type: type }, { onConflict: 'order_index,type' }) // Requires unique constraint on
             .select();
 
         if (error) throw error; // If old constraint fails, user needs to drop old constraint. But upsert might handle if PK is changed.
@@ -1638,7 +1638,7 @@ export const adminService = {
         const { error } = await supabase
             .from('headlines')
             .delete()
-            .eq('slot_number', slotNumber)
+            .eq('order_index', slotNumber)
             .eq('type', type);
 
         if (error) throw error;
@@ -1652,11 +1652,11 @@ export const adminService = {
 
     async getNextAvailableHeadlineSlot() {
         // Type 1 = Manşet 1 (Default)
-        const { data: headlines } = await supabase.from('headlines').select('slot_number').eq('type', 1);
+        const { data: headlines } = await supabase.from('headlines').select('order_index').eq('type', 1);
         const { data: ads } = await supabase.from('ads').select('headline_slot').eq('is_headline', true).not('headline_slot', 'is', null);
 
         const usedSlots = new Set();
-        headlines?.forEach(h => usedSlots.add(h.slot_number));
+        headlines?.forEach(h => usedSlots.add(h.order_index));
         ads?.forEach(a => usedSlots.add(a.headline_slot));
 
         // Check slots 1 to 20
@@ -1668,11 +1668,11 @@ export const adminService = {
 
     async getNextAvailableManset2Slot() {
         // Type 2 = Manşet 2 (Sürmanşet)
-        const { data: headlines } = await supabase.from('headlines').select('slot_number').eq('type', 2);
+        const { data: headlines } = await supabase.from('headlines').select('order_index').eq('type', 2);
         const { data: ads } = await supabase.from('ads').select('manset_2_slot').eq('is_manset_2', true).not('manset_2_slot', 'is', null);
 
         const usedSlots = new Set();
-        headlines?.forEach(h => usedSlots.add(h.slot_number));
+        headlines?.forEach(h => usedSlots.add(h.order_index));
         ads?.forEach(a => usedSlots.add(a.manset_2_slot));
 
         // Check slots 1 to 20
@@ -2578,6 +2578,43 @@ export const adminService = {
         return true;
     },
 
+
+    // Bot Mappings
+    async getBotMappings(sourceName) {
+        const { data, error } = await supabase
+            .from('bot_category_mappings')
+            .select('*')
+            .eq('source_name', sourceName)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching bot mappings:', error);
+            // Non-blocking error if table doesn't exist
+            return [];
+        }
+        return data;
+    },
+
+    async addBotMapping(mapping) {
+        const { data, error } = await supabase
+            .from('bot_category_mappings')
+            .insert(mapping)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async deleteBotMapping(id) {
+        const { error } = await supabase
+            .from('bot_category_mappings')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+    },
+
     // Service: SEO Files (robots.txt, ads.txt)
     async getSeoFile(type) {
         // Since we don't have a DB table for this in the provided context, 
@@ -2588,5 +2625,32 @@ export const adminService = {
         // For now, I will add the method stub and fill it after viewing the file.
         // But to be efficient, I will use generic updateSetting for now if it's key-value.
         return null;
+    },
+
+    // Bot Commands
+    async triggerBot(command = 'FORCE_RUN') {
+        const { data, error } = await supabase
+            .from('bot_commands')
+            .insert({ command, status: 'PENDING' })
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Trigger bot failed:', error);
+            throw error;
+        }
+        return data;
+    },
+
+    async getBotStatus() {
+        const { data, error } = await supabase
+            .from('bot_commands')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error) return null;
+        return data;
     }
 };

@@ -6,6 +6,8 @@ import CommentSection from './CommentSection';
 import { getEmbedUrl } from '../utils/videoUtils';
 import ImageWithFallback from './ImageWithFallback';
 import { supabase } from '../services/supabase';
+import SourceBadge from './SourceBadge';
+import { formatDate } from '../utils/mappers';
 
 const NewsArticle = ({ news, onVisible }) => {
     const articleRef = useRef(null);
@@ -60,13 +62,36 @@ const NewsArticle = ({ news, onVisible }) => {
                 </h2>
             )}
 
-            <div className="flex items-center justify-between border-b border-gray-200 pb-6 mb-8">
-                <div className="flex items-center space-x-6 text-gray-500">
-                    <div className="flex items-center">
-                        <Clock size={18} className="mr-2" />
-                        {news.time}
-                    </div>
-                    <div className="flex items-center">
+
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-200 pb-6 mb-8 gap-4">
+                <div className="flex flex-wrap items-center gap-4 text-gray-500 text-sm">
+                    {/* Source Logo */}
+                    {news.source && (
+                        <div className="mr-2">
+                            <SourceBadge source={news.source} className="h-8" />
+                        </div>
+                    )}
+
+                    {/* Author & Date (Okan Coşkun | 05.02.2026) */}
+                    {(news.author || news.published_at) && (
+                        <div className="flex items-center">
+                            {news.author && (
+                                <span className="font-semibold text-gray-900 mr-2">
+                                    {news.author}
+                                </span>
+                            )}
+                            {news.author && news.published_at && <span className="mx-2 text-gray-300">|</span>}
+                            {news.published_at && (
+                                <span>
+                                    {formatDate(news.published_at)}
+                                </span>
+                            )}
+                        </div>
+                    )}
+
+                    {/* View Count */}
+                    <div className="flex items-center ml-auto md:ml-0">
                         <Eye size={18} className="mr-2" />
                         {news.views?.toLocaleString() || 0} görüntülenme
                     </div>

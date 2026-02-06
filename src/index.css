@@ -72,3 +72,51 @@ body {
   scrollbar-width: none;
   /* Firefox */
 }
+
+/* Force Site Font on Scraped Content */
+/* This overrides inline styles that might come from scraped HTML */
+.prose * {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif !important;
+}
+
+/* Responsive Content Text Size */
+/* Mobile: Slightly bigger than original but readable */
+.prose p,
+.prose li,
+.prose h3,
+.prose h4,
+.prose div,
+.prose span {
+  font-size: 1.15rem !important;
+  /* ~18px Mobile */
+  line-height: 1.7 !important;
+}
+
+/* Desktop: Larger as requested */
+@media (min-width: 768px) {
+
+  .prose p,
+  .prose li,
+  .prose h3,
+  .prose h4,
+  .prose div,
+  .prose span {
+    font-size: 1.35rem !important;
+    /* ~22px Desktop */
+    line-height: 1.8 !important;
+  }
+}
+
+/* Spacing for subheadings inside content */
+.prose h2,
+.prose h3,
+.prose h4 {
+  display: block !important;
+  clear: both !important;
+  width: 100% !important;
+  margin-top: 3em !important;
+  margin-bottom: 1.5em !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+  /* Darker black for headers */
+}

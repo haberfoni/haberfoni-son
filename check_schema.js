@@ -1,8 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
+import { supabaseUrl, supabaseKey } from './load-config.js';
 
-const supabaseUrl = 'https://elrxpnzihsjugndbgvrv.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVscnhwbnppaHNqdWduZGJndnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ5MzY2ODMsImV4cCI6MjA4MDUxMjY4M30.SeWT_Jc4SrM5WWsaK1Ss3Ry36rdHatq1GoUyfqVJD5o';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function checkSchema() {
