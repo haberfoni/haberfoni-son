@@ -210,7 +210,7 @@ const HeadlinesPage = () => {
             }
 
             setMessage({ type: 'success', text: 'Sıralama kaydedildi.' });
-            setTimeout(() => loadHeadlines(), 300);
+            setTimeout(() => loadHeadlines(), 1500);
         } catch (error) {
             console.error('Error saving order:', error);
             setMessage({ type: 'error', text: 'Sıralama kaydedilemedi.' });
@@ -237,8 +237,8 @@ const HeadlinesPage = () => {
                 <button
                     onClick={() => setActiveTab(1)}
                     className={`flex items-center gap-2 px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 1
-                            ? 'border-primary text-primary'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     <Layers size={18} />
@@ -247,8 +247,8 @@ const HeadlinesPage = () => {
                 <button
                     onClick={() => setActiveTab(2)}
                     className={`flex items-center gap-2 px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 2
-                            ? 'border-primary text-primary'
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
                         }`}
                 >
                     <Layers size={18} />

@@ -120,13 +120,36 @@ export async function scrapeDHA() {
                         // If specific container found, get text from paragraphs and HEADERS to preserve structure
                         let content = '';
                         if (contentEl.length > 0) {
-                            // Select paragraphs, headers, and lists
+                            // Select paragraphs, headers, lists, and IMAGES
                             let stopExtraction = false;
 
-                            let rawContent = contentEl.find('p, h2, h3, h4, ul, ol').map((i, el) => {
+                            let rawContent = contentEl.find('p, h2, h3, h4, ul, ol, figure, img').map((i, el) => {
                                 if (stopExtraction) return '';
 
                                 const tag = el.tagName.toLowerCase();
+                                const $el = $detail(el);
+
+                                // Handle Images
+                                if (tag === 'img' || tag === 'figure') {
+                                    // Avoid duplicates: If img is inside figure, skip it (figure handles it)
+                                    // Use closest() because img might be nested in div or a tag
+                                    if (tag === 'img' && $el.closest('figure').length > 0) return '';
+
+                                    let imgEl = tag === 'img' ? $el : $el.find('img');
+                                    let src = imgEl.attr('data-src') || imgEl.attr('src');
+
+                                    if (src && !src.includes('base64') && !src.includes('dha-logo')) {
+                                        // Fix relative URLs
+                                        if (!src.startsWith('http')) src = `https://www.dha.com.tr${src}`;
+
+                                        // Use caption from figure if available, else alt
+                                        let caption = tag === 'figure' ? $el.find('figcaption').text().trim() : imgEl.attr('alt');
+
+                                        return `<figure class="my-6"><img src="${src}" alt="${caption || ''}" class="w-full h-auto rounded-lg shadow-md" /><figcaption class="text-sm text-gray-500 mt-2 text-center">${caption || ''}</figcaption></figure>`;
+                                    }
+                                    return '';
+                                }
+
                                 const text = $detail(el).text().trim();
                                 const upperText = text.toUpperCase();
 
@@ -203,6 +226,21 @@ export async function scrapeDHA() {
                         // Fallback to title only if absolutely nothing else found
                         if (!summary) summary = item.title;
 
+
+                        // Extract Author
+                        let author = $detail('meta[name="author"]').attr('content') ||
+                            $detail('.news-detail-editor-name').text().trim() ||
+                            $detail('.news-source-info').text().trim();
+
+                        // DHA specific text pattern check (Name SURNAME / City) if not found strings
+                        if (!author) {
+                            // Sometimes it's in the text: "Ahmet YILMAZ / İSTANBUL, (DHA)"
+                            // Regex to find "Name SURNAME" before a slash or comma
+                            const contentText = $detail('.news-detail-text').text(); // Get full text to search
+                            const match = contentText.match(/([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+)*\s+[A-ZÇĞİÖŞÜ]{2,})(?=\s*\/|\s*,)/);
+                            if (match) author = match[1];
+                        }
+
                         // Append Agency Name
                         summary = `${summary} - Demirören Haber Ajansı`;
 
@@ -210,6 +248,7 @@ export async function scrapeDHA() {
                             ...item,
                             content: content.substring(0, 60000), // Increased limit for long articles
                             summary: summary,
+                            author: author, // Author or null/undefined (database will handle it)
                         };
 
                         const success = await saveNews(newsItem);

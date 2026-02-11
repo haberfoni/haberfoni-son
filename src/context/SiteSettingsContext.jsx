@@ -18,12 +18,9 @@ export const SiteSettingsProvider = ({ children }) => {
     const loadData = async () => {
         try {
             // Load settings, ads, redirects, and categories in parallel
-            // Use window.adsPromise if available (LCP Optimization)
-            const adsPromise = window.adsPromise || adminService.getAdPlacements();
-
             const [settingsData, adsData, redirectsData, categoriesData] = await Promise.all([
                 adminService.getSettings(),
-                adsPromise,
+                adminService.getAdPlacements(),
                 adminService.getRedirects(),
                 fetchCategories()
             ]);

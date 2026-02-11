@@ -35,7 +35,7 @@ async function resetAndTestDHA() {
     console.log('\n3. Verifying Summaries...');
     const { data: news, error: fetchError } = await supabase
         .from('news')
-        .select('title, summary')
+        .select('title, summary, author, content')
         .eq('source', 'DHA')
         .order('created_at', { ascending: false })
         .limit(5);
@@ -48,6 +48,8 @@ async function resetAndTestDHA() {
     if (news && news.length > 0) {
         news.forEach((n, i) => {
             console.log(`\n[${i + 1}] Title: ${n.title}`);
+            console.log(`    Author: ${n.author}`);
+            console.log(`    Has Image: ${n.content && n.content.includes('<img') ? 'YES' : 'NO'}`);
             console.log(`    Summary: ${n.summary ? n.summary.substring(0, 100) + '...' : 'NULL'}`);
             if (n.title === n.summary) {
                 console.log('    ❌ ERROR: Summary is still identical to Title');

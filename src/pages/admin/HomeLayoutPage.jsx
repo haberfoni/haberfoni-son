@@ -7,8 +7,8 @@ const HomeLayoutPage = () => {
     const [sections, setSections] = useState([
         { id: 'home_top', name: 'Üst Reklam', type: 'ad', enabled: true, removable: false },
         { id: 'headline_slider', name: 'Manşet 1 (Ana Manşet)', type: 'content', enabled: true, removable: false },
-        { id: 'home_between_mansets', name: 'Manşetler Arası Reklam', type: 'ad', enabled: true, removable: true },
         { id: 'surmanset', name: 'Manşet 2 (Sürmanşet)', type: 'content', enabled: true, removable: true },
+        { id: 'home_list_top', name: 'Ana Sayfa Liste Üstü', type: 'ad', enabled: true, removable: true },
         { id: 'breaking_news', name: 'Son Dakika', type: 'content', enabled: true, removable: false },
         { id: 'multimedia', name: 'Multimedya (Video & Foto)', type: 'content', enabled: true, removable: true },
         { id: 'categories', name: 'Kategori Bölümleri (Dinamik)', type: 'content', enabled: true, removable: true }
@@ -125,7 +125,6 @@ const HomeLayoutPage = () => {
             const defaultLayout = [
                 { id: 'home_top', name: 'Üst Reklam', type: 'ad', enabled: true, removable: false },
                 { id: 'headline_slider', name: 'Manşet 1 (Ana Manşet)', type: 'content', enabled: true, removable: false },
-                { id: 'home_between_mansets', name: 'Manşetler Arası Reklam', type: 'ad', enabled: true, removable: true },
                 { id: 'surmanset', name: 'Manşet 2 (Sürmanşet)', type: 'content', enabled: true, removable: true },
                 { id: 'breaking_news', name: 'Son Dakika', type: 'content', enabled: true, removable: false },
                 { id: 'multimedia', name: 'Multimedya (Video & Foto)', type: 'content', enabled: true, removable: true },

@@ -289,7 +289,7 @@ export const adminService = {
     async updateSetting(key, value) {
         const { data, error } = await supabase
             .from('site_settings')
-            .upsert({ key, value })
+            .upsert({ key, value }, { onConflict: 'key' })
             .select()
             .single();
 
@@ -325,10 +325,23 @@ export const adminService = {
 
         if (error) throw error;
 
-        // Return parsed JSON or default layout
         if (data && data.value) {
             try {
-                return JSON.parse(data.value);
+                const parsedLayout = JSON.parse(data.value);
+                // Fix: Ensure home_top is enabled if it exists, as it's a critical section
+                if (parsedLayout.sections) {
+                    let topSection = parsedLayout.sections.find(s => s.id === 'home_top');
+
+                    if (!topSection) {
+                        // If missing, inject it at the start
+                        topSection = { id: 'home_top', name: 'Üst Sponsor', type: 'ad', enabled: true, removable: false };
+                        parsedLayout.sections.unshift(topSection);
+                    } else {
+                        // If exists, ensure enabled
+                        topSection.enabled = true;
+                    }
+                }
+                return parsedLayout;
             } catch (e) {
                 console.error('Error parsing home layout:', e);
             }
@@ -341,6 +354,7 @@ export const adminService = {
                 { id: 'headline_slider', name: 'Manşet 1 (Ana Manşet)', type: 'content', enabled: true, removable: false },
                 { id: 'home_between_mansets', name: 'Manşetler Arası Reklam', type: 'ad', enabled: true, removable: true },
                 { id: 'surmanset', name: 'Manşet 2 (Sürmanşet)', type: 'content', enabled: true, removable: true },
+                { id: 'home_list_top', name: 'Ana Sayfa Liste Üstü', type: 'ad', enabled: true, removable: true },
                 { id: 'breaking_news', name: 'Son Dakika', type: 'content', enabled: true, removable: false },
                 { id: 'multimedia', name: 'Multimedya (Video & Foto)', type: 'content', enabled: true, removable: true },
                 { id: 'categories', name: 'Kategori Bölümleri (Dinamik)', type: 'content', enabled: true, removable: true }
@@ -640,6 +654,30 @@ export const adminService = {
     },
 
     async deleteNews(id) {
+        // 1. Check for linked ads
+        const { data: linkedAds } = await supabase
+            .from('ads')
+            .select('id')
+            .eq('target_news_id', String(id));
+
+        if (linkedAds && linkedAds.length > 0) {
+            console.log(`Unlinking ${linkedAds.length} ads from news ${id}`);
+            const adIds = linkedAds.map(a => a.id);
+            // Unlink them by PK
+            const { error: unlinkError } = await supabase
+                .from('ads')
+                .update({ target_news_id: null })
+                .in('id', adIds);
+
+            if (unlinkError) {
+                console.error('Error unlinking ads:', unlinkError);
+            }
+        } else {
+            // Blind unlink attempt for safety
+            await supabase.from('ads').update({ target_news_id: null }).eq('target_news_id', String(id));
+        }
+
+        // 2. Delete the news
         const { error } = await supabase
             .from('news')
             .delete()
@@ -653,12 +691,61 @@ export const adminService = {
     },
 
     async deleteNewsBulk(ids) {
+        if (!ids || ids.length === 0) return;
+
+        try {
+            // 1. Try to find and unlink ads using BOTH integer and string formats
+            // First try with raw IDs (likely integers)
+            const { data: linkedAds1 } = await supabase
+                .from('ads')
+                .select('id, target_news_id')
+                .in('target_news_id', ids);
+
+            // Then try with string IDs
+            const idStrings = ids.map(String);
+            const { data: linkedAds2 } = await supabase
+                .from('ads')
+                .select('id, target_news_id')
+                .in('target_news_id', idStrings);
+
+            // Combine results and deduplicate
+            const allLinkedAds = [...(linkedAds1 || []), ...(linkedAds2 || [])];
+            const uniqueAdIds = [...new Set(allLinkedAds.map(ad => ad.id))];
+
+            if (uniqueAdIds.length > 0) {
+                console.log(`Found ${uniqueAdIds.length} ads linked to news. Unlinking...`);
+
+                // Unlink using the Ad Primary Keys
+                const { error: updateError } = await supabase
+                    .from('ads')
+                    .update({ target_news_id: null })
+                    .in('id', uniqueAdIds);
+
+                if (updateError) {
+                    console.error('Error unlinking ads:', updateError);
+                    throw new Error(`Reklam bağlantıları kaldırılamadı: ${updateError.message}`);
+                } else {
+                    console.log('Successfully unlinked ads.');
+                }
+            } else {
+                console.log('No linked ads found.');
+            }
+
+        } catch (err) {
+            console.error('Error during reference cleanup:', err);
+            throw err; // Re-throw to let the caller handle it
+        }
+
+        // 2. Delete the news
         const { error } = await supabase
             .from('news')
             .delete()
             .in('id', ids);
 
-        if (error) throw error;
+        if (error) {
+            throw new Error(`Haber silme hatası: ${error.message}`);
+        }
+
         return true;
     },
 
@@ -2652,5 +2739,56 @@ export const adminService = {
 
         if (error) return null;
         return data;
+    },
+
+    async getDashboardStats() {
+        try {
+            // Get total views from all published news
+            const { data: newsData, error: newsError } = await supabase
+                .from('news')
+                .select('views')
+                .not('published_at', 'is', null);
+
+            if (newsError) throw newsError;
+
+            const totalViews = newsData?.reduce((sum, item) => sum + (item.views || 0), 0) || 0;
+
+            // Get active news count (published)
+            const { count: activeNews, error: activeError } = await supabase
+                .from('news')
+                .select('*', { count: 'exact', head: true })
+                .not('published_at', 'is', null);
+
+            if (activeError) throw activeError;
+
+            // Get subscribers count
+            const { count: subscribers, error: subsError } = await supabase
+                .from('subscribers')
+                .select('*', { count: 'exact', head: true });
+
+            if (subsError) throw subsError;
+
+            // Get total comments count
+            const { count: totalComments, error: commentsError } = await supabase
+                .from('comments')
+                .select('*', { count: 'exact', head: true });
+
+            if (commentsError) throw commentsError;
+
+            return {
+                totalViews,
+                activeNews: activeNews || 0,
+                subscribers: subscribers || 0,
+                totalComments: totalComments || 0
+            };
+        } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+            return {
+                totalViews: 0,
+                activeNews: 0,
+                subscribers: 0,
+                totalComments: 0
+            };
+        }
     }
 };

@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import Hero from '../components/Hero';
 import Surmanset from '../components/Surmanset';
 import AdBanner from '../components/AdBanner';
+import TopSponsorBanner from '../components/TopSponsorBanner';
 import SEO from '../components/SEO';
 import MultimediaRow from '../components/MultimediaRow';
 import ImageWithFallback from '../components/ImageWithFallback';
 import { TrendingUp, ArrowRight, Clock, Globe, Trophy, Cpu, HeartPulse, Palette, Landmark, Coffee, GraduationCap, Sparkles, Car, Banknote, Newspaper, Layout } from 'lucide-react';
 import { fetchNews, fetchHeadlines, fetchSurmanset, fetchHomeVideos, fetchHomePhotoGalleries, fetchCategories } from '../services/api';
+import { supabase } from '../services/supabase';
 import { mapNewsItem } from '../utils/mappers';
 import { slugify } from '../utils/slugify';
 import { toTurkishTitleCase } from '../utils/turkishCase';
@@ -100,13 +102,14 @@ const HomePage = () => {
                 // Use pre-fetched headlines promise if available (LCP Optimization)
                 const headlinesPromise = window.headlinesPromise || fetchHeadlines();
 
-                const [headlinesData, surmansetData, allNews, videoData, photoData, categoriesData] = await Promise.all([
+                const [headlinesData, surmansetData, allNews, videoData, photoData, categoriesData, adsData] = await Promise.all([
                     headlinesPromise.catch(e => { console.error(e); return []; }),
                     fetchSurmanset().catch(e => { console.error(e); return []; }),
                     fetchNews().catch(e => { console.error(e); return []; }),
                     fetchHomeVideos().catch(e => { console.error(e); return []; }),
                     fetchHomePhotoGalleries().catch(e => { console.error(e); return []; }),
-                    fetchCategories().catch(e => { console.error(e); return []; })
+                    fetchCategories().catch(e => { console.error(e); return []; }),
+                    supabase.from('ads').select('*').then(({ data }) => data || []).catch(e => { console.error(e); return []; })
                 ]);
 
                 // Create Slug -> Name map
@@ -120,9 +123,49 @@ const HomePage = () => {
                 setCategoryMap(map);
 
                 // Update state and cache with fresh data
+                let finalHeroItems = [];
                 if (headlinesData && headlinesData.length > 0) {
-                    localStorage.setItem('headlines_cache', JSON.stringify(headlinesData));
-                    setHeroItems(headlinesData.map(mapNewsItem));
+                    const mappedHeadlines = headlinesData.map(mapNewsItem);
+                    finalHeroItems = [...mappedHeadlines];
+
+                    // Merge Ads into Slider
+                    if (adsData && adsData.length > 0) {
+                        const sliderAds = adsData.filter(ad =>
+                            ad.is_active &&
+                            ad.placement_code === 'headline_slider'
+                            // Removed date checks for debugging visibility
+                        );
+
+                        if (sliderAds.length > 0) {
+                            // Sort ads by headline_slot to ensure correct insertion order
+                            sliderAds.sort((a, b) => (a.headline_slot || 99) - (b.headline_slot || 99));
+
+                            sliderAds.forEach((ad, i) => {
+                                // Map ad to slider item structure
+                                const adItem = {
+                                    id: `ad-${ad.id}`,
+                                    title: ad.name || 'Sponsorlu İçerik',
+                                    image: ad.image_url,
+                                    type: 'ad',
+                                    link_url: ad.link_url,
+                                    category: 'REKLAM',
+                                    adPlacementId: ad.id
+                                };
+
+                                // Insert every 3 items? Or just put them in?
+                                // Let's insert the first ad at index 0 (first slide), second at index 3 etc.
+                                const insertPos = (ad.headline_slot && ad.headline_slot > 0) ? ad.headline_slot - 1 : (i * 3);
+                                if (insertPos < finalHeroItems.length) {
+                                    finalHeroItems.splice(insertPos, 0, adItem);
+                                } else {
+                                    finalHeroItems.push(adItem);
+                                }
+                            });
+                        }
+                    }
+
+                    localStorage.setItem('headlines_cache', JSON.stringify(headlinesData)); // Cache raw news only
+                    setHeroItems(finalHeroItems);
                 }
                 setSurmansetItems(surmansetData.map(mapNewsItem));
                 setGridItems(allNews.map(mapNewsItem));
@@ -157,37 +200,26 @@ const HomePage = () => {
 
     const getOrderedSections = () => {
         if (!layoutConfig || !layoutConfig.sections) {
-            return ['home_top', 'headline_slider', 'home_between_mansets', 'surmanset', 'breaking_news', 'multimedia', 'categories'];
+            return ['home_top', 'headline_slider', 'surmanset', 'breaking_news', 'multimedia', 'categories'];
         }
-        return layoutConfig.sections.map(s => s.id);
+        // Filter only enabled sections and return their IDs in order
+        return layoutConfig.sections
+            .filter(s => s.enabled !== false)
+            .map(s => s.id);
     };
 
     const renderSection = (sectionId) => {
         if (!isSectionEnabled(sectionId)) return null;
 
-        switch (sectionId) {
-            case 'home_top':
-                return (
-                    <div className="container mx-auto px-4 pt-4">
-                        <AdBanner
-                            placementCode="home_top"
-                            customMobileDimensions="320x100"
-                            customHeight="h-[100px] md:h-[250px]"
-                            fetchPriority="high"
-                            loading="eager"
-                        />
-                    </div>
-                );
+        if (sectionId === 'home_top') {
+            return <TopSponsorBanner />;
+        }
 
+        switch (sectionId) {
             case 'headline_slider':
                 return <Hero items={heroItems} />;
 
-            case 'home_between_mansets':
-                return (
-                    <div className="container mx-auto px-4 mt-8">
-                        <AdBanner placementCode="home_between_mansets" customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px]" />
-                    </div>
-                );
+
 
             case 'surmanset':
                 return surmansetItems.length > 0 ? (
@@ -198,6 +230,13 @@ const HomePage = () => {
                         </div>
                     </div>
                 ) : null;
+
+            case 'home_list_top':
+                return (
+                    <div className="container mx-auto px-4 mt-8">
+                        <AdBanner placementCode="home_list_top" customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px]" noContainer={true} />
+                    </div>
+                );
 
             case 'breaking_news':
                 return (
@@ -262,7 +301,7 @@ const HomePage = () => {
                     <>
                         <MultimediaRow videos={videos} photos={photos} />
                         <div className="container mx-auto px-4 mt-8">
-                            <AdBanner placementCode="home_horizontal" customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px]" />
+                            {/* <AdBanner placementCode="home_horizontal" customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px]" /> */}
                         </div>
                     </>
                 );
@@ -462,8 +501,14 @@ const HomePage = () => {
     return (
         <>
             <SEO />
-            <div className="bg-gray-100 min-h-screen">
-                {getOrderedSections().map(sectionId => (
+            {/* Main Content Areas */}
+            <div className="min-h-screen bg-gray-50 pb-12">
+
+                {/* FIXED: Always render TopSponsorBanner at the top, regardless of settings */}
+                <TopSponsorBanner />
+
+                {/* Sections */}
+                {getOrderedSections().filter(id => id !== 'home_top').map(sectionId => (
                     <React.Fragment key={sectionId}>
                         {renderSection(sectionId)}
                     </React.Fragment>
@@ -474,3 +519,4 @@ const HomePage = () => {
 };
 
 export default HomePage;
+

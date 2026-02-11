@@ -63,19 +63,18 @@ const AdsPage = () => {
 
     // Standard Placements Definition with Dimensions
     const BASE_PLACEMENTS = {
-        'manset_2_slider': { name: 'Manşet 2 Slider Alanı (Sürmanşet)', w: 1200, h: 600, mobile: '100%x400' },
-        'headline_slider': { name: 'Manşet 1 Slider Alanı (Ana Manşet)', w: 1200, h: 600, mobile: '100%x400' },
-        'home_top': { name: 'Ana Sayfa Üst', w: 970, h: 250, mobile: '300x250' },
-        'home_top_mobile': { name: 'Ana Sayfa Üst (Mobil)', w: 300, h: 250, mobile: '300x250' },
-        'home_between_mansets': { name: 'Manşetler Arası Reklam', w: 970, h: 250, mobile: '300x250' },
-        'home_breaking_news_sidebar_1': { name: 'Ana Sayfa Son Dakika Yan Reklam 1', w: 300, h: 250, mobile: '300x250' },
-        'home_breaking_news_sidebar_2': { name: 'Ana Sayfa Son Dakika Yan Reklam 2', w: 300, h: 250, mobile: '300x250' },
-        'home_breaking_news_sidebar_3': { name: 'Ana Sayfa Son Dakika Yan Reklam 3', w: 300, h: 250, mobile: '300x250' },
-        'home_surmanset_sidebar_1': { name: 'Ana Sayfa Sürmanşet Yan Reklam 1', w: 300, h: 250, mobile: '300x250' },
-        'home_surmanset_sidebar_2': { name: 'Ana Sayfa Sürmanşet Yan Reklam 2', w: 300, h: 250, mobile: '300x250' },
-        'home_surmanset_sidebar_3': { name: 'Ana Sayfa Sürmanşet Yan Reklam 3', w: 300, h: 250, mobile: '300x250' },
-        'home_list_top': { name: 'Ana Sayfa Liste Üstü', w: 970, h: 250, mobile: '300x250' },
-        'home_multimedia_bottom': { name: 'Ana Sayfa Multimedya Altı', w: 970, h: 250, mobile: '300x250' },
+        'headline_slider': { name: 'Manşet 1 (Ana Manşet)', w: 1200, h: 600, mobile: '100%x400' },
+        'manset_2_slider': { name: 'Manşet 2 (Sürmanşet)', w: 1200, h: 600, mobile: '100%x400' },
+        'home_top': { name: 'Logo Yanı Reklam', w: 970, h: 250, mobile: '300x250' },
+        'home_top_mobile': { name: 'Logo Yanı (Mobil)', w: 300, h: 250, mobile: '300x250' },
+        'home_breaking_news_sidebar_1': { name: 'Son Dakika Yanı 1', w: 300, h: 250, mobile: '300x250' },
+        'home_breaking_news_sidebar_2': { name: 'Son Dakika Yanı 2', w: 300, h: 250, mobile: '300x250' },
+        'home_breaking_news_sidebar_3': { name: 'Son Dakika Yanı 3', w: 300, h: 250, mobile: '300x250' },
+        'home_surmanset_sidebar_1': { name: 'Sürmanşet Yanı 1', w: 300, h: 250, mobile: '300x250' },
+        'home_surmanset_sidebar_2': { name: 'Sürmanşet Yanı 2', w: 300, h: 250, mobile: '300x250' },
+        'home_surmanset_sidebar_3': { name: 'Sürmanşet Yanı 3', w: 300, h: 250, mobile: '300x250' },
+        'home_list_top': { name: 'Liste Üstü Reklam', w: 970, h: 250, mobile: '300x250' },
+        'home_multimedia_bottom': { name: 'Multimedya Altı', w: 970, h: 250, mobile: '300x250' },
         'home_horizontal': { name: 'Ana Sayfa Yatay', w: 970, h: 250, mobile: '300x250' },
 
         'category_top': { name: 'Kategori Üst', w: 970, h: 250, mobile: '300x250' },
@@ -84,17 +83,17 @@ const AdsPage = () => {
         'category_horizontal_3': { name: 'Kategori Yatay (3. Yükleme)', w: 970, h: 250, mobile: '300x250' },
         'category_horizontal_4': { name: 'Kategori Yatay (4. Yükleme)', w: 970, h: 250, mobile: '300x250' },
 
-        'category_sidebar_1': { name: 'Kategori Yan Menü 1', w: 300, h: 250, mobile: 'Gizli' },
-        'category_sidebar_2': { name: 'Kategori Yan Menü 2', w: 300, h: 250, mobile: 'Gizli' },
-        'category_sidebar_3': { name: 'Kategori Yan Menü 3', w: 300, h: 250, mobile: 'Gizli' },
-        'category_sidebar_sticky': { name: 'Kategori Yan Menü Yapışkan', w: 300, h: 600, mobile: 'Gizli' },
-        'news_sidebar_1': { name: 'Haber Detay Yan Menü 1', w: 300, h: 250, mobile: 'Gizli' },
-        'news_sidebar_2': { name: 'Haber Detay Yan Menü 2', w: 300, h: 250, mobile: 'Gizli' },
-        'news_sidebar_3': { name: 'Haber Detay Yan Menü 3', w: 300, h: 250, mobile: 'Gizli' },
-        'news_sidebar_sticky': { name: 'Haber Detay Yan Menü Yapışkan', w: 300, h: 600, mobile: 'Gizli' },
-        'news_content_1': { name: 'Haber İçi', w: 'Responsive', h: 'Auto', mobile: '300x250' },
+        'category_sidebar_1': { name: 'Kategori Yan 1', w: 300, h: 250, mobile: 'Gizli' },
+        'category_sidebar_2': { name: 'Kategori Yan 2', w: 300, h: 250, mobile: 'Gizli' },
+        'category_sidebar_3': { name: 'Kategori Yan 3', w: 300, h: 250, mobile: 'Gizli' },
+        'category_sidebar_sticky': { name: 'Kategori Yan Yapışkan', w: 300, h: 600, mobile: 'Gizli' },
+        'news_sidebar_1': { name: 'Haber Detay Yan 1', w: 300, h: 250, mobile: 'Gizli' },
+        'news_sidebar_2': { name: 'Haber Detay Yan 2', w: 300, h: 250, mobile: 'Gizli' },
+        'news_sidebar_3': { name: 'Haber Detay Yan 3', w: 300, h: 250, mobile: 'Gizli' },
+        'news_sidebar_sticky': { name: 'Haber Detay Yan Yapışkan', w: 300, h: 600, mobile: 'Gizli' },
+        'news_content_1': { name: 'Haber İçi', w: 970, h: 250, mobile: '300x250' },
         'site_popup': { name: 'Açılır Popup (Site Giriş)', w: 800, h: 600, mobile: '300x400' },
-        'site_header_top': { name: 'Site Üstü Duyuru Bantı', w: 'Full', h: 40, mobile: 'Responsive' },
+        'site_header_top': { name: 'Site Üstü Duyuru Bantı', w: 1920, h: 40, mobile: 'Responsive' },
     };
 
     // Dynamically merge categories into placements
@@ -164,17 +163,18 @@ const AdsPage = () => {
 
             const activeSlugs = categoriesData.map(cat => cat.slug).filter(slug => {
                 const configItem = layoutConfig.find(c => c.id === slug);
-                const isEnabledInLayout = configItem ? configItem.enabled : true; // Default to true if not configured yet
+                const isEnabledInLayout = configItem ? configItem.enabled : true;
 
-                // Get count (try slug, try name)
+                // Robust counting: check both slug and original name
                 const catName = categoriesData.find(c => c.slug === slug)?.name;
-                const count = (newsCounts[slug] || 0) + (newsCounts[slugify(catName || '')] || 0);
-                // Note: The double counting logic above is imperfect but ensures we catch matches. 
-                // Ideally we should use a map. simplified:
-                const effectiveCount = newsCounts[slug] || newsCounts[catName] || 0;
+                const countBySlug = newsCounts[slug] || 0;
+                const countByName = newsCounts[catName] || 0;
+                // If keys are distinct, sum them? Or assume news uses one convention.
+                // Safest is to rely on slugified keys if news processing did that.
+                // In line 145 we did: newsCounts[slugify(item.category)]++
+                // So newsCounts is keyed by slug. We should just look up by slug.
 
-                // To be safe with the loose matching:
-                // If news.category stores 'Gündem', slug is 'gundem'.
+                const effectiveCount = countBySlug;
 
                 return isEnabledInLayout && effectiveCount >= 4;
             });
@@ -208,28 +208,29 @@ const AdsPage = () => {
     const toggleEmptyAds = async () => {
         try {
             const newValue = !showEmptyAds;
-            setShowEmptyAds(newValue);
+            // 1. First update database
             await adminService.updateSetting('show_empty_ads', newValue.toString());
+            // 2. Then reload settings from database
             await reloadSettings();
+            // 3. Finally update local state
+            setShowEmptyAds(newValue);
             setMessage({ type: 'success', text: `Boş reklam alanları ${newValue ? 'gösterilecek' : 'gizlenecek'}.` });
         } catch (error) {
             console.error('Error updating setting:', error);
             setMessage({ type: 'error', text: 'Ayar güncellenirken hata oluştu.' });
-            setShowEmptyAds(!showEmptyAds);
         }
     };
 
     const toggleSponsoredLabel = async () => {
         try {
             const newValue = !showSponsoredLabel;
-            setShowSponsoredLabel(newValue);
             await adminService.updateSetting('show_sponsored_label', newValue.toString());
             await reloadSettings();
+            setShowSponsoredLabel(newValue);
             setMessage({ type: 'success', text: `Sponsorlu etiketi ${newValue ? 'gösterilecek' : 'gizlenecek'}.` });
         } catch (error) {
             console.error('Error updating setting:', error);
             setMessage({ type: 'error', text: 'Ayar güncellenirken hata oluştu.' });
-            setShowSponsoredLabel(!showSponsoredLabel);
         }
     };
 
@@ -286,9 +287,9 @@ const AdsPage = () => {
                 image_url: editingAd.image_url,
                 link_url: editingAd.link_url,
                 code: editingAd.code,
-                target_news_id: editingAd.target_news_id ? parseInt(editingAd.target_news_id) : null,
-                target_page: editingAd.target_page,
-                target_category: editingAd.target_category,
+                target_news_id: editingAd.target_news_id ? String(editingAd.target_news_id) : null,
+                target_page: editingAd.target_page || 'all',
+                target_category: editingAd.target_category || null,
                 start_date: editingAd.start_date || null,
                 end_date: editingAd.end_date || null,
                 is_sticky: editingAd.is_sticky || false
@@ -405,19 +406,74 @@ const AdsPage = () => {
         setLoading(true);
 
         try {
-            // Update Source Ad -> Target
-            await adminService.updateAdPlacement(draggedAd.id, {
+            const updatePayload = {
                 ...draggedAd,
                 placement_code: targetPlacementCode
-            });
+            };
+
+            // SPECIAL LOGIC: Handle Headline Sliders (assign slots if missing)
+            if (targetPlacementCode === 'headline_slider') {
+                // Check if it already has a slot, if not assign next available
+                if (!draggedAd.headline_slot) {
+                    const slot = await adminService.getNextAvailableHeadlineSlot();
+                    updatePayload.is_headline = true;
+                    updatePayload.headline_slot = slot;
+                } else {
+                    updatePayload.is_headline = true;
+                    updatePayload.headline_slot = draggedAd.headline_slot; // Keep existing if present, or maybe should re-assign?
+                    // If we are dragging from somewhere else, we should arguably get a new slot or ensure uniqueness
+                    // Simple approach: Always get new slot if moving FROM a non-headline spot
+                    if (sourcePlacementCode !== 'headline_slider') {
+                        const slot = await adminService.getNextAvailableHeadlineSlot();
+                        updatePayload.headline_slot = slot;
+                    }
+                }
+            } else if (targetPlacementCode === 'manset_2_slider') {
+                if (!draggedAd.manset_2_slot || sourcePlacementCode !== 'manset_2_slider') {
+                    const slot = await adminService.getNextAvailableManset2Slot();
+                    updatePayload.is_manset_2 = true;
+                    updatePayload.manset_2_slot = slot;
+                } else {
+                    updatePayload.is_manset_2 = true;
+                }
+            } else {
+                // If moving OUT of headline/manset 2, maybe clear flags (optional but good for cleanup)
+                // We keep them loosely coupled usually, but let's clear to avoid phantom appearances if logic changes
+                if (sourcePlacementCode === 'headline_slider') {
+                    updatePayload.is_headline = false;
+                    updatePayload.headline_slot = null;
+                }
+                if (sourcePlacementCode === 'manset_2_slider') {
+                    updatePayload.is_manset_2 = false;
+                    updatePayload.manset_2_slot = null;
+                }
+            }
+
+            // Update Source Ad -> Target
+            await adminService.updateAdPlacement(draggedAd.id, updatePayload);
 
             // If Swap: Update target ads -> Source
             if (isSwap) {
                 for (const targetAd of targetAds) {
-                    await adminService.updateAdPlacement(targetAd.id, {
+                    const swapPayload = {
                         ...targetAd,
                         placement_code: sourcePlacementCode
-                    });
+                    };
+
+                    // Slot cleanup for swapped item
+                    if (sourcePlacementCode === 'headline_slider') {
+                        swapPayload.is_headline = true;
+                        swapPayload.headline_slot = await adminService.getNextAvailableHeadlineSlot();
+                    } else if (sourcePlacementCode === 'manset_2_slider') {
+                        swapPayload.is_manset_2 = true;
+                        swapPayload.manset_2_slot = await adminService.getNextAvailableManset2Slot();
+                    } else {
+                        // Clearning flags if swapping out
+                        if (targetPlacementCode === 'headline_slider') { swapPayload.is_headline = false; swapPayload.headline_slot = null; }
+                        if (targetPlacementCode === 'manset_2_slider') { swapPayload.is_manset_2 = false; swapPayload.manset_2_slot = null; }
+                    }
+
+                    await adminService.updateAdPlacement(targetAd.id, swapPayload);
                 }
                 setMessage({ type: 'success', text: 'Reklamlar yer değiştirildi!' });
             } else {
@@ -631,31 +687,44 @@ const AdsPage = () => {
                             ${vertical ? 'w-full' : 'w-full'} 
                             ${h}
                             ${ads.length > 0
-                                ? 'bg-gray-100 border-2 border-gray-300'
-                                : 'bg-gray-50 border-2 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-100 cursor-pointer group'}
+                                ? 'bg-[#e5e7eb] border border-gray-300'
+                                : 'bg-[#e5e7eb] border border-gray-300 hover:border-gray-400 cursor-pointer group'}
                             ${snapshot.isDraggingOver ? 'ring-2 ring-blue-500 bg-blue-50' : ''}
-                            rounded-lg overflow-hidden
+                            rounded-lg overflow-hidden shadow-sm
                         `}
                         onClick={() => ads.length === 0 && startCreate(code)}
                     >
+                        {/* Label mimicking frontend */}
+                        <div className="absolute top-0 right-0 bg-[#374151] text-white text-[9px] px-2 py-0.5 z-10 rounded-bl-lg opacity-50 group-hover:opacity-100 transition-opacity">
+                            {displayLabel}
+                        </div>
                         {/* Empty State */}
                         {ads.length === 0 && (
-                            <div className="flex flex-col w-full h-full">
-                                <div className="bg-gray-200 px-2 py-1 text-[10px] uppercase font-bold text-gray-500 flex justify-between items-center">
-                                    <div className="flex items-center gap-2">
-                                        <PlusCircle size={12} className="text-gray-400" />
-                                        <span>{displayLabel} {dimensions && <span className="text-gray-400 font-normal ml-1">({dimensions})</span>}</span>
+                            <div className="flex flex-col w-full h-full relative">
+                                {/* Sponsorlu Label */}
+                                <div className="absolute top-0 left-0 bg-[#374151] text-white text-[10px] md:text-xs px-3 py-1 font-bold tracking-wide z-20">
+                                    Sponsorlu
+                                </div>
+
+                                {/* Main Content Area */}
+                                <div className="flex-1 flex items-center justify-center p-4">
+                                    <div className="text-center">
+                                        <span className={`${vertical ? "text-xl" : (h.includes('64') || h.includes('400') ? "text-3xl md:text-4xl" : "text-2xl md:text-3xl")} font-semibold tracking-tight text-gray-300 block`}>
+                                            Reklam Alanı
+                                        </span>
+                                        <span className="text-base md:text-lg text-gray-500 font-bold block mt-1">
+                                            {dimensions || 'Özel Boyut'} px
+                                        </span>
                                     </div>
                                 </div>
-                                <div className="flex-1 flex items-center justify-center p-2">
-                                    <span className="text-xs text-gray-400">Reklam alanı boş</span>
-                                </div>
-                                <div className="p-2">
+
+                                {/* Action Button */}
+                                <div className="p-3 border-t border-gray-300">
                                     <button
                                         onClick={(e) => { e.stopPropagation(); startCreate(code); }}
-                                        className="w-full py-1.5 bg-blue-600 text-white text-xs rounded shadow hover:bg-blue-700 transition-colors flex items-center justify-center gap-1 font-bold"
+                                        className="w-full py-2 bg-blue-600 text-white text-sm rounded-lg shadow hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-bold"
                                     >
-                                        <Plus size={12} /> Yeni Ekle
+                                        <Plus size={16} /> Reklam Ekle
                                     </button>
                                 </div>
                             </div>
@@ -668,7 +737,7 @@ const AdsPage = () => {
                                 <div className="bg-gray-200 px-2 py-1 text-[10px] uppercase font-bold text-gray-500 flex justify-between items-center">
                                     <div className="flex items-center gap-2">
                                         <Move size={12} className="text-gray-400" />
-                                        <span>{displayLabel} {dimensions && <span className="text-gray-400 font-normal ml-1">({dimensions})</span>}</span>
+                                        <span>{displayLabel} {dimensions && <span className="text-gray-600 font-extrabold ml-1">({dimensions} px)</span>}</span>
                                     </div>
                                     <span className="bg-gray-300 text-gray-600 px-1 rounded">{ads.length}</span>
                                 </div>
@@ -768,7 +837,7 @@ const AdsPage = () => {
             {/* Header */}
             <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="text-center md:text-left w-full md:w-auto">
-                    <h1 className="text-3xl font-bold text-gray-900">Reklam Yerleşimi</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">Reklam Yönetimi</h1>
                     <p className="text-gray-500 mt-1">Sitenizdeki reklam alanlarını görsel olarak yönetin.</p>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-3 w-full md:w-auto">
@@ -821,7 +890,7 @@ const AdsPage = () => {
                     <PageTab id="home" label="Ana Sayfa" icon={Home} />
                     <PageTab id="category" label="Kategori Sayfaları" icon={List} />
                     <PageTab id="detail" label="Haber Detay / İçerik" icon={FileText} />
-
+                    <PageTab id="all" label="Tüm Alanlar" icon={LayoutTemplate} />
                     <PageTab id="reports" label="Raporlar" icon={BarChart2} />
                 </div>
 
@@ -849,11 +918,8 @@ const AdsPage = () => {
                                     <SectionHeader title="Manşet 1 (Ana Manşet)" />
                                     <AdSlot code="headline_slider" h="h-64" />
 
-                                    <SectionHeader title="Manşetler Arası Reklam" />
-                                    <AdSlot code="home_between_mansets" h="h-28" />
-
                                     {/* Manşet 2 (Sürmanşet) Section (Full Width) */}
-                                    <SectionHeader title="Manşet 2 (Sürmanşet) Bölümü" />
+                                    <SectionHeader title="Manşet 2 (Sürmanşet)" />
                                     <div className="w-full">
                                         <AdSlot code="manset_2_slider" h="h-[400px]" />
                                     </div>
@@ -1006,23 +1072,8 @@ const AdsPage = () => {
                                         {/* SIDEBAR */}
                                         <div className="w-full lg:w-1/3 flex flex-col gap-6">
                                             <div className="p-4 border border-dashed rounded bg-gray-50">
-                                                <div className="text-xs text-gray-400 mb-2 font-bold uppercase tracking-wider">Benzer Haberler</div>
-
                                                 {/* Ad Above Grid */}
-                                                <AdSlot code="news_sidebar_sticky" h="h-64" label="Benzer Haberler Üstü" />
-
-                                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                                    <ContentBlock h="h-32" />
-                                                    <ContentBlock h="h-32" />
-                                                    <ContentBlock h="h-32" />
-                                                    <ContentBlock h="h-32" />
-                                                    <ContentBlock h="h-32" />
-                                                    <ContentBlock h="h-32" />
-                                                    <ContentBlock h="h-32" />
-                                                    <ContentBlock h="h-32" />
-                                                    <ContentBlock h="h-32" />
-                                                    <ContentBlock h="h-32" />
-                                                </div>
+                                                <AdSlot code="news_sidebar_sticky" h="h-[600px]" label="Haber Detay Yan (Sticky)" />
 
                                                 <p className="text-center text-gray-400 mt-4 text-sm">
                                                     * Düzenlemek istediğiniz reklam alanına tıklayınız.
@@ -1033,6 +1084,140 @@ const AdsPage = () => {
                                 </div>
                             )}
 
+
+                            {activeTab === 'all' && (
+                                <div className="space-y-6">
+                                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 p-4 rounded-lg mb-6">
+                                        <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                            <LayoutTemplate size={20} className="text-purple-600" />
+                                            Tüm Reklam Alanları Koordinasyonu
+                                        </h3>
+                                        <p className="text-sm text-gray-600">
+                                            Sitenizdeki tüm reklam alanlarını tek bir yerden yönetin. Her alanın durumunu görüntüleyin ve hızlıca düzenleyin.
+                                        </p>
+                                    </div>
+
+                                    {/* Statistics Cards */}
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                                        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                            <div className="text-sm text-gray-500 mb-1">Toplam Alan</div>
+                                            <div className="text-2xl font-bold text-gray-900">{Object.keys(STANDARD_PLACEMENTS).length}</div>
+                                        </div>
+                                        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                            <div className="text-sm text-gray-500 mb-1">Dolu Alanlar</div>
+                                            <div className="text-2xl font-bold text-green-600">
+                                                {Object.keys(STANDARD_PLACEMENTS).filter(code => getAdsForSlot(code).length > 0).length}
+                                            </div>
+                                        </div>
+                                        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                            <div className="text-sm text-gray-500 mb-1">Boş Alanlar</div>
+                                            <div className="text-2xl font-bold text-orange-600">
+                                                {Object.keys(STANDARD_PLACEMENTS).filter(code => getAdsForSlot(code).length === 0).length}
+                                            </div>
+                                        </div>
+                                        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                            <div className="text-sm text-gray-500 mb-1">Toplam Reklam</div>
+                                            <div className="text-2xl font-bold text-blue-600">{placements.length}</div>
+                                        </div>
+                                    </div>
+
+                                    {/* All Placements Table */}
+                                    <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm">
+                                                <thead className="bg-gray-50 border-b border-gray-200">
+                                                    <tr>
+                                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Reklam Alanı</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Boyut</th>
+                                                        <th className="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Sayfa</th>
+                                                        <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Durum</th>
+                                                        <th className="px-6 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Reklam Sayısı</th>
+                                                        <th className="px-6 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">İşlemler</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200">
+                                                    {Object.entries(STANDARD_PLACEMENTS).map(([code, info]) => {
+                                                        const ads = getAdsForSlot(code);
+                                                        const isEmpty = ads.length === 0;
+                                                        const pageType = code.startsWith('home_') ? 'Ana Sayfa' :
+                                                            code.startsWith('category_') ? 'Kategori' :
+                                                                code.startsWith('news_') ? 'Haber Detay' : 'Diğer';
+
+                                                        return (
+                                                            <tr key={code} className={`hover:bg-gray-50 transition-colors ${isEmpty ? 'bg-orange-50/30' : ''}`}>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className={`w-2 h-2 rounded-full ${isEmpty ? 'bg-orange-400' : 'bg-green-500'}`}></div>
+                                                                        <div>
+                                                                            <div className="font-medium text-gray-900">{info.name}</div>
+                                                                            <div className="text-xs text-gray-500 font-mono">{code}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <div className="text-sm text-gray-700">
+                                                                        <div className="font-medium">{info.w}×{info.h}</div>
+                                                                        {info.mobile && (
+                                                                            <div className="text-xs text-gray-500">Mobil: {info.mobile}</div>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-6 py-4">
+                                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${pageType === 'Ana Sayfa' ? 'bg-blue-100 text-blue-800' :
+                                                                        pageType === 'Kategori' ? 'bg-purple-100 text-purple-800' :
+                                                                            pageType === 'Haber Detay' ? 'bg-green-100 text-green-800' :
+                                                                                'bg-gray-100 text-gray-800'
+                                                                        }`}>
+                                                                        {pageType}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center">
+                                                                    {isEmpty ? (
+                                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                                                            <XCircle size={12} />
+                                                                            Boş
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                            <CheckCircle size={12} />
+                                                                            Dolu
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-6 py-4 text-center">
+                                                                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-bold text-sm">
+                                                                        {ads.length}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-right">
+                                                                    <div className="flex items-center justify-end gap-2">
+                                                                        {ads.length > 0 && (
+                                                                            <button
+                                                                                onClick={() => startEdit(ads[0])}
+                                                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
+                                                                            >
+                                                                                <Edit size={12} />
+                                                                                Düzenle
+                                                                            </button>
+                                                                        )}
+                                                                        <button
+                                                                            onClick={() => startCreate(code)}
+                                                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
+                                                                        >
+                                                                            <Plus size={12} />
+                                                                            Yeni Ekle
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {activeTab === 'reports' && (
                                 <div className="space-y-6">
@@ -1201,7 +1386,17 @@ const AdsPage = () => {
                                             <select
                                                 className="w-full px-2 py-1.5 border border-blue-200 rounded text-sm text-blue-900 focus:ring-blue-500 focus:border-blue-500"
                                                 value={editingAd.placement_code || ''}
-                                                onChange={(e) => setEditingAd({ ...editingAd, placement_code: e.target.value })}
+                                                onChange={(e) => {
+                                                    const newCode = e.target.value;
+                                                    let newTargetPage = editingAd.target_page;
+
+                                                    // Auto-set target page based on placement code
+                                                    if (newCode.startsWith('category_')) newTargetPage = 'category';
+                                                    else if (newCode.startsWith('news_')) newTargetPage = 'detail';
+                                                    else if (newCode.startsWith('home_')) newTargetPage = 'home';
+
+                                                    setEditingAd({ ...editingAd, placement_code: newCode, target_page: newTargetPage });
+                                                }}
                                                 disabled={!isCreating && !!editingAd.id}
                                             >
                                                 <option value="" disabled>Lütfen bir alan seçiniz...</option>
@@ -1439,7 +1634,59 @@ const AdsPage = () => {
                                     {/* Sticky Toggle */}
 
 
-                                    {/* Date Scheduling */}
+
+                                    {/* Page Targeting */}
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
+                                        {/* Page Targeting - Hidden for News Detail Placements */}
+                                        {!editingAd.placement_code?.startsWith('news_') && (
+                                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase">Hedef Sayfa Tipi</label>
+                                                    <select
+                                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:ring-black focus:border-black"
+                                                        value={editingAd.target_page || 'all'}
+                                                        onChange={(e) => setEditingAd({ ...editingAd, target_page: e.target.value })}
+                                                    >
+                                                        {/* Logic to filter options based on placement type */}
+                                                        {(!editingAd.placement_code || (!editingAd.placement_code.startsWith('category_') && !editingAd.placement_code.startsWith('news_') && !editingAd.placement_code.startsWith('home_'))) && (
+                                                            <option value="all">Tüm Sayfalar</option>
+                                                        )}
+
+                                                        {(!editingAd.placement_code || editingAd.placement_code.startsWith('home_')) && (
+                                                            <option value="home">Sadece Ana Sayfa</option>
+                                                        )}
+
+                                                        {(!editingAd.placement_code || editingAd.placement_code.startsWith('category_')) && (
+                                                            <option value="category">Kategori Sayfaları</option>
+                                                        )}
+
+                                                        {(!editingAd.placement_code || editingAd.placement_code.startsWith('news_')) && (
+                                                            <option value="detail">Haber Detay Sayfaları</option>
+                                                        )}
+                                                    </select>
+                                                </div>
+
+                                                {/* Show category selector unless it is strictly Home Page */}
+                                                {(editingAd.target_page !== 'home') && (
+                                                    <div>
+                                                        <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase">Hedef Kategori</label>
+                                                        <select
+                                                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:ring-black focus:border-black"
+                                                            value={editingAd.target_category || ''}
+                                                            onChange={(e) => setEditingAd({ ...editingAd, target_category: e.target.value })}
+                                                        >
+                                                            <option value="">Tüm Kategoriler</option>
+                                                            {categories.map((cat) => (
+                                                                <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                                                            ))}
+                                                        </select>
+                                                        <p className="text-[10px] text-gray-400 mt-1">Sadece seçilen kategoride gösterilir.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <div className="grid grid-cols-2 gap-4 mb-4">
                                         <div>
                                             <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase">Başlangıç Tarihi</label>

@@ -141,7 +141,7 @@ const NewsListPage = () => {
             alert('Seçilen haberler silindi.');
         } catch (error) {
             console.error('Bulk delete failed:', error);
-            alert('Toplu silme başarısız.');
+            alert(`Toplu silme başarısız: ${error.message || error}`);
         }
     };
 

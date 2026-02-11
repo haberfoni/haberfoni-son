@@ -119,29 +119,25 @@ const NewsDetailPage = () => {
     // Infinite Scroll Logic - stable function that uses refs
     const loadNextArticle = useCallback(() => {
         if (isLoadingMoreRef.current) {
-            console.log('Already loading, skipping...');
+
             return;
         }
         if (displayedNewsRef.current.length === 0 || allCategoryNewsRef.current.length === 0) {
-            console.log('No data available for infinite scroll');
+
             return;
         }
 
         const lastArticle = displayedNewsRef.current[displayedNewsRef.current.length - 1];
         const currentIndex = allCategoryNewsRef.current.findIndex(item => item.id === lastArticle.id);
 
-        console.log('Infinite scroll triggered:', {
-            currentIndex,
-            totalNews: allCategoryNewsRef.current.length,
-            displayedCount: displayedNewsRef.current.length
-        });
+
 
 
         let nextIndex;
 
         // If current article isn't in the list (e.g. opened from slider/search), start from beginning
         if (currentIndex === -1) {
-            console.log('Current article not in list, starting from first article');
+
             nextIndex = 0;
         } else {
             nextIndex = currentIndex + 1;
@@ -149,7 +145,7 @@ const NewsDetailPage = () => {
             // If we've reached the end, loop back to the beginning
             if (nextIndex >= allCategoryNewsRef.current.length) {
                 nextIndex = 0;
-                console.log('Reached end of category, looping back to start');
+
             }
         }
 
@@ -157,16 +153,16 @@ const NewsDetailPage = () => {
 
         // Avoid duplicates
         if (!displayedNewsRef.current.find(d => d.id === nextArticle.id)) {
-            console.log('Loading next article:', nextArticle.title);
+
             setIsLoadingMore(true);
             setDisplayedNews(prev => [...prev, nextArticle]);
             // Reset loading state immediately after state update
             setTimeout(() => {
                 setIsLoadingMore(false);
-                console.log('Loading state reset');
+
             }, 100);
         } else {
-            console.log('Next article already in list (circular loop detected), stopping');
+
             setIsLoadingMore(false);
         }
     }, []); // Empty deps - function is now stable
@@ -174,11 +170,11 @@ const NewsDetailPage = () => {
     useEffect(() => {
         // Don't set up observer until we have content AND loading is complete
         if (loading || displayedNews.length === 0) {
-            console.log('Skipping observer setup - loading:', loading, 'displayedNews.length:', displayedNews.length);
+
             return;
         }
 
-        console.log('Setting up IntersectionObserver for category:', category, 'slug:', slug);
+
 
         let observer = null;
 
@@ -186,7 +182,7 @@ const NewsDetailPage = () => {
         const timer = setTimeout(() => {
             observer = new IntersectionObserver(
                 (entries) => {
-                    console.log('Observer triggered, isIntersecting:', entries[0].isIntersecting);
+
                     if (entries[0].isIntersecting) {
                         loadNextArticle();
                     }
@@ -196,7 +192,7 @@ const NewsDetailPage = () => {
 
             if (observerTarget.current) {
                 observer.observe(observerTarget.current);
-                console.log('✅ Observer attached to target successfully');
+
             } else {
                 console.error('❌ Observer target ref is still null after timeout!');
             }
@@ -206,7 +202,7 @@ const NewsDetailPage = () => {
             clearTimeout(timer);
             if (observer && observerTarget.current) {
                 observer.unobserve(observerTarget.current);
-                console.log('Observer cleaned up');
+
             }
         };
     }, [loadNextArticle, category, slug, displayedNews.length, loading]); // Also depend on loading
@@ -261,13 +257,7 @@ const NewsDetailPage = () => {
     const expectedUrl = `/kategori/${slugify(currentNews.category)}/${currentNews.slug || slugify(currentNews.title)}`;
 
     // DEBUG: Check if SEO data is present
-    console.log('NewsDetailPage currentNews:', {
-        id: currentNews.id,
-        title: currentNews.title,
-        seo_description: currentNews.seo_description,
-        seo_keywords: currentNews.seo_keywords,
-        summary: currentNews.summary
-    });
+
 
     return (
         <ErrorBoundary>
@@ -327,24 +317,23 @@ const NewsDetailPage = () => {
                     {/* Sidebar / Related News (Sticky) */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-[180px] max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-2">
+                            {/* Ad Banner - Always Visible */}
+                            <div className="mb-6">
+                                <AdBanner
+                                    placementCode="news_sidebar_sticky"
+                                    vertical={true}
+                                    customDimensions="300x600"
+                                    newsId={currentNews?.id}
+                                />
+                            </div>
+
                             {relatedNews.length > 0 && (
                                 <div className="mb-0">
                                     <h3 className="text-xl font-bold text-gray-900 mb-6 border-l-4 border-primary pl-4">
                                         Benzer Haberler
                                     </h3>
 
-                                    {/* Ad Banner Above Related News */}
-                                    <div className="mb-4">
-                                        <AdBanner
-                                            placementCode="news_sidebar_sticky"
-                                            vertical={true}
-                                            customDimensions="300x250"
-                                            customHeight="h-[250px]"
-                                            newsId={currentNews?.id}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4">
                                         {relatedNews.map((item) => (
                                             <NewsCard key={item.id} news={item} compact={true} />
                                         ))}

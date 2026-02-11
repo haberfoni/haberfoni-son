@@ -27,9 +27,16 @@ async function scrapeAAHTML(url, targetCategory) {
         $('a[href*="/tr/"]').each((i, elem) => {
             const href = $(elem).attr('href');
             if (href && href.match(/\/tr\/[^\/]+\/[^\/]+\/\d+$/)) {
-                // Make absolute URL
-                const fullUrl = href.startsWith('http') ? href : `https://www.aa.com.tr${href}`;
-                articleLinks.add(fullUrl);
+                // Filter out media content types (photo galleries, videos, infographics)
+                // AA media URLs contain: /pgc/ (photo), /vgc/ (video), /info/infographic/
+                const isMediaContent = /\/(pgc|vgc|info\/infographic)\//.test(href) ||
+                    /\/(fotoraf|video|infografik)-\d+$/.test(href);
+
+                if (!isMediaContent) {
+                    // Make absolute URL
+                    const fullUrl = href.startsWith('http') ? href : `https://www.aa.com.tr${href}`;
+                    articleLinks.add(fullUrl);
+                }
             }
         });
 
@@ -93,33 +100,81 @@ async function scrapeAAArticle(url, targetCategory) {
 
 
         // Extract content - try to find article body
-        let content = '';
-        const articleBody = $('.detay-spot-category').text().trim() ||
-            $('article p').map((i, el) => $(el).text()).get().join(' ') ||
-            summary;
-        content = articleBody.replace(/\s+/g, ' ').trim().substring(0, 3000); // Limit content length
+        let contentEl = $('.detay-icerik');
+        if (contentEl.length === 0) contentEl = $('article');
 
-        // Extract Author (Try specific class first, then regex at end of content)
+        let content = '';
+        if (contentEl.length > 0) {
+            content = contentEl.find('p, h2, h3, h4, img, figure').map((i, el) => {
+                const $el = $(el);
+                const tag = el.tagName.toLowerCase();
+                const text = $el.text().trim();
+
+                // Remove Author/Date line if it matches regex (e.g. "Ali Veli | 06.02.2026")
+                if (/^[A-Za-zÇĞİÖŞÜçğıöşü\s]{2,50}\s?\|\s?\d{2}\.\d{2}\.\d{4}/.test(text)) return '';
+
+                if (tag === 'img' || tag === 'figure') {
+                    const img = tag === 'img' ? $el : $el.find('img');
+                    let src = img.attr('src') || img.attr('data-src');
+
+                    if (src) {
+                        // Always decode URL first (handles %2F etc.)
+                        try {
+                            src = decodeURIComponent(src);
+                        } catch (e) {
+                            // If decode fails, keep original
+                        }
+
+                        // Convert relative URLs to absolute
+                        if (src.startsWith('/')) {
+                            src = `https://www.aa.com.tr${src}`;
+                        } else if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('data:')) {
+                            src = `https://www.aa.com.tr/${src}`;
+                        }
+                    }
+
+
+                    // Strict validation: filter out empty, placeholder, or invalid images
+                    if (src &&
+                        src.length > 10 &&
+                        !src.toLowerCase().includes('bip') &&
+                        !src.toLowerCase().includes('placeholder') &&
+                        !src.toLowerCase().includes('blank') &&
+                        !src.toLowerCase().includes('next-header') &&
+                        !src.toLowerCase().includes('aa-logo') &&
+                        !src.toLowerCase().includes('/logo') &&
+                        !(src.startsWith('data:') && src.length < 100)) {
+                        return `<figure class="my-6"><img src="${src}" class="w-full h-auto rounded-lg" /></figure>`;
+                    }
+                    return '';
+                }
+
+                if (tag.startsWith('h')) return `<h3>${$el.html()}</h3>`;
+                return `<p>${$el.html()}</p>`;
+            }).get().join('');
+        }
+
+        // Filter out empty tags
+        content = content.replace(/<p>\s*<\/p>/g, '');
+
+        // Extract Author (Try specific class first, then regex)
         let author = $('meta[name="author"]').attr('content') || '';
+        const authorDateRegex = /([A-Za-zÇĞİÖŞÜçğıöşü\s]{2,50})\s+\|\s+\d{2}\.\d{2}\.\d{4}/;
 
         if (!author) {
-            // Check for "Name Surname | Date" pattern at the end of content
-            // Example: "Okan Coşkun | 05.02.2026"
-            const authorDateRegex = /([A-Za-zÇĞİÖŞÜçğıöşü\s]{2,50})\s+\|\s+\d{2}\.\d{2}\.\d{4}/;
-            const match = content.match(authorDateRegex);
+            // Check for "Name Surname | Date" pattern in the raw text (if not caught above)
+            // We search in the full text of the article
+            const fullText = $('body').text();
+            const match = fullText.match(authorDateRegex);
             if (match && match[1]) {
                 author = match[1].trim();
-                // Optionally remove this footer from content if desired, but user might want it kept.
-                // keeping it for now to be safe.
-
-                // If the author name seems too long or contains "Güncelleme", might be false positive, but regex checks for | Date
             }
         }
 
         return {
             title: title,
-            summary: summary.substring(0, 200),
-            content: content || summary,
+            summary: summary, // Full summary, no truncation
+            content: content.substring(0, 60000), // Increased limit
             original_url: url,
             image_url: imageUrl,
             source: 'AA',

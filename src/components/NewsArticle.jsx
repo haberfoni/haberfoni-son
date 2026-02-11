@@ -150,13 +150,18 @@ const NewsArticle = ({ news, onVisible }) => {
 
                 {/* Ad Banner - Placed at the bottom as requested */}
                 <div className="mt-12 mb-8 flex justify-center">
-                    <AdBanner
-                        placementCode="news_content_1"
-                        customDimensions="300x250"
-                        customHeight="h-[250px]"
-                        text="Haber Sonu Reklam"
-                        newsId={news.id}
-                    />
+                    <div className="w-full max-w-[300px] md:max-w-[970px] mx-auto border border-gray-200 rounded-lg shadow-sm overflow-hidden bg-gray-50">
+                        <AdBanner
+                            placementCode="news_content_1"
+                            customDimensions="970x250"
+                            customMobileDimensions="300x250"
+                            customHeight="h-[250px] md:h-[250px]"
+                            text="Haber Sonu Reklam"
+                            newsId={news.id}
+                            className="w-full h-full"
+                            objectFit="contain"
+                        />
+                    </div>
                 </div>
             </div>
 

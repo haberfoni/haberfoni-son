@@ -4,7 +4,11 @@ import { useSiteSettings } from '../context/SiteSettingsContext';
 import { adminService } from '../services/adminService';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 
-const AdBanner = ({ vertical = false, small = false, image = null, href = null, customHeight = null, customDimensions = null, customMobileDimensions = null, text = null, placementCode = null, newsId = null, noContainer = false, fetchPriority = "auto", loading = "lazy" }) => {
+// Critical placements that should always show (even when empty)
+// These are strategic positions that should remain visible regardless of settings
+const CRITICAL_PLACEMENTS = ['home_top'];
+
+const AdBanner = ({ vertical = false, small = false, image = null, href = null, customHeight = null, customDimensions = null, customMobileDimensions = null, text = null, placementCode = null, newsId = null, noContainer = false, fetchPriority = "auto", loading = "lazy", className = "", objectFit = "cover" }) => {
     // Refs for IntersectionObserver
     const desktopRef = useRef(null);
     const mobileRef = useRef(null);
@@ -34,13 +38,14 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
     const defaultRel = isCustomAd && href ? "noopener noreferrer nofollow" : "nofollow";
 
     // Image URLs
-    const desktopText = text || `Reklam + Alani + ${desktopDimensions} `;
-    const mobileText = text || `Reklam + Alani + ${mobileDimensions} `;
+    const desktopText = text || `Sponsor + Alani + ${desktopDimensions} `;
+    const mobileText = text || `Sponsor + Alani + ${mobileDimensions} `;
     const desktopImage = isCustomAd ? image : null;
     const mobileImage = isCustomAd ? image : null;
 
+
     const { ads, settings } = useSiteSettings();
-    const showEmptyAds = settings?.show_empty_ads !== 'false';
+    const showEmptyAds = settings?.show_empty_ads === 'true';
     const location = useLocation();
 
     // Determine current page context
@@ -84,17 +89,41 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
 
             // Date Scheduling Check
             const now = new Date();
-            if (ad.start_date && now < new Date(ad.start_date)) return false;
-            if (ad.end_date && now > new Date(ad.end_date)) return false;
-
-            if (ad.target_page === 'all') return true;
-            if (ad.target_page === 'home' && pageContext.type === 'home') return true;
-            if (ad.target_page === 'category') {
-                // Show on category pages AND detail pages (unless specific category logic added later)
-                return pageContext.type === 'category' || pageContext.type === 'detail';
+            if (ad.start_date) {
+                const startDate = new Date(ad.start_date);
+                if (now < startDate) return false;
             }
-            if (ad.target_page === 'detail' && pageContext.type === 'detail') return true;
-            return false;
+            if (ad.end_date) {
+                const endDate = new Date(ad.end_date);
+                if (now > endDate) return false;
+            }
+
+            // Target page check (default to 'all' if not set)
+            const targetPage = ad.target_page || 'all';
+            let pageMatch = false;
+
+            if (targetPage === 'all') pageMatch = true;
+            else if (targetPage === 'home' && pageContext.type === 'home') pageMatch = true;
+            else if (targetPage === 'category') {
+                // STRICT CHECK: Only show on category listing pages
+                pageMatch = pageContext.type === 'category';
+            }
+            else if (targetPage === 'detail' && pageContext.type === 'detail') pageMatch = true;
+
+            if (!pageMatch) return false;
+
+            // Target Category Check (CRITICAL FIX)
+            if (ad.target_category && ad.target_category !== 'all') {
+                const currentCategory = pageContext.category;
+
+                // Debug Log
+                // console.log(`Ad: ${ad.name}, Target: ${ad.target_category}, Current: ${currentCategory}`);
+
+                if (!currentCategory) return false; // We are not in a category context
+                if (currentCategory !== ad.target_category) return false; // Category mismatch
+            }
+
+            return true;
         });
 
         if (targetedAds.length === 0) return null;
@@ -135,7 +164,7 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
 
         // Observer all ads
         // We need to observe elements regardless of whether they are desktop or mobile containers
-        document.querySelectorAll(`.ad-observer-target-${placementCode}`).forEach(el => observer.observe(el));
+        document.querySelectorAll(`.view-observer-target-${placementCode}`).forEach(el => observer.observe(el));
 
         return () => observer.disconnect();
     }, [activeDesktopAds, activeMobileAds, placementCode, location.pathname]);
@@ -249,7 +278,7 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
             <div
                 key={ad.id}
                 data-ad-id={ad.id}
-                className={`ad-observer-target-${placementCode} flex justify-center items-center ${widthClass} ${heightClass} group ${noContainer ? '' : 'mb-4 last:mb-0'} ${positionClass}`}
+                className={`view-observer-target-${placementCode} flex justify-center items-center ${widthClass} ${heightClass} group ${noContainer ? '' : 'mb-4 last:mb-0'} ${positionClass}`}
                 style={customHeight ? {} : style}
             >
                 {renderAdContent(ad, isMobile)}
@@ -258,7 +287,9 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
     };
 
     // If no ads exist and empty ads should be hidden, return null
-    if ((!activeDesktopAds || activeDesktopAds.length === 0) && (!activeMobileAds || activeMobileAds.length === 0) && !showEmptyAds) {
+    // EXCEPT for critical placements which should always be visible
+    const isCriticalPlacement = CRITICAL_PLACEMENTS.includes(placementCode);
+    if ((!activeDesktopAds || activeDesktopAds.length === 0) && (!activeMobileAds || activeMobileAds.length === 0) && !showEmptyAds && !isCriticalPlacement) {
         return null;
     }
 
@@ -266,29 +297,37 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
     const hasDesktopAds = activeDesktopAds && activeDesktopAds.length > 0;
     const hasMobileAds = activeMobileAds && activeMobileAds.length > 0;
 
-    if (hasDesktopAds || hasMobileAds || showEmptyAds) {
+    if (hasDesktopAds || hasMobileAds || showEmptyAds || isCriticalPlacement) {
         return (
-            <div className={`${noContainer ? '' : 'container mx-auto px-4'} ${noContainer ? '' : (vertical ? 'py-0' : 'py-2 md:pt-8 md:pb-4')} flex flex-col items-center ${noContainer ? 'gap-0' : 'gap-4'}`}>
+            <div className={`${noContainer ? '' : 'container mx-auto px-4'} ${noContainer ? '' : (vertical ? 'py-0' : 'py-2 md:pt-8 md:pb-4')} flex flex-col items-center ${noContainer ? 'gap-0' : 'gap-4'} ${className}`}>
 
                 {/* Desktop Ads List */}
-                <div className={`hidden md:flex flex-col items-center w-full ${noContainer ? 'gap-0' : 'gap-4'}`}>
+                <div className={`flex flex-col items-center w-full ${noContainer ? 'gap-0' : 'gap-4'}`}>
                     {hasDesktopAds ? (
                         activeDesktopAds.map(ad => renderAdContainer(ad, false))
                     ) : (
                         // Placeholder
-                        <div className={`flex justify-center items-center ${widthClass} ${heightClass} bg-gray-100 border-2 border-dashed border-gray-300 relative group`}>
-                            <Link to={targetLink} target={isCustomAd && href ? "_blank" : "_self"} className="flex flex-col items-center justify-center w-full h-full text-gray-400">
+                        <div className={`flex justify-center items-center ${widthClass} ${heightClass} bg-[#e5e7eb] flex flex-col relative group overflow-hidden`}>
+                            {/* Label */}
+                            <div className="absolute top-0 left-0 bg-[#374151] text-white text-[10px] md:text-xs px-3 py-1 font-bold tracking-wide z-10">
+                                Sponsorlu
+                            </div>
+
+                            <Link to={targetLink} target={isCustomAd && href ? "_blank" : "_self"} className="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-gray-500 transition-colors no-underline z-0">
                                 {isCustomAd ? (
-                                    <img src={getOptimizedImageUrl(image, { width: parseInt(desktopDims.w) || 970 })} alt="Reklam" className="w-full h-full object-cover opacity-100" />
+                                    <img src={getOptimizedImageUrl(image, { width: parseInt(desktopDims.w) || 970 })} alt="Sponsor" className={`w-full h-full object-${objectFit} opacity-100`} />
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center p-4 text-center">
-                                        <span className="text-sm font-medium text-gray-400 break-all">{desktopText.replace(/\+/g, ' ')}</span>
+                                    <div className="flex flex-col items-center justify-center">
+                                        <span className={`${vertical ? "text-xl" : (small ? "text-lg md:text-2xl" : "text-2xl md:text-4xl")} font-semibold tracking-tight opacity-75 select-none text-center`}>
+                                            Reklam Alanı
+                                        </span>
+                                        <span className="text-sm font-bold opacity-60 mt-1">{desktopDimensions} px</span>
                                     </div>
                                 )}
                             </Link>
                             {!isCustomAd && (
-                                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                    <span className="text-primary font-bold text-base bg-white/80 px-4 py-2 rounded shadow-sm">Reklam Ver</span>
+                                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-20">
+                                    <span className="text-gray-800 font-bold text-sm md:text-base bg-white px-4 py-2 shadow-lg transform scale-95 group-hover:scale-100 transition-transform">Reklam Ver</span>
                                 </div>
                             )}
                         </div>
@@ -308,6 +347,7 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                                 ) : (
                                     <div className="flex flex-col items-center justify-center p-4 text-center">
                                         <span className="text-sm font-medium text-gray-400 break-all">{mobileText.replace(/\+/g, ' ')}</span>
+                                        <span className="text-xs font-bold text-gray-300 mt-1 block">{mobileDimensions} px</span>
                                     </div>
                                 )}
                             </Link>
@@ -340,7 +380,7 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                         <img
                             src={getOptimizedImageUrl(desktopImage, { width: parseInt(desktopDims.w) || 970 })}
                             alt="Reklam Alanı"
-                            className="w-full h-full object-cover transition-opacity opacity-100"
+                            className={`w-full h-full object-${objectFit} transition-opacity opacity-100`}
                             width={desktopDims.w}
                             height={desktopDims.h}
                             fetchPriority={fetchPriority}
@@ -359,7 +399,7 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                         <img
                             src={getOptimizedImageUrl(mobileImage, { width: parseInt(mobileDims.w) || 300 })}
                             alt="Reklam Alanı"
-                            className="w-full h-full object-cover transition-opacity opacity-100"
+                            className={`w-full h-full object-${objectFit} transition-opacity opacity-100`}
                             width={mobileDims.w}
                             height={mobileDims.h}
                             fetchPriority={fetchPriority}
@@ -375,12 +415,13 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                 {/* Hover Effect Overlay - Only for placeholders */}
                 {!isCustomAd && (
                     <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="text-primary font-bold text-xs md:text-base bg-white/80 px-2 py-1 md:px-4 md:py-2 rounded shadow-sm">Reklam Ver</span>
+                        <span className="text-primary font-bold text-xs md:text-base bg-white/80 px-2 py-1 md:px-4 md:py-2 rounded shadow-sm">Sponsor Ol</span>
                     </div>
                 )}
             </Link>
         </div>
     );
+    return null;
 };
 
 export default AdBanner;

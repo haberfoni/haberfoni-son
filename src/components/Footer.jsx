@@ -19,6 +19,7 @@ const Footer = () => {
     const [message, setMessage] = useState('');
     const [footerSections, setFooterSections] = useState([]);
     const [sectionLinks, setSectionLinks] = useState({});
+    const [pages, setPages] = useState([]);
 
 
 
@@ -40,6 +41,11 @@ const Footer = () => {
                     }
                 }
                 setSectionLinks(linksMap);
+
+                // 3. Get active pages for dynamic_pages sections
+                const pagesData = await adminService.getPages();
+                const activePages = pagesData?.filter(p => p.is_active) || [];
+                setPages(activePages);
 
             } catch (err) {
                 console.error('Error loading footer data:', err);
@@ -140,6 +146,23 @@ const Footer = () => {
                                         <li key={category.id || category.name}>
                                             <Link to={`/kategori/${slugify(category.name)}`} className="hover:text-primary transition-colors">
                                                 {category.name}
+                                            </Link>
+                                        </li>
+                                    ))
+                                ) : section.type === 'dynamic_pages' ? (
+                                    // Pages Logic
+                                    pages.map((page) => (
+                                        <li key={page.id}>
+                                            <Link
+                                                to={
+                                                    page.slug === 'reklam' ? '/reklam' :
+                                                        page.slug === 'iletisim' ? '/iletisim' :
+                                                            page.slug === 'hakkimizda' ? '/hakkimizda' :
+                                                                `/kurumsal/${page.slug}`
+                                                }
+                                                className="hover:text-primary transition-colors"
+                                            >
+                                                {page.title}
                                             </Link>
                                         </li>
                                     ))
