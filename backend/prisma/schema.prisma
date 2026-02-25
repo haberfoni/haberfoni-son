@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model News {
+  id              Int       @id @default(autoincrement())
+  title           String    @db.VarChar(255)
+  slug            String    @unique @db.VarChar(255)
+  summary         String?   @db.Text
+  content         String?   @db.LongText
+  image_url       String?   @db.Text
+  category        String?   @db.VarChar(100)
+  category_id     Int?
+  original_url    String?   @unique @db.VarChar(512)
+  source          String?   @db.VarChar(100)
+  author          String?   @db.VarChar(100)
+  author_id       Int?
+  published_at    DateTime?
+  is_active       Boolean   @default(true)
+  views           Int       @default(0)
+  is_slider       Boolean   @default(false)
+  seo_title       String?   @db.VarChar(255)
+  seo_description String?   @db.VarChar(512)
+  seo_keywords    String?   @db.VarChar(255)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  Category        Category? @relation(fields: [category_id], references: [id])
+  AuthorRelation  Author?   @relation(fields: [author_id], references: [id])
+  Comments        Comment[]
+  TargetedAds     Ad[]
+
+  @@map("news")
+  @@index([category])
+  @@index([slug])
+  @@index([published_at])
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(100)
+  order_index Int      @default(0)
+  is_active   Boolean  @default(true)
+  seo_title       String?   @db.VarChar(255)
+  seo_description String?   @db.VarChar(512)
+  seo_keywords    String?   @db.VarChar(255)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  
+  News        News[]
+
+  @@map("categories")
+}
+
+model Author {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  avatar_url  String?  @db.Text
+  bio         String?  @db.Text
+  email       String?  @db.VarChar(255)
+  created_at  DateTime @default(now())
+
+  News        News[]
+
+  @@map("authors")
+}
+
+model Ad {
+  id             Int      @id @default(autoincrement())
+  name           String   @db.VarChar(255)
+  type           String   @db.VarChar(50) // e.g. 'banner', 'popup'
+  placement_code String?  @db.VarChar(50) // e.g. 'home_top'
+  image_url      String?  @db.Text
+  target_url     String?  @db.Text
+  views          Int      @default(0)
+  clicks         Int      @default(0)
+  is_active      Boolean  @default(true)
+  target_news_id Int?     // Linked to specific news
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  TargetNews     News?    @relation(fields: [target_news_id], references: [id])
+
+  @@map("ads")
+}
+
+model Comment {
+  id          Int      @id @default(autoincrement())
+  news_id     Int
+  user_name   String   @db.VarChar(100)
+  comment     String   @db.Text
+  is_approved Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  News        News     @relation(fields: [news_id], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model Page {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  content     String?  @db.LongText
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("pages")
+}
+
+model SiteSetting {
+  key         String   @id @db.VarChar(100)
+  value       String?  @db.Text
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+model BotSetting {
+  id          Int      @id @default(autoincrement())
+  source_name String   @unique @db.VarChar(50) // 'AA', 'IHA', 'DHA'
+  is_active   Boolean  @default(true)
+  auto_publish Boolean @default(false)
+  daily_limit Int      @default(100)
+  config      String?  @db.Text // JSON config if needed
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("bot_settings")
+}
+
+model BotCommand {
+  id          Int      @id @default(autoincrement())
+  command     String   @db.VarChar(50) // 'FORCE_RUN'
+  status      String   @default("PENDING") // 'PENDING', 'PROCESSING', 'COMPLETED'
+  payload     String?  @db.Text
+  executed_at DateTime?
+  created_at  DateTime @default(now())
+
+  @@map("bot_commands")
+}
+
+model BotCategoryMapping {
+  id              Int      @id @default(autoincrement())
+  source_name     String   @db.VarChar(50)
+  source_url      String   @unique @db.VarChar(512)
+  target_category String   @db.VarChar(100)
+  is_active       Boolean  @default(true)
+  last_scraped_at DateTime?
+  last_status     String?
+  last_item_count Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@map("bot_category_mappings")
+}
+
+model FooterSection {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(100)
+  order_index Int      @default(0)
+  created_at  DateTime @default(now())
+
+  Links       FooterLink[]
+
+  @@map("footer_sections")
+}
+
+model FooterLink {
+  id          Int      @id @default(autoincrement())
+  section_id  Int
+  title       String   @db.VarChar(100)
+  url         String   @db.VarChar(512)
+  order_index Int      @default(0)
+  target      String?  @default("_self")
+  created_at  DateTime @default(now())
+
+  Section     FooterSection @relation(fields: [section_id], references: [id], onDelete: Cascade)
+
+  @@map("footer_links")
+}
+
+model Redirect {
+  id          Int      @id @default(autoincrement())
+  source_url  String   @unique @db.VarChar(512)
+  target_url  String   @db.VarChar(512)
+  code        Int      @default(301)
+  created_at  DateTime @default(now())
+
+  @@map("redirects")
+}
+
+model Tag {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique @db.VarChar(100)
+  slug        String   @unique @db.VarChar(100)
+  created_at  DateTime @default(now())
+
+  @@map("tags")
+}
+
+model Subscriber {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique @db.VarChar(255)
+  created_at DateTime @default(now())
+
+  @@map("subscribers")
+}
