@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Image as ImageIcon, Video, AlertTriangle, Eye, Trash2, X } from 'lucide-react';
-import { supabase } from '../../services/supabase';
+
 import { adminService } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
 import { slugify } from '../../utils/slugify';
@@ -86,13 +86,9 @@ const NewsEditPage = () => {
 
     const loadNews = async () => {
         try {
-            const { data, error } = await supabase
-                .from('news')
-                .select('*')
-                .eq('id', id)
-                .single();
+            const data = await adminService.getNews(id);
 
-            if (error) throw error;
+            // if (error) throw error; // adminService throws on error
 
             // Check if news is in headlines
             const slot = await adminService.getHeadlineByNewsId(id);
@@ -240,20 +236,11 @@ const NewsEditPage = () => {
             let result;
             const trySave = async (payload) => {
                 if (isEditing) {
-                    const { data, error } = await supabase
-                        .from('news')
-                        .update(payload)
-                        .eq('id', id)
-                        .select();
-                    if (error) throw error;
-                    return data && data.length > 0 ? data[0] : null;
+                    const data = await adminService.updateNews(id, payload);
+                    return data;
                 } else {
-                    const { data, error } = await supabase
-                        .from('news')
-                        .insert(payload)
-                        .select();
-                    if (error) throw error;
-                    return data && data.length > 0 ? data[0] : null;
+                    const data = await adminService.createNews(payload);
+                    return data;
                 }
             };
 
@@ -600,7 +587,7 @@ const NewsEditPage = () => {
                                                         console.error('Upload failed:', error);
                                                         // Helpful error message for missing bucket
                                                         if (error.statusCode === '404' || error.message.includes('Bucket not found')) {
-                                                            alert('Hata: "images" adında bir depolama alanı (Bucket) bulunamadı. Lütfen Supabase Storage panelinde "images" adında public bir bucket oluşturun.');
+                                                            alert('Hata: "images" klasörü bulunamadı. Lütfen backend panelinde public klasörünü kontrol edin.');
                                                         } else {
                                                             alert('Görsel yüklenirken bir hata oluştu: ' + error.message);
                                                         }

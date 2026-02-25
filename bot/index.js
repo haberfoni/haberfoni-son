@@ -3,12 +3,9 @@ import { scrapeAA } from './src/scrapers/aa.js';
 import { scrapeDHA } from './src/scrapers/dha.js';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
+import { db } from './src/db.js'; // Import shared pool
 
 dotenv.config();
-
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 console.log('Bot started. Waiting for schedule or commands...');
 
@@ -28,19 +25,19 @@ setInterval(async () => {
 
 async function checkCommands() {
     try {
-        const { data: commands } = await supabase
-            .from('bot_commands')
-            .select('*')
-            .eq('status', 'PENDING')
-            .order('created_at', { ascending: true })
-            .limit(1);
+        const [commands] = await db.execute(
+            "SELECT * FROM bot_commands WHERE status = 'PENDING' ORDER BY created_at ASC LIMIT 1"
+        );
 
         if (commands && commands.length > 0) {
             const cmd = commands[0];
             console.log(`Received command: ${cmd.command}`);
 
             // Mark processing
-            await supabase.from('bot_commands').update({ status: 'PROCESSING', executed_at: new Date() }).eq('id', cmd.id);
+            await db.execute(
+                "UPDATE bot_commands SET status = 'PROCESSING', executed_at = NOW() WHERE id = ?",
+                [cmd.id]
+            );
 
             if (cmd.command === 'FORCE_RUN') {
                 console.log('Executing FORCE RUN...');
@@ -48,7 +45,10 @@ async function checkCommands() {
             }
 
             // Mark completed
-            await supabase.from('bot_commands').update({ status: 'COMPLETED' }).eq('id', cmd.id);
+            await db.execute(
+                "UPDATE bot_commands SET status = 'COMPLETED' WHERE id = ?",
+                [cmd.id]
+            );
             console.log('Command completed.');
         }
     } catch (error) {
@@ -57,7 +57,17 @@ async function checkCommands() {
 }
 
 async function runAll() {
-    await scrapeIHA();
-    await scrapeAA();
-    await scrapeDHA();
+    console.log('Starting scrape cycle...');
+    try {
+        await scrapeIHA();
+    } catch (e) { console.error('IHA Error:', e); }
+
+    try {
+        await scrapeAA();
+    } catch (e) { console.error('AA Error:', e); }
+
+    try {
+        await scrapeDHA();
+    } catch (e) { console.error('DHA Error:', e); }
+    console.log('Scrape cycle finished.');
 }

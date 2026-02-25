@@ -4,7 +4,7 @@ import { adminService } from '../../services/adminService';
 import { useSiteSettings } from '../../context/SiteSettingsContext';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { fetchCategories } from '../../services/api';
-import { supabase } from '../../services/supabase';
+import apiClient from '../../services/apiClient';
 import { slugify } from '../../utils/slugify';
 
 const AdsPage = () => {
@@ -131,7 +131,7 @@ const AdsPage = () => {
                 adminService.getAdPlacements(),
                 fetchCategories(),
                 adminService.getHomeLayout(),
-                supabase.from('news').select('category') // Fetch minimal data for counting
+                apiClient.get('/news', { params: { limit: 1000 } }).then(res => res.data) // Fetch enough data for counting
             ]);
 
             setPlacements(adsData);

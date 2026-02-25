@@ -279,7 +279,7 @@ const UsersPage = () => {
                                             Panele yönetici olarak eklenen kişiler veritabanında <strong>Authentication - Users</strong> kısmına da kaydedilmektedir.
                                         </p>
                                         <p className="mt-2 text-yellow-700">
-                                            E-mail onayı (Confirm Email) ayarı açıksa ve mail gitmiyorsa lütfen Supabase panelinden <strong>Email Confirm</strong> ayarını kapatınız.
+                                            E-mail onayı (Confirm Email) ayarı açıksa ve mail gitmiyorsa lütfen sistem ayarlarından e-mail sağlayıcısını kontrol ediniz.
                                         </p>
                                     </div>
                                 </div>

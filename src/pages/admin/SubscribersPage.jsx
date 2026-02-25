@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Trash2, Send, X, Plus, Calendar, Users, Loader } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { formatDate } from '../../utils/mappers';
-import { supabase } from '../../services/supabase';
 import NewsletterComposer from '../../components/admin/NewsletterComposer';
 import { sendNewsletterToSubscribers } from '../../services/emailService';
 
@@ -42,13 +41,9 @@ const SubscribersPage = () => {
 
     const loadNewsletters = async () => {
         try {
-            const { data, error } = await supabase
-                .from('newsletters')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            setNewsletters(data || []);
+            const dataStr = localStorage.getItem('local_newsletters');
+            const data = dataStr ? JSON.parse(dataStr) : [];
+            setNewsletters(data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
         } catch (error) {
             console.error('Error loading newsletters:', error);
         }
@@ -70,24 +65,25 @@ const SubscribersPage = () => {
 
     const handleSaveNewsletter = async (newsletterData) => {
         try {
-            const { data, error } = await supabase
-                .from('newsletters')
-                .insert([{
-                    subject: newsletterData.subject,
-                    content: newsletterData.content,
-                    created_by: (await supabase.auth.getUser()).data.user?.id
-                }])
-                .select()
-                .single();
+            const newDoc = {
+                id: Date.now().toString(),
+                subject: newsletterData.subject,
+                content: newsletterData.content,
+                created_at: new Date().toISOString(),
+                sent_at: null,
+                sent_count: 0
+            };
 
-            if (error) throw error;
+            const updatedList = [newDoc, ...newsletters];
+            localStorage.setItem('local_newsletters', JSON.stringify(updatedList));
+            setNewsletters(updatedList);
 
-            setNewsletters([data, ...newsletters]);
             setMessage({
                 type: 'success',
-                text: 'Bülten kaydedildi! Email entegrasyonu eklendiğinde gönderilebilecek.'
+                text: 'Bülten başarıyla tarayıcıya kaydedildi! Email entegrasyonu eklendiğinde gönderilebilecek.'
             });
             setTimeout(() => setMessage({ type: '', text: '' }), 5000);
+            return newDoc;
         } catch (error) {
             console.error('Error saving newsletter:', error);
             throw error;
@@ -117,19 +113,12 @@ const SubscribersPage = () => {
                 }
             );
 
-            // Update newsletter in database
-            const { error } = await supabase
-                .from('newsletters')
-                .update({
-                    sent_at: new Date().toISOString(),
-                    sent_count: result.successCount
-                })
-                .eq('id', newsletter.id);
-
-            if (error) throw error;
-
-            // Reload newsletters
-            await loadNewsletters();
+            // Update newsletter in localStorage
+            const updatedList = newsletters.map(n =>
+                n.id === newsletter.id ? { ...n, sent_at: new Date().toISOString(), sent_count: result.successCount } : n
+            );
+            localStorage.setItem('local_newsletters', JSON.stringify(updatedList));
+            setNewsletters(updatedList);
 
             setMessage({
                 type: 'success',
@@ -152,14 +141,10 @@ const SubscribersPage = () => {
         if (!window.confirm('Bu bülteni silmek istediğinize emin misiniz?')) return;
 
         try {
-            const { error } = await supabase
-                .from('newsletters')
-                .delete()
-                .eq('id', id);
+            const updatedList = newsletters.filter(n => n.id !== id);
+            localStorage.setItem('local_newsletters', JSON.stringify(updatedList));
+            setNewsletters(updatedList);
 
-            if (error) throw error;
-
-            setNewsletters(newsletters.filter(n => n.id !== id));
             setMessage({ type: 'success', text: 'Bülten silindi.' });
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         } catch (error) {
@@ -316,17 +301,10 @@ const SubscribersPage = () => {
                 onSave={handleSaveNewsletter}
                 onSaveAndSend={async (newsletterData) => {
                     // First save the newsletter
-                    await handleSaveNewsletter(newsletterData);
-                    // Then get the latest newsletter and send it
-                    const { data } = await supabase
-                        .from('newsletters')
-                        .select('*')
-                        .order('created_at', { ascending: false })
-                        .limit(1)
-                        .single();
-
-                    if (data) {
-                        await handleSendNewsletter(data);
+                    const newDoc = await handleSaveNewsletter(newsletterData);
+                    // Then send it
+                    if (newDoc) {
+                        await handleSendNewsletter(newDoc);
                     }
                 }}
             />

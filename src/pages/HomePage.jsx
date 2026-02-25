@@ -8,8 +8,7 @@ import SEO from '../components/SEO';
 import MultimediaRow from '../components/MultimediaRow';
 import ImageWithFallback from '../components/ImageWithFallback';
 import { TrendingUp, ArrowRight, Clock, Globe, Trophy, Cpu, HeartPulse, Palette, Landmark, Coffee, GraduationCap, Sparkles, Car, Banknote, Newspaper, Layout } from 'lucide-react';
-import { fetchNews, fetchHeadlines, fetchSurmanset, fetchHomeVideos, fetchHomePhotoGalleries, fetchCategories } from '../services/api';
-import { supabase } from '../services/supabase';
+import { fetchNews, fetchHeadlines, fetchSurmanset, fetchHomeVideos, fetchHomePhotoGalleries, fetchCategories, fetchAdPlacements } from '../services/api';
 import { mapNewsItem } from '../utils/mappers';
 import { slugify } from '../utils/slugify';
 import { toTurkishTitleCase } from '../utils/turkishCase';
@@ -109,7 +108,7 @@ const HomePage = () => {
                     fetchHomeVideos().catch(e => { console.error(e); return []; }),
                     fetchHomePhotoGalleries().catch(e => { console.error(e); return []; }),
                     fetchCategories().catch(e => { console.error(e); return []; }),
-                    supabase.from('ads').select('*').then(({ data }) => data || []).catch(e => { console.error(e); return []; })
+                    fetchAdPlacements().catch(e => { console.error(e); return []; })
                 ]);
 
                 // Create Slug -> Name map

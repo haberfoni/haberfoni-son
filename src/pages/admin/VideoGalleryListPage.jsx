@@ -265,7 +265,7 @@ const VideoGalleryListPage = () => {
                                             <div>
                                                 {item.video_url?.toLowerCase().includes('youtube') || item.video_url?.toLowerCase().includes('youtu.be')
                                                     ? 'YouTube'
-                                                    : item.video_url?.includes('supabase.co')
+                                                    : item.video_url?.includes('/uploads/') || item.video_url?.startsWith('http://localhost')
                                                         ? 'Dosya Yükleme'
                                                         : 'Diğer'}
                                             </div>

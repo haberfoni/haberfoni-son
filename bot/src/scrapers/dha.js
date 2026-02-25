@@ -4,6 +4,20 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { saveNews } from '../db.js';
 
+const BLOCKED_IMAGE_PATTERNS = [
+    'bip.png', 'bip.jpg',
+    'next-header-aa', 'aa-logo',
+    'dha-logo', 'default.jpg',
+    'placeholder', 'logo.png', 'logo.jpg', 'logo.svg',
+    'noimage', 'no-image', 'no_image',
+];
+
+function isBlockedImage(url) {
+    if (!url) return true;
+    const lower = url.toLowerCase();
+    return BLOCKED_IMAGE_PATTERNS.some(p => lower.includes(p));
+}
+
 export async function scrapeDHA() {
     console.log('--- Starting DHA Scrape ---');
     try {
@@ -18,7 +32,7 @@ export async function scrapeDHA() {
 
         let totalSaved = 0;
         for (const mapping of mappings) {
-            console.log(`Fetching DHA: ${mapping.source_url} -> ${mapping.target_category_slug}`);
+            console.log(`Fetching DHA: ${mapping.source_url} -> ${mapping.target_category}`);
             try {
                 // Determine if it is RSS or HTML based on URL content or extension if possible,
                 // but for now, assume HTML since RSS failed. Or try both?
@@ -53,11 +67,11 @@ export async function scrapeDHA() {
                         articles.push({
                             title: title,
                             original_url: fullLink,
-                            image_url: img ? (img.startsWith('http') ? img : `https://www.dha.com.tr${img}`) : null,
-                            summary: '', // DHA category pages often don't show summary
-                            content: '', // Will be fetched if needed, or left empty
+                            image_url: img && !isBlockedImage(img) ? (img.startsWith('http') ? img : `https://www.dha.com.tr${img}`) : null,
+                            summary: '',
+                            content: '',
                             source: 'DHA',
-                            category: mapping.target_category_slug
+                            category: mapping.target_category
                         });
                     }
                 });
@@ -83,7 +97,6 @@ export async function scrapeDHA() {
                         // Clean up DOM before extracting content
                         $detail('script').remove();
                         $detail('style').remove();
-                        $detail('iframe').remove();
                         $detail('.share-buttons').remove();
                         $detail('.breadcrumb').remove();
                         $detail('.tags').remove();
@@ -123,7 +136,7 @@ export async function scrapeDHA() {
                             // Select paragraphs, headers, lists, and IMAGES
                             let stopExtraction = false;
 
-                            let rawContent = contentEl.find('p, h2, h3, h4, ul, ol, figure, img').map((i, el) => {
+                            let rawContent = contentEl.find('p, h2, h3, h4, ul, ol, figure, img, iframe, video').map((i, el) => {
                                 if (stopExtraction) return '';
 
                                 const tag = el.tagName.toLowerCase();
@@ -131,21 +144,34 @@ export async function scrapeDHA() {
 
                                 // Handle Images
                                 if (tag === 'img' || tag === 'figure') {
-                                    // Avoid duplicates: If img is inside figure, skip it (figure handles it)
-                                    // Use closest() because img might be nested in div or a tag
                                     if (tag === 'img' && $el.closest('figure').length > 0) return '';
 
                                     let imgEl = tag === 'img' ? $el : $el.find('img');
                                     let src = imgEl.attr('data-src') || imgEl.attr('src');
 
-                                    if (src && !src.includes('base64') && !src.includes('dha-logo')) {
-                                        // Fix relative URLs
+                                    if (src && !src.includes('base64') && !isBlockedImage(src)) {
                                         if (!src.startsWith('http')) src = `https://www.dha.com.tr${src}`;
-
-                                        // Use caption from figure if available, else alt
                                         let caption = tag === 'figure' ? $el.find('figcaption').text().trim() : imgEl.attr('alt');
-
                                         return `<figure class="my-6"><img src="${src}" alt="${caption || ''}" class="w-full h-auto rounded-lg shadow-md" /><figcaption class="text-sm text-gray-500 mt-2 text-center">${caption || ''}</figcaption></figure>`;
+                                    }
+                                    return '';
+                                }
+
+                                // Handle iframes (YouTube, etc.)
+                                if (tag === 'iframe') {
+                                    const src = $el.attr('src') || '';
+                                    if (src && (src.includes('youtube') || src.includes('youtu.be') || src.includes('dailymotion') || src.includes('vimeo'))) {
+                                        return `<div class="my-6 aspect-video"><iframe src="${src}" class="w-full h-full rounded-lg" allowfullscreen></iframe></div>`;
+                                    }
+                                    return '';
+                                }
+
+                                // Handle native video tags
+                                if (tag === 'video') {
+                                    const src = $el.attr('src') || $el.find('source').attr('src') || '';
+                                    if (src) {
+                                        if (!src.startsWith('http')) return '';
+                                        return `<div class="my-6"><video src="${src}" controls class="w-full rounded-lg"></video></div>`;
                                     }
                                     return '';
                                 }
@@ -246,7 +272,7 @@ export async function scrapeDHA() {
 
                         const newsItem = {
                             ...item,
-                            content: content.substring(0, 60000), // Increased limit for long articles
+                            content: content,
                             summary: summary,
                             author: author, // Author or null/undefined (database will handle it)
                         };
@@ -262,7 +288,7 @@ export async function scrapeDHA() {
                     }
                 }
 
-                console.log(`   Saved ${count} items for ${mapping.target_category_slug}`);
+                console.log(`   Saved ${count} items for ${mapping.target_category}`);
                 totalSaved += count;
 
                 // Log Success

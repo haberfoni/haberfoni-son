@@ -39,17 +39,15 @@ const LoginPage = () => {
         } catch (err) {
             console.error('Login error:', err);
 
-            // Supabase error handling
-            const errorMessage = err?.message || err?.error_description || '';
-
-            if (errorMessage.includes('Invalid') || errorMessage.includes('credentials')) {
+            // API error handling
+            if (err.message && err.message.includes('Invalid login credentials')) {
                 setError('Email veya şifre hatalı.');
-            } else if (errorMessage.includes('Email not confirmed')) {
+            } else if (err.message && err.message.includes('Email not confirmed')) {
                 setError('Email adresiniz doğrulanmamış.');
-            } else if (err?.status === 400) {
+            } else if (err.response && err.response.status === 400) {
                 setError('Email veya şifre hatalı.');
             } else {
-                setError(`Giriş hatası: ${errorMessage || 'Bilinmeyen hata'}`);
+                setError(`Giriş hatası: ${err.message || 'Bilinmeyen hata'}`);
             }
         } finally {
             setLoading(false);

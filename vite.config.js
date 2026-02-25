@@ -9,7 +9,6 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'supabase': ['@supabase/supabase-js'],
           'ui': ['lucide-react', 'date-fns'],
           'utils': ['react-helmet-async']
         }

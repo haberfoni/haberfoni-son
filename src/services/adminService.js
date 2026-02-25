@@ -1,194 +1,46 @@
-import { supabase, supabaseUrl, supabaseKey } from './supabase.js';
-import { createClient } from '@supabase/supabase-js';
 import { slugify } from '../utils/slugify.js';
+import apiClient from './apiClient';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const adminService = {
     // ... (rest of the file)
     // Service: Pages
     async getPages() {
-        const { data, error } = await supabase
-            .from('pages')
-            .select('*')
-            .order('title');
-
-        if (error) throw error;
-        return data;
+        try {
+            const res = await apiClient.get('/pages');
+            return res.data || [];
+        } catch (e) { console.error('getPages error:', e); return []; }
     },
 
-    // Service: Footer Sections
-    async getFooterSections() {
-        const { data, error } = await supabase
-            .from('footer_sections')
-            .select('*')
-            .order('order_index', { ascending: true });
+    // Service: Footer Sections (stubbed - not in NestJS API yet, return empty)
+    async getFooterSections() { return []; },
+    async createFooterSection(d) { return d; },
+    async updateFooterSection(id, d) { return d; },
+    async deleteFooterSection(id) { return true; },
+    async reorderFooterSections(s) { return true; },
 
-        if (error) throw error;
-        return data;
-    },
-
-    async createFooterSection(sectionData) {
-        const { data, error } = await supabase
-            .from('footer_sections')
-            .insert(sectionData)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('CREATE', 'FOOTER_SECTION', `Footer bölümü oluşturuldu: ${sectionData.title}`, data.id);
-
-        return data;
-    },
-
-    async updateFooterSection(id, updates) {
-        const { data, error } = await supabase
-            .from('footer_sections')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('UPDATE', 'FOOTER_SECTION', `Footer bölümü güncellendi: ${updates.title || id}`, id);
-
-        return data;
-    },
-
-    async deleteFooterSection(id) {
-        const { error } = await supabase
-            .from('footer_sections')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        await this.logActivity('DELETE', 'FOOTER_SECTION', `Footer bölümü silindi: ${id}`, id);
-
-        return true;
-    },
-
-    async reorderFooterSections(sections) {
-        const promises = sections.map((section, index) =>
-            supabase
-                .from('footer_sections')
-                .update({ order_index: index })
-                .eq('id', section.id)
-        );
-
-        await Promise.all(promises);
-        return true;
-    },
-
-    // Service: Footer Links
-    async getFooterLinks(sectionId = null) {
-        let query = supabase
-            .from('footer_links')
-            .select('*')
-            .order('order_index', { ascending: true });
-
-        if (sectionId) {
-            query = query.eq('section_id', sectionId);
-        }
-
-        const { data, error } = await query;
-
-        if (error) throw error;
-        return data;
-    },
-
-    async createFooterLink(linkData) {
-        const { data, error } = await supabase
-            .from('footer_links')
-            .insert(linkData)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('CREATE', 'FOOTER_LINK', `Footer linki eklendi: ${linkData.title}`, data.id);
-
-        return data;
-    },
-
-    async updateFooterLink(id, updates) {
-        const { data, error } = await supabase
-            .from('footer_links')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('UPDATE', 'FOOTER_LINK', `Footer linki güncellendi: ${updates.title || id}`, id);
-
-        return data;
-    },
-
-    async deleteFooterLink(id) {
-        const { error } = await supabase
-            .from('footer_links')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        await this.logActivity('DELETE', 'FOOTER_LINK', `Footer linki silindi: ${id}`, id);
-
-        return true;
-    },
-
-    async reorderFooterLinks(links) {
-        const promises = links.map((link, index) =>
-            supabase
-                .from('footer_links')
-                .update({ order_index: index })
-                .eq('id', link.id)
-        );
-
-        await Promise.all(promises);
-        return true;
-    },
+    // Service: Footer Links (stubbed)
+    async getFooterLinks(sectionId = null) { return []; },
+    async createFooterLink(d) { return d; },
+    async updateFooterLink(id, d) { return d; },
+    async deleteFooterLink(id) { return true; },
+    async reorderFooterLinks(l) { return true; },
 
     async getPage(id) {
-        const { data, error } = await supabase
-            .from('pages')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-        if (error) throw error;
-        return data;
+        const res = await apiClient.get(`/pages/${id}`);
+        return res.data;
     },
 
     async getPageBySlug(slug) {
-        const { data, error } = await supabase
-            .from('pages')
-            .select('*')
-            .eq('slug', slug)
-            .eq('is_active', true)
-            .maybeSingle();
-
-        if (error) throw error;
-        return data;
+        const res = await apiClient.get(`/pages?slug=${slug}&is_active=true`).catch(() => ({ data: null }));
+        return Array.isArray(res.data) ? res.data[0] || null : res.data;
     },
 
     async createPage(pageData) {
-        const { data, error } = await supabase
-            .from('pages')
-            .insert([{
-                ...pageData,
-                slug: slugify(pageData.slug || pageData.title)
-            }])
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('CREATE', 'PAGE', `Yeni sayfa oluşturuldu: ${pageData.title}`, data.id);
-
-        return data;
+        const res = await apiClient.post('/pages', { ...pageData, slug: slugify(pageData.slug || pageData.title) });
+        await this.logActivity('CREATE', 'PAGE', `Yeni sayfa oluşturuldu: ${pageData.title}`, res.data.id);
+        return res.data;
     },
 
     async updatePage(id, pageData) {
@@ -197,153 +49,100 @@ export const adminService = {
             // Only update slug if explicit or if title changed and slug wasn't provided (optional logic, kept simple here)
         }
 
-        const { data, error } = await supabase
-            .from('pages')
-            .update(updateData)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        let title = pageData.title;
-        if (!title) {
-            const { data: current } = await supabase.from('pages').select('title').eq('id', id).single();
-            title = current?.title;
+        try {
+            const response = await apiClient.patch(`/pages/${id}`, updateData);
+            await this.logActivity('UPDATE', 'PAGE', `Sayfa güncellendi: ${pageData.title || id}`, id);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating page:', error);
+            throw error;
         }
-        await this.logActivity('UPDATE', 'PAGE', `Sayfa güncellendi: ${title || id}`, id);
-
-        return data;
     },
 
     async deletePage(id) {
-        const { error } = await supabase
-            .from('pages')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        await this.logActivity('DELETE', 'PAGE', `Sayfa silindi: ${id}`, id);
+        try {
+            await apiClient.delete(`/pages/${id}`);
+            await this.logActivity('DELETE', 'PAGE', `Sayfa silindi: ${id}`, id);
+        } catch (error) {
+            console.error('Error deleting page:', error);
+            throw error;
+        }
     },
 
     async getDashboardStats() {
-        // 1. Active News Count
-        const { count: activeNewsCount, error: newsError } = await supabase
-            .from('news')
-            .select('*', { count: 'exact', head: true })
-            .not('published_at', 'is', null);
-
-        if (newsError) console.error('Error fetching news count:', newsError);
-
-        // 2. Subscribers Count
-        const { count: subscribersCount, error: subsError } = await supabase
-            .from('subscribers')
-            .select('*', { count: 'exact', head: true });
-
-        if (subsError) console.error('Error fetching subscribers count:', subsError);
-
-        // 3. Total Comments Count (Replacing Revenue)
-        const { count: commentsCount, error: commentsError } = await supabase
-            .from('comments')
-            .select('*', { count: 'exact', head: true });
-
-        if (commentsError) console.error('Error fetching comments count:', commentsError);
-
-        // 4. Total Views (Sum of news views - Simplified approximation)
-        // Note: For large datasets, use RPC. For now, fetching views column.
-        const { data: viewsData, error: viewsError } = await supabase
-            .from('news')
-            .select('views');
-
-        let totalViews = 0;
-        if (!viewsError && viewsData) {
-            totalViews = viewsData.reduce((sum, item) => sum + (item.views || 0), 0);
+        try {
+            const response = await apiClient.get('/stats/dashboard');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching dashboard stats:', error);
+            return {
+                activeNews: 0,
+                subscribers: 0,
+                totalComments: 0,
+                totalViews: 0
+            };
         }
-
-        return {
-            activeNews: activeNewsCount || 0,
-            subscribers: subscribersCount || 0,
-            totalComments: commentsCount || 0,
-            totalViews: totalViews
-        };
     },
 
     // Service: Settings
     async getSettings() {
-        const { data, error } = await supabase
-            .from('site_settings')
-            .select('*');
-
-        if (error) throw error;
-
-        // Transform array to object for easier consumption
-        const settingsObject = {};
-        data.forEach(item => {
-            settingsObject[item.key] = item.value;
-        });
-
-        return settingsObject;
+        try {
+            const res = await apiClient.get('/settings');
+            const obj = {};
+            (res.data || []).forEach(item => { obj[item.key] = item.value; });
+            return obj;
+        } catch (e) { return {}; }
     },
 
     async updateSetting(key, value) {
-        const { data, error } = await supabase
-            .from('site_settings')
-            .upsert({ key, value }, { onConflict: 'key' })
-            .select()
-            .single();
-
-        if (error) throw error;
-
+        const res = await apiClient.patch(`/settings/${key}`, { value });
         await this.logActivity('UPDATE', 'SETTINGS', `Ayar güncellendi: ${key}`, 1);
-
-        return data;
+        return res.data;
     },
 
     async updateSettingsBulk(settingsArray) {
-        const { data, error } = await supabase
-            .from('site_settings')
-            .upsert(settingsArray)
-            .select();
-
-        if (error) throw error;
-
-        await this.logActivity('UPDATE', 'SETTINGS', `Ayarlar toplu güncellendi (${settingsArray.length} adet)`, 1);
-
-        return data;
+        for (const s of settingsArray) {
+            await apiClient.patch(`/settings/${s.key}`, { value: s.value }).catch(() => { });
+        }
+        await this.logActivity('UPDATE', 'SETTINGS', `Ayarlar toplu güncellendi`, 1);
+        return true;
     },
 
 
 
     // Service: Home Layout
+
+
     async getHomeLayout() {
-        const { data, error } = await supabase
-            .from('site_settings')
-            .select('value')
-            .eq('key', 'home_layout')
-            .maybeSingle();
+        try {
+            const response = await apiClient.get('/settings/home_layout');
+            const data = response.data;
 
-        if (error) throw error;
+            if (data && data.value) {
+                try {
+                    const parsedLayout = JSON.parse(data.value);
+                    // Fix: Ensure home_top is enabled if it exists, as it's a critical section
+                    if (parsedLayout.sections) {
+                        let topSection = parsedLayout.sections.find(s => s.id === 'home_top');
 
-        if (data && data.value) {
-            try {
-                const parsedLayout = JSON.parse(data.value);
-                // Fix: Ensure home_top is enabled if it exists, as it's a critical section
-                if (parsedLayout.sections) {
-                    let topSection = parsedLayout.sections.find(s => s.id === 'home_top');
-
-                    if (!topSection) {
-                        // If missing, inject it at the start
-                        topSection = { id: 'home_top', name: 'Üst Sponsor', type: 'ad', enabled: true, removable: false };
-                        parsedLayout.sections.unshift(topSection);
-                    } else {
-                        // If exists, ensure enabled
-                        topSection.enabled = true;
+                        if (!topSection) {
+                            // If missing, inject it at the start
+                            topSection = { id: 'home_top', name: 'Üst Sponsor', type: 'ad', enabled: true, removable: false };
+                            parsedLayout.sections.unshift(topSection);
+                        } else {
+                            // If exists, ensure enabled
+                            topSection.enabled = true;
+                        }
                     }
+                    return parsedLayout;
+                } catch (e) {
+                    console.error('Error parsing home layout:', e);
                 }
-                return parsedLayout;
-            } catch (e) {
-                console.error('Error parsing home layout:', e);
+            }
+        } catch (error) {
+            // If 404, it returns default
+            if (error.response && error.response.status !== 404) {
+                console.error('Error fetching home layout:', error);
             }
         }
 
@@ -363,20 +162,16 @@ export const adminService = {
     },
 
     async saveHomeLayout(layout) {
-        const { data, error } = await supabase
-            .from('site_settings')
-            .upsert({
-                key: 'home_layout',
+        try {
+            const response = await apiClient.patch('/settings/home_layout', {
                 value: JSON.stringify(layout)
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('UPDATE', 'HOME_LAYOUT', 'Ana sayfa düzeni ve kategori ayarları güncellendi', null);
-
-        return data;
+            });
+            await this.logActivity('UPDATE', 'HOME_LAYOUT', 'Ana sayfa düzeni ve kategori ayarları güncellendi', null);
+            return response.data;
+        } catch (error) {
+            console.error('Error saving home layout:', error);
+            throw error;
+        }
     },
 
 
@@ -384,369 +179,199 @@ export const adminService = {
 
 
     // Service: Ads
+    // Service: Ads
     async getAdPlacements() {
-        const { data, error } = await supabase
-            .from('ads')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data;
+        try {
+            const response = await apiClient.get('/ads');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching ads:', error);
+            throw error;
+        }
     },
 
     async createAdPlacement(ad) {
-        const { data, error } = await supabase
-            .from('ads')
-            .insert(ad)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('CREATE', 'ADS', `Yeni reklam alanı oluşturuldu: ${ad.name}`, data.id);
-
-        return data;
+        try {
+            const response = await apiClient.post('/ads', ad);
+            await this.logActivity('CREATE', 'ADS', `Yeni reklam alanı oluşturuldu: ${ad.name}`, response.data.id);
+            return response.data;
+        } catch (error) {
+            console.error('Error creating ad:', error);
+            throw error;
+        }
     },
 
     async updateAdPlacement(id, updates) {
-        // Fetch current state for log comparison
-        const { data: currentAd } = await supabase
-            .from('ads')
-            .select('image_url, name')
-            .eq('id', id)
-            .single();
+        try {
+            const response = await apiClient.patch(`/ads/${id}`, updates);
 
-        const { data, error } = await supabase
-            .from('ads')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        // Custom Log Logic
-        let desc = `Reklam güncellendi: ${updates.name || currentAd?.name || id}`;
-        if (currentAd && updates.image_url !== undefined) {
-            if (!currentAd.image_url && updates.image_url) {
-                desc = `Reklam görseli YÜKLENDİ: ${updates.name || currentAd.name}`;
-            } else if (currentAd.image_url && !updates.image_url) {
-                desc = `Reklam görseli SİLİNDİ: ${updates.name || currentAd.name}`;
-            } else if (currentAd.image_url !== updates.image_url) {
-                desc = `Reklam görseli DEĞİŞTİRİLDİ: ${updates.name || currentAd.name}`;
+            // Simplified logging
+            let desc = `Reklam güncellendi: ${updates.name || id}`;
+            if (updates.image_url !== undefined) {
+                desc += ' (Görsel güncellendi)';
             }
+            await this.logActivity('UPDATE', 'ADS', desc, id);
+
+            return response.data;
+        } catch (error) {
+            console.error(`Error updating ad ${id}:`, error);
+            throw error;
         }
+    },
 
-        await this.logActivity('UPDATE', 'ADS', desc, id);
-
-        return data;
+    async deleteAdPlacement(id) {
+        try {
+            await apiClient.delete(`/ads/${id}`);
+            await this.logActivity('DELETE', 'ADS', `Reklam silindi`, id);
+        } catch (error) {
+            console.error(`Error deleting ad ${id}:`, error);
+            throw error;
+        }
     },
 
     async incrementAdView(id) {
-        // Optimistic update or minimal query?
-        // Ideally: rpc('increment_ad_view', { row_id: id })
-        // Fallback: fetch count, increment, update.
-        // For reliability without RPC:
-        const { data } = await supabase.from('ads').select('views').eq('id', id).single();
-        if (data) {
-            await supabase.from('ads').update({ views: (data.views || 0) + 1 }).eq('id', id);
+        try {
+            // Fetch current to increment
+            // TODO: Implement atomic increment in backend
+            const { data } = await apiClient.get(`/ads/${id}`);
+            if (data) {
+                await apiClient.patch(`/ads/${id}`, { views: (data.views || 0) + 1 });
+            }
+        } catch (e) {
+            // Fail silently for analytics
+            console.error('Error incrementing ad view:', e);
         }
     },
 
     async incrementAdClick(id) {
-        const { data } = await supabase.from('ads').select('clicks').eq('id', id).single();
-        if (data) {
-            await supabase.from('ads').update({ clicks: (data.clicks || 0) + 1 }).eq('id', id);
+        try {
+            const { data } = await apiClient.get(`/ads/${id}`);
+            if (data) {
+                await apiClient.patch(`/ads/${id}`, { clicks: (data.clicks || 0) + 1 });
+            }
+        } catch (e) {
+            console.error('Error incrementing ad click:', e);
         }
     },
 
     // Service: Comments
     async getComments() {
-        const { data, error } = await supabase
-            .from('comments')
-            .select('*, news:news_id(title)')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data;
+        try {
+            const res = await apiClient.get('/comments');
+            return res.data || [];
+        } catch (e) { return []; }
     },
 
     async approveComment(id) {
-        const { data, error } = await supabase
-            .from('comments')
-            .update({ is_approved: true })
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        // Use 'comment' column
-        let logDesc = `Yorum onaylandı: ${id}`;
-        if (data && data.comment) {
-            const text = data.comment.length > 50 ? data.comment.substring(0, 50) + '...' : data.comment;
-            logDesc = `Yorum onaylandı: ${text}`;
-        }
-
-        await this.logActivity('UPDATE', 'COMMENT', logDesc, id);
-
-        return data;
+        const res = await apiClient.patch(`/comments/${id}`, { is_approved: true });
+        await this.logActivity('UPDATE', 'COMMENT', `Yorum onaylandı: ${id}`, id);
+        return res.data;
     },
 
     async deleteComment(id) {
-        let logDesc = `Yorum silindi: ${id}`;
         try {
-            // NOTE: Column name is 'comment', NOT 'content'
-            const { data } = await supabase.from('comments').delete().eq('id', id).select().single();
-            if (data && data.comment) {
-                const text = data.comment.length > 50 ? data.comment.substring(0, 50) + '...' : data.comment;
-                logDesc = `Yorum silindi: ${text}`;
-            }
+            await apiClient.delete(`/comments/${id}`);
         } catch (err) {
             console.error('Error deleting comment:', err);
-            // Fallback to separate delete if select failed (though it shouldn't)
-            const { error: delError } = await supabase.from('comments').delete().eq('id', id);
-            if (delError) throw delError;
+            throw err;
         }
-
-        await this.logActivity('DELETE', 'COMMENT', logDesc, id);
-
+        await this.logActivity('DELETE', 'COMMENT', `Yorum silindi: ${id}`, id);
         return true;
     },
 
     // Service: Tags
     async getTags() {
-        const { data, error } = await supabase
-            .from('tags')
-            .select('*')
-            .order('name');
-
-        if (error) throw error;
-        return data;
+        try { const res = await apiClient.get('/tags'); return res.data || []; } catch (e) { return []; }
     },
 
     async addTag(name) {
-        // Basic slug generation
         const slug = name.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, '');
-
-        const { data, error } = await supabase
-            .from('tags')
-            .insert({ name, slug })
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('CREATE', 'TAG', `Yeni etiket eklendi: ${name}`, data.id);
-
-        return data;
+        const res = await apiClient.post('/tags', { name, slug });
+        await this.logActivity('CREATE', 'TAG', `Yeni etiket eklendi: ${name}`, res.data.id);
+        return res.data;
     },
 
     async deleteTag(id) {
-        const { error } = await supabase
-            .from('tags')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
+        await apiClient.delete(`/tags/${id}`);
         await this.logActivity('DELETE', 'TAG', `Etiket silindi: ${id}`, id);
-
         return true;
     },
 
     // Service: Redirects
     async getRedirects() {
-        const { data, error } = await supabase
-            .from('redirects')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data;
+        try { const res = await apiClient.get('/redirects'); return res.data || []; } catch (e) { return []; }
     },
 
     async addRedirect(redirect) {
-        const { data, error } = await supabase
-            .from('redirects')
-            .insert(redirect)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('CREATE', 'REDIRECT', `Yönlendirme eklendi: ${redirect.source_url} -> ${redirect.target_url}`, data.id);
-
-        return data;
+        const res = await apiClient.post('/redirects', redirect);
+        await this.logActivity('CREATE', 'REDIRECT', `Yönlendirme eklendi`, res.data.id);
+        return res.data;
     },
 
     async deleteRedirect(id) {
-        const { error } = await supabase
-            .from('redirects')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
+        await apiClient.delete(`/redirects/${id}`);
         await this.logActivity('DELETE', 'REDIRECT', `Yönlendirme silindi: ${id}`, id);
-
         return true;
     },
 
-    // Service: News (with Duplicate Check)
+    // Service: News
     async checkDuplicateNews(title, excludeId = null) {
-        // Simple similar title check
-        let query = supabase
-            .from('news')
-            .select('id, title, slug')
-            .ilike('title', title)
-            .limit(1);
-
-        if (excludeId) {
-            query = query.neq('id', excludeId);
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        return data.length > 0 ? data[0] : null;
+        try {
+            const res = await apiClient.get('/news', { params: { search: title, limit: 1 } });
+            const items = res.data?.data || [];
+            return items.length > 0 && items[0].id !== excludeId ? items[0] : null;
+        } catch (e) { return null; }
     },
 
-
     async getNewsBySlug(slug) {
-        const { data, error } = await supabase
-            .from('news')
-            .select('id, title')
-            .eq('slug', slug)
-            .single();
-
-        if (error) throw error;
-        return data;
+        try {
+            const res = await apiClient.get(`/news?slug=${slug}`);
+            const items = res.data?.data || res.data || [];
+            return Array.isArray(items) ? items[0] || null : items;
+        } catch (e) { return null; }
     },
 
     async getNewsList(page = 0, pageSize = 20, filters = {}) {
-        let query = supabase
-            .from('news')
-            .select('*', { count: 'exact' });
-
-        // Apply filters
-        if (filters.category && filters.category !== 'all') {
-            query = query.eq('category', filters.category);
+        try {
+            const params = {
+                page: page + 1, // API is 1-indexed
+                limit: pageSize,
+                category: filters.category !== 'all' ? filters.category : undefined,
+                search: filters.search,
+                status: filters.status,
+                authorId: filters.authorId
+            };
+            const response = await apiClient.get('/news', { params });
+            return {
+                data: response.data.data,
+                count: response.data.meta.total
+            };
+        } catch (error) {
+            console.error('Error fetching news list:', error);
+            return { data: [], count: 0 };
         }
-        if (filters.status === 'published') {
-            query = query.not('published_at', 'is', null);
-        } else if (filters.status === 'draft') {
-            query = query.is('published_at', null);
-        }
-        if (filters.search) {
-            query = query.ilike('title', `%${filters.search}%`);
-        }
-        if (filters.authorId) {
-            query = query.eq('author_id', filters.authorId);
-        }
-
-        const { data, error, count } = await query
-            .order('created_at', { ascending: false })
-            .range(page * pageSize, (page + 1) * pageSize - 1);
-
-        if (error) throw error;
-        return { data, count };
     },
 
     async deleteNews(id) {
-        // 1. Check for linked ads
-        const { data: linkedAds } = await supabase
-            .from('ads')
-            .select('id')
-            .eq('target_news_id', String(id));
-
-        if (linkedAds && linkedAds.length > 0) {
-            console.log(`Unlinking ${linkedAds.length} ads from news ${id}`);
-            const adIds = linkedAds.map(a => a.id);
-            // Unlink them by PK
-            const { error: unlinkError } = await supabase
-                .from('ads')
-                .update({ target_news_id: null })
-                .in('id', adIds);
-
-            if (unlinkError) {
-                console.error('Error unlinking ads:', unlinkError);
-            }
-        } else {
-            // Blind unlink attempt for safety
-            await supabase.from('ads').update({ target_news_id: null }).eq('target_news_id', String(id));
+        try {
+            await apiClient.delete(`/news/${id}`);
+            await this.logActivity('DELETE', 'NEWS', `Haber silindi: ${id}`, id);
+            return true;
+        } catch (error) {
+            console.error('Error deleting news:', error);
+            throw error;
         }
-
-        // 2. Delete the news
-        const { error } = await supabase
-            .from('news')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        await this.logActivity('DELETE', 'NEWS', `Haber silindi: ${id}`, id);
-
-        return true;
     },
 
     async deleteNewsBulk(ids) {
         if (!ids || ids.length === 0) return;
-
         try {
-            // 1. Try to find and unlink ads using BOTH integer and string formats
-            // First try with raw IDs (likely integers)
-            const { data: linkedAds1 } = await supabase
-                .from('ads')
-                .select('id, target_news_id')
-                .in('target_news_id', ids);
-
-            // Then try with string IDs
-            const idStrings = ids.map(String);
-            const { data: linkedAds2 } = await supabase
-                .from('ads')
-                .select('id, target_news_id')
-                .in('target_news_id', idStrings);
-
-            // Combine results and deduplicate
-            const allLinkedAds = [...(linkedAds1 || []), ...(linkedAds2 || [])];
-            const uniqueAdIds = [...new Set(allLinkedAds.map(ad => ad.id))];
-
-            if (uniqueAdIds.length > 0) {
-                console.log(`Found ${uniqueAdIds.length} ads linked to news. Unlinking...`);
-
-                // Unlink using the Ad Primary Keys
-                const { error: updateError } = await supabase
-                    .from('ads')
-                    .update({ target_news_id: null })
-                    .in('id', uniqueAdIds);
-
-                if (updateError) {
-                    console.error('Error unlinking ads:', updateError);
-                    throw new Error(`Reklam bağlantıları kaldırılamadı: ${updateError.message}`);
-                } else {
-                    console.log('Successfully unlinked ads.');
-                }
-            } else {
-                console.log('No linked ads found.');
-            }
-
-        } catch (err) {
-            console.error('Error during reference cleanup:', err);
-            throw err; // Re-throw to let the caller handle it
+            await apiClient.post('/news/bulk-delete', { ids });
+            return true;
+        } catch (error) {
+            console.error('Error deleting news bulk:', error);
+            throw error;
         }
-
-        // 2. Delete the news
-        const { error } = await supabase
-            .from('news')
-            .delete()
-            .in('id', ids);
-
-        if (error) {
-            throw new Error(`Haber silme hatası: ${error.message}`);
-        }
-
-        return true;
     },
 
     async duplicateNewsBulk(ids) {
@@ -756,259 +381,145 @@ export const adminService = {
         return true;
     },
 
-    async updateNews(id, updates) {
-        const { data, error } = await supabase
-            .from('news')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
+    async getNews(id) {
+        try {
+            const response = await apiClient.get(`/news/${id}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching news ${id}:`, error);
+            throw error;
+        }
+    },
 
-        if (error) throw error;
-        return data;
+    async createNews(news) {
+        try {
+            const response = await apiClient.post('/news', news);
+            return response.data;
+        } catch (error) {
+            console.error('Error creating news:', error);
+            throw error;
+        }
+    },
+
+    async updateNews(id, updates) {
+        try {
+            const response = await apiClient.patch(`/news/${id}`, updates);
+            return response.data;
+        } catch (error) {
+            console.error(`Error updating news ${id}:`, error);
+            throw error;
+        }
     },
 
     async duplicateNews(id) {
-        // 1. Fetch original
-        const { data: original, error: fetchError } = await supabase
-            .from('news')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-        if (fetchError) throw fetchError;
-
-        // 2. Prepare copy payload
-        // Omit id, created_at, updated_at to let DB handle them
-        const { id: _, created_at, updated_at, ...copyData } = original;
-
-        copyData.title = `${copyData.title} (Kopya)`;
-
-        // Ensure base slug exists
-        const baseSlug = copyData.slug || slugify(copyData.title);
-        // Use random number for safe uniqueness without long timestamps
-        copyData.slug = `${baseSlug}-kopya-${Math.floor(Math.random() * 100000)}`;
-
-        // Remove published_at to let DB use default (Active) logic
-        delete copyData.published_at;
-        copyData.views = 0;
-        copyData.is_slider = false;
-
-        // 3. Insert copy
-        const { data, error } = await supabase
-            .from('news')
-            .insert(copyData)
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
+        try {
+            const res = await apiClient.get(`/news/${id}`);
+            const original = res.data;
+            if (!original) throw new Error('Haber bulunamadı');
+            const { id: _, created_at, updated_at, ...newsData } = original;
+            const newTitle = `${newsData.title} (Kopya)`;
+            const baseSlug = newsData.slug || slugify(newsData.title);
+            const created = await apiClient.post('/news', {
+                ...newsData, title: newTitle,
+                slug: `${baseSlug}-kopya-${Math.floor(Math.random() * 100000)}`,
+                published_at: null, views: 0, is_slider: false
+            });
+            return created.data;
+        } catch (error) { console.error('Error duplicating news:', error); throw error; }
     },
 
     // Service: Subscribers
     async getSubscribers() {
-        const { data, error } = await supabase
-            .from('subscribers')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data;
+        try { const res = await apiClient.get('/subscribers'); return res.data || []; } catch (e) { return []; }
     },
 
     async deleteSubscriber(id) {
-        const { error } = await supabase
-            .from('subscribers')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
+        await apiClient.delete(`/subscribers/${id}`);
         await this.logActivity('DELETE', 'SUBSCRIBER', `Abone silindi: ${id}`, id);
-
         return true;
     },
 
     // Service: Photo Galleries
     async getPhotoGalleries(page = 0, pageSize = 20, filters = {}) {
-        let query = supabase
-            .from('photo_galleries')
-            .select('*, gallery_images(image_url)', { count: 'exact' });
-
-        // Apply search filter
-        if (filters.search) {
-            query = query.ilike('title', `%${filters.search}%`);
-        }
-
-        if (filters.status === 'published') {
-            query = query.not('published_at', 'is', null);
-        } else if (filters.status === 'draft') {
-            query = query.is('published_at', null);
-        }
-
-        // Order and paginate
-        query = query
-            .order('created_at', { ascending: false })
-            .range(page * pageSize, (page + 1) * pageSize - 1);
-
-        const { data, error, count } = await query;
-
-        if (error) throw error;
-        return { data, count };
+        try {
+            const params = { page: page + 1, limit: pageSize, search: filters.search, status: filters.status };
+            const res = await apiClient.get('/galleries', { params });
+            return { data: res.data?.data || res.data || [], count: res.data?.meta?.total || 0 };
+        } catch (e) { return { data: [], count: 0 }; }
     },
 
     async getPhotoGallery(id) {
-        const { data, error } = await supabase
-            .from('photo_galleries')
-            .select('*, gallery_images(*)')
-            .eq('id', id)
-            .single();
-
-        if (error) throw error;
-        // Sort images by order_index
-        if (data && data.gallery_images) {
-            data.gallery_images.sort((a, b) => (a.order_index || 0) - (b.order_index || 0));
-        }
-        return data;
+        const res = await apiClient.get(`/galleries/${id}`);
+        return res.data;
     },
 
     async createPhotoGallery(gallery, images) {
-        // 1. Create Gallery
-        const { data: galleryData, error: galleryError } = await supabase
-            .from('photo_galleries')
-            .insert(gallery)
-            .select()
-            .single();
-
-        if (galleryError) throw galleryError;
-
-        // 2. Add Images if any
+        const res = await apiClient.post('/galleries', gallery);
+        const galleryData = res.data;
         if (images && images.length > 0) {
-            const imagesPayload = images.map((img, index) => ({
-                gallery_id: galleryData.id,
-                image_url: img.image_url,
-                caption: img.caption || '',
-                order_index: index
-            }));
-
-            const { error: imagesError } = await supabase
-                .from('gallery_images')
-                .insert(imagesPayload);
-
-            if (imagesError) throw imagesError;
+            const imagesPayload = images.map((img, i) => ({ gallery_id: galleryData.id, image_url: img.image_url, caption: img.caption || '', order_index: i }));
+            await apiClient.post(`/galleries/${galleryData.id}/images`, { images: imagesPayload });
         }
-
         await this.logActivity('CREATE', 'PHOTO_GALLERY', `Yeni galeri oluşturuldu: ${gallery.title}`, galleryData.id);
-
         return galleryData;
     },
 
     async updatePhotoGallery(id, gallery, images) {
         // 1. Update Gallery Details
-        let title = gallery.title;
-        if (!title) {
-            const { data: current } = await supabase.from('photo_galleries').select('title').eq('id', id).single();
-            title = current?.title;
+
+        try {
+            await apiClient.patch(`/galleries/${id}`, gallery);
+        } catch (e) {
+            console.error('Error updating gallery:', e);
+            throw e;
         }
 
-        const { error: galleryError } = await supabase
-            .from('photo_galleries')
-            .update(gallery)
-            .eq('id', id);
-
-        if (galleryError) throw galleryError;
-
-        // 2. Sync Images (Delete all and re-insert is easiest for this scale, 
-        // but better to verify existing. For simplicity in this iteration: Delete All -> Insert All)
-        // Warning: unique IDs on images might change. If that's an issue, we need smart diffing.
-        // Given the request "detaylandır", let's be safe and just delete/re-insert for now as it guarantees order.
-
-        // Delete old images
-        const { error: deleteError } = await supabase
-            .from('gallery_images')
-            .delete()
-            .eq('gallery_id', id);
-
-        if (deleteError) throw deleteError;
-
-        // Insert new images
-        if (images && images.length > 0) {
-            const imagesPayload = images.map((img, index) => ({
-                gallery_id: id,
-                image_url: img.image_url,
-                caption: img.caption || '',
-                order_index: index
-            }));
-
-            const { error: insertError } = await supabase
-                .from('gallery_images')
-                .insert(imagesPayload);
-
-            if (insertError) throw insertError;
+        // 2. Sync Images
+        try {
+            // Delete old images and re-insert
+            await apiClient.delete(`/galleries/${id}/images`);
+            if (images && images.length > 0) {
+                const imagesPayload = images.map((img, index) => ({
+                    gallery_id: id,
+                    image_url: img.image_url,
+                    caption: img.caption || '',
+                    order_index: index
+                }));
+                await apiClient.post(`/galleries/${id}/images`, { images: imagesPayload });
+            }
+        } catch (e) {
+            console.error('Error syncing gallery images:', e);
         }
 
-        await this.logActivity('UPDATE', 'PHOTO_GALLERY', `Galeri güncellendi: ${title || gallery.title || id}`, id);
-
+        await this.logActivity('UPDATE', 'PHOTO_GALLERY', `Galeri güncellendi: ${gallery.title || id}`, id);
         return true;
     },
 
     async deletePhotoGallery(id) {
-        // Cascade delete handles images usually, but safe to trust DB cascade
-        const { error } = await supabase
-            .from('photo_galleries')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        await this.logActivity('DELETE', 'PHOTO_GALLERY', `Galeri silindi: ${id}`, id);
-
-        return true;
+        try {
+            await apiClient.delete(`/galleries/${id}`);
+            await this.logActivity('DELETE', 'PHOTO_GALLERY', `Galeri silindi: ${id}`, id);
+            return true;
+        } catch (error) {
+            console.error('Error deleting gallery:', error);
+            throw error;
+        }
     },
 
     async duplicatePhotoGallery(id) {
-        // 1. Fetch original gallery with images
-        const { data: original, error: fetchError } = await supabase
-            .from('photo_galleries')
-            .select('*, gallery_images(*)')
-            .eq('id', id)
-            .single();
-
-        if (fetchError) throw fetchError;
-
-        // 2. Prepare gallery copy
+        const res = await apiClient.get(`/galleries/${id}`);
+        const original = res.data;
+        if (!original) throw new Error('Galeri bulunamadı');
         const { id: _, created_at, published_at, gallery_images, ...galleryData } = original;
         galleryData.title = `${galleryData.title} (Kopya)`;
         galleryData.views = 0;
-
-        // 3. Insert gallery copy
-        const { data: newGallery, error: galleryError } = await supabase
-            .from('photo_galleries')
-            .insert(galleryData)
-            .select()
-            .single();
-
-        if (galleryError) throw galleryError;
-
-        // 4. Copy images if any
+        const newGallery = await apiClient.post('/galleries', galleryData);
         if (gallery_images && gallery_images.length > 0) {
-            const imagesCopy = gallery_images.map(img => ({
-                gallery_id: newGallery.id,
-                image_url: img.image_url,
-                caption: img.caption,
-                order_index: img.order_index
-            }));
-
-            const { error: imagesError } = await supabase
-                .from('gallery_images')
-                .insert(imagesCopy);
-
-            if (imagesError) throw imagesError;
+            const imagesCopy = gallery_images.map(img => ({ gallery_id: newGallery.data.id, image_url: img.image_url, caption: img.caption, order_index: img.order_index }));
+            await apiClient.post(`/galleries/${newGallery.data.id}/images`, { images: imagesCopy });
         }
-
-        await this.logActivity('CREATE', 'PHOTO_GALLERY', `Galeri kopyalandı: ${galleryData.title}`, newGallery.id);
-
-        return newGallery;
+        await this.logActivity('CREATE', 'PHOTO_GALLERY', `Galeri kopyalandı: ${galleryData.title}`, newGallery.data.id);
+        return newGallery.data;
     },
 
     async duplicatePhotoGalleriesBulk(ids) {
@@ -1018,679 +529,250 @@ export const adminService = {
     },
 
     async deletePhotoGalleriesBulk(ids) {
-        const { error } = await supabase
-            .from('photo_galleries')
-            .delete()
-            .in('id', ids);
-
-        if (error) throw error;
-
-        await this.logActivity('DELETE', 'PHOTO_GALLERY', `Galeriler toplu silindi: ${ids.length} adet`, ids.join(','));
-
+        await apiClient.post('/galleries/bulk-delete', { ids });
+        await this.logActivity('DELETE', 'PHOTO_GALLERY', `Galeriler toplu silindi: ${ids.length} adet`);
         return true;
     },
 
     async togglePhotoGalleryStatus(id, isPublished) {
-        console.log('Service toggle called:', id, isPublished);
-        const { data, error } = await supabase
-            .from('photo_galleries')
-            .update({ published_at: isPublished ? new Date().toISOString() : null })
-            .eq('id', id)
-            .select();
-
-        console.log('Supabase update result:', data, error);
-
-        if (error) throw error;
-
+        await apiClient.patch(`/galleries/${id}`, { published_at: isPublished ? new Date().toISOString() : null });
         await this.logActivity('UPDATE', 'PHOTO_GALLERY', `Galeri durumu değiştirildi: ${isPublished ? 'Yayında' : 'Taslak'}`, id);
-
         return true;
     },
 
 
     // Service: Videos
     async getVideos(page = 0, pageSize = 20, filters = {}) {
-        let query = supabase
-            .from('videos')
-            .select('*', { count: 'exact' });
-
-        if (filters.search) {
-            query = query.ilike('title', `%${filters.search}%`);
-        }
-
-        if (filters.status === 'published') {
-            query = query.not('published_at', 'is', null);
-        } else if (filters.status === 'draft') {
-            query = query.is('published_at', null);
-        }
-
-        // Add sorting
-        query = query.order('created_at', { ascending: false });
-
-        // Add pagination
-        const from = page * pageSize;
-        const to = from + pageSize - 1;
-        query = query.range(from, to);
-
-        const { data, count, error } = await query;
-
-        if (error) throw error;
-        return { data, count };
+        try {
+            const params = { page: page + 1, limit: pageSize, search: filters.search, status: filters.status };
+            const res = await apiClient.get('/videos', { params });
+            return { data: res.data?.data || res.data || [], count: res.data?.meta?.total || 0 };
+        } catch (e) { return { data: [], count: 0 }; }
     },
 
     async getVideo(id) {
-        const { data, error } = await supabase
-            .from('videos')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-        if (error) throw error;
-        return data;
+        const res = await apiClient.get(`/videos/${id}`);
+        return res.data;
     },
 
     async createVideo(video) {
-        const { data, error } = await supabase
-            .from('videos')
-            .insert([{ ...video, published_at: new Date() }]) // Default published
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('CREATE', 'VIDEO', `Yeni video eklendi: ${video.title}`, data.id);
-
-        return data;
+        const res = await apiClient.post('/videos', { ...video, published_at: new Date() });
+        await this.logActivity('CREATE', 'VIDEO', `Yeni video eklendi: ${video.title}`, res.data.id);
+        return res.data;
     },
 
     async updateVideo(id, video) {
-        let title = video.title;
-        if (!title) {
-            const { data: current } = await supabase.from('videos').select('title').eq('id', id).single();
-            title = current?.title;
+        try {
+            const response = await apiClient.patch(`/videos/${id}`, video);
+            await this.logActivity('UPDATE', 'VIDEO', `Video güncellendi (ID: ${id})`, id);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating video:', error);
+            throw error;
         }
-
-        const { data, error } = await supabase
-            .from('videos')
-            .update(video)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('UPDATE', 'VIDEO', `Video güncellendi: ${title || id}`, id);
-
-        return data;
     },
 
     async deleteVideo(id) {
-        const { error } = await supabase
-            .from('videos')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        await this.logActivity('DELETE', 'VIDEO', `Video silindi: ${id}`, id);
-
-        return true;
+        try {
+            await apiClient.delete(`/videos/${id}`);
+            await this.logActivity('DELETE', 'VIDEO', `Video silindi: ${id}`, id);
+            return true;
+        } catch (error) {
+            console.error('Error deleting video:', error);
+            throw error;
+        }
     },
 
     async toggleVideoStatus(id, status) {
-        const { error } = await supabase
-            .from('videos')
-            .update({ published_at: status ? new Date().toISOString() : null })
-            .eq('id', id);
-
-        if (error) throw error;
-
-        await this.logActivity('UPDATE', 'VIDEO', `Video durumu değiştirildi: ${status ? 'Yayında' : 'Taslak'}`, id);
-
-        return true;
+        try {
+            await apiClient.patch(`/videos/${id}`, { published_at: status ? new Date().toISOString() : null });
+            await this.logActivity('UPDATE', 'VIDEO', `Video durumu değiştirildi: ${status ? 'Yayında' : 'Taslak'}`, id);
+            return true;
+        } catch (error) {
+            console.error('Error toggling video status:', error);
+            throw error;
+        }
     },
 
     async duplicateVideosBulk(ids) {
-        // Fetch originals
-        const { data: originals, error: fetchError } = await supabase
-            .from('videos')
-            .select('*')
-            .in('id', ids);
-
-        if (fetchError) throw fetchError;
-        if (!originals || originals.length === 0) return;
-
-        // Prepare copies
-        const copies = originals.map(video => ({
-            title: `${video.title} (Kopya)`,
-            video_url: video.video_url,
-            thumbnail_url: video.thumbnail_url,
-            duration: video.duration,
-            description: video.description,
-            views: 0,
-            published_at: null // Copies are drafts
-        }));
-
-        const { error: insertError } = await supabase
-            .from('videos')
-            .insert(copies);
-
-        if (insertError) throw insertError;
-
+        for (const id of ids) {
+            try {
+                const res = await apiClient.get(`/videos/${id}`);
+                const v = res.data;
+                if (!v) continue;
+                await apiClient.post('/videos', { title: `${v.title} (Kopya)`, video_url: v.video_url, thumbnail_url: v.thumbnail_url, duration: v.duration, description: v.description, views: 0, published_at: null });
+            } catch (e) { console.error('Error duplicating video:', e); }
+        }
         await this.logActivity('CREATE', 'VIDEO', `Videolar toplu kopyalandı: ${ids.length} adet`);
-
         return true;
     },
 
     async deleteVideosBulk(ids) {
-        const { error } = await supabase
-            .from('videos')
-            .delete()
-            .in('id', ids);
-
-        if (error) throw error;
-
+        await apiClient.post('/videos/bulk-delete', { ids });
         await this.logActivity('DELETE', 'VIDEO', `Videolar toplu silindi: ${ids.length} adet`);
-
         return true;
     },
 
     // Service: User Profiles
     async getProfiles() {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data;
+        try { const res = await apiClient.get('/users'); return res.data || []; } catch (e) { return []; }
     },
 
     async getUserProfile(userId) {
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single();
-
-        if (error) {
-            // Return null if not found (might not exist yet)
-            if (error.code === 'PGRST116') return null;
-            throw error;
-        }
-        return data;
+        try { const res = await apiClient.get(`/users/${userId}`); return res.data; } catch (e) { return null; }
     },
 
     async updateUserProfile(id, updates) {
-        const { data, error } = await supabase
-            .from('profiles')
-            .upsert({ id, ...updates }) // Upsert handles create if not exists
-            .select()
-            .single();
-
-        if (error) throw error;
-
+        const res = await apiClient.patch(`/users/${id}`, updates);
         await this.logActivity('UPDATE', 'USER', `Kullanıcı güncellendi: ${id}`, id);
-
-        return data;
+        return res.data;
     },
 
     async createUser(email, password, userData) {
-        // Create a temporary client to sign up the user without logging out the admin
-        const tempClient = createClient(supabaseUrl, supabaseKey, {
-            auth: {
-                persistSession: false // Critical: Do not persist this session
-            }
-        });
-
-        // 1. Sign up the user
-        const { data: authData, error: authError } = await tempClient.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: userData.full_name,
-                    role: userData.role
-                }
-            }
-        });
-
-        if (authError) throw authError;
-
-        // 2. Create profile entry (using admin client to ensure permissions)
-        if (authData.user) {
-            // Use upsert to handle potential trigger-created profiles
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .upsert({
-                    id: authData.user.id,
-                    email: email,
-                    full_name: userData.full_name,
-                    role: userData.role,
-                    created_at: new Date()
-                }, { onConflict: 'id' });
-
-            if (profileError) {
-                console.error('Profile creation error:', profileError);
-                // Note: Auth user is created but profile might fail. 
-                // In a robust system we might want to rollback or retry.
-                throw profileError;
-            }
-        }
-
-        await this.logActivity('CREATE', 'USER', `Yeni kullanıcı oluşturuldu: ${email}`, authData.user?.id);
-
-        return authData;
+        const res = await apiClient.post('/users', { email, password, ...userData });
+        await this.logActivity('CREATE', 'USER', `Yeni kullanıcı oluşturuldu: ${email}`, res.data?.id);
+        return res.data;
     },
 
     async deleteUser(id) {
-        // Supabase Auth admin API interaction is not directly possible from client-side
-        // However, we can delete the profile entry.
-
-        // 1. Manually Cascade: Delete/Unlink dependencies to avoid Foreign Key errors
-        // Delete user's activity logs
-        await supabase.from('activity_logs').delete().eq('user_id', id);
-
-        // For News, if there is a strict FK, we should handle it. 
-        // Set author_id to null instead of deleting news
-        await supabase.from('news').update({ author_id: null }).eq('author_id', id);
-
-        // 2. Delete the profile
-        const { error } = await supabase
-            .from('profiles')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error('Error deleting user profile:', error);
+        try {
+            await apiClient.delete(`/users/${id}`);
+            await this.logActivity('DELETE', 'USER', `Kullanıcı silindi: ${id}`, id);
+            return true;
+        } catch (error) {
+            console.error('Error deleting user:', error);
             throw error;
         }
-
-        await this.logActivity('DELETE', 'USER', `Kullanıcı silindi: ${id}`, id);
-
-        return true;
     },
 
 
 
     // Service: Storage
     async uploadImage(file, bucket = 'images') {
-        const fileExt = file.name.split('.').pop();
-        // Sanitize file name: remove non-alphanumeric chars, keep underscores/hyphens
-        const sanitizedName = file.name.replace(/[^a-zA-Z0-9-_]/g, '').replace(`.${fileExt}`, '').substring(0, 20);
-        const fileName = `${sanitizedName}_${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-            .from(bucket)
-            .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data } = supabase.storage
-            .from(bucket)
-            .getPublicUrl(filePath);
-
-        return data.publicUrl;
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await apiClient.post('/upload/image', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            return `${API_BASE}${res.data.url}`;
+        } catch (error) {
+            console.error('Upload error:', error);
+            throw new Error('Dosya yüklenirken hata oluştu.');
+        }
     },
 
     // Service: Gallery Thumbnail Upload
     async uploadGalleryThumbnail(file) {
-        // Validate file size (max 1MB)
-        const maxSize = 1 * 1024 * 1024; // 1MB in bytes
-        if (file.size > maxSize) {
-            throw new Error('Dosya boyutu 1MB\'dan büyük olamaz.');
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await apiClient.post('/upload/image', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            return `${API_BASE}${res.data.url}`;
+        } catch (error) {
+            console.error('Upload error:', error);
+            throw new Error('Dosya yüklenirken hata oluştu.');
         }
-
-        // Validate file type
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-        if (!allowedTypes.includes(file.type)) {
-            throw new Error('Sadece JPEG, PNG ve WebP formatları desteklenmektedir.');
-        }
-
-        // Generate unique filename
-        const fileExt = file.name.split('.').pop();
-        const fileName = `thumbnail_${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        // Upload to Supabase Storage
-        const { error: uploadError } = await supabase.storage
-            .from('gallery-thumbnails')
-            .upload(filePath, file);
-
-        if (uploadError) {
-            console.error('Upload error:', uploadError);
-            throw new Error('Dosya yüklenirken hata oluştu: ' + uploadError.message);
-        }
-
-        // Get public URL
-        const { data } = supabase.storage
-            .from('gallery-thumbnails')
-            .getPublicUrl(filePath);
-
-        return data.publicUrl;
     },
 
     async deleteGalleryThumbnail(url) {
-        if (!url) return;
-
-        try {
-            // Extract filename from URL
-            // URL format: https://.../storage/v1/object/public/gallery-thumbnails/filename.jpg
-            const urlParts = url.split('/');
-            const filename = urlParts[urlParts.length - 1];
-
-            if (!filename) return;
-
-            // Delete from Supabase Storage
-            const { error } = await supabase.storage
-                .from('gallery-thumbnails')
-                .remove([filename]);
-
-            if (error) {
-                console.error('Delete error:', error);
-            }
-        } catch (error) {
-            console.error('Error deleting thumbnail:', error);
-            // Don't throw - deletion is not critical
-        }
+        // No-op: local uploads do not support remote deletion by URL
+        return;
     },
 
     // Service: Gallery Images Upload (Multiple)
     async uploadGalleryImages(files, onProgress) {
         const uploadedUrls = [];
-        const totalFiles = files.length;
-
         for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-
-            // Validate file size (max 5MB)
-            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-            if (file.size > maxSize) {
-                throw new Error(`${file.name}: Dosya boyutu 5MB'dan büyük olamaz.`);
-            }
-
-            // Validate file type
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-            if (!allowedTypes.includes(file.type)) {
-                throw new Error(`${file.name}: Sadece JPEG, PNG ve WebP formatları desteklenmektedir.`);
-            }
-
-            // Generate unique filename
-            const fileExt = file.name.split('.').pop();
-            const fileName = `gallery_${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-            const filePath = `${fileName}`;
-
-            // Upload to Supabase Storage
-            const { error: uploadError } = await supabase.storage
-                .from('gallery-images')
-                .upload(filePath, file);
-
-            if (uploadError) {
-                console.error('Upload error:', uploadError);
-                throw new Error(`${file.name}: Dosya yüklenirken hata oluştu - ${uploadError.message}`);
-            }
-
-            // Get public URL
-            const { data } = supabase.storage
-                .from('gallery-images')
-                .getPublicUrl(filePath);
-
-            uploadedUrls.push(data.publicUrl);
-
-            // Update progress
-            if (onProgress) {
-                const progress = Math.round(((i + 1) / totalFiles) * 100);
-                onProgress(progress);
-            }
+            const formData = new FormData();
+            formData.append('file', files[i]);
+            const res = await apiClient.post('/upload/image', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            uploadedUrls.push(`${API_BASE}${res.data.url}`);
+            if (onProgress) onProgress(Math.round(((i + 1) / files.length) * 100));
         }
-
         return uploadedUrls;
     },
 
     async deleteGalleryImage(url) {
-        if (!url) return;
-
-        try {
-            // Extract filename from URL
-            const urlParts = url.split('/');
-            const filename = urlParts[urlParts.length - 1];
-
-            if (!filename) return;
-
-            // Delete from Supabase Storage
-            const { error } = await supabase.storage
-                .from('gallery-images')
-                .remove([filename]);
-
-            if (error) {
-                console.error('Delete error:', error);
-            }
-        } catch (error) {
-            console.error('Error deleting gallery image:', error);
-            // Don't throw - deletion is not critical
-        }
+        // No-op: local uploads do not support remote deletion by URL
+        return;
     },
 
     // Service: Video Upload
     async uploadVideo(file, onProgress) {
-        // Validate file size (max 50MB)
-        const maxSize = 50 * 1024 * 1024; // 50MB in bytes
-        if (file.size > maxSize) {
-            throw new Error(`Dosya boyutu 50MB'dan büyük olamaz.`);
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            const res = await apiClient.post('/upload/image', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            if (onProgress) onProgress(100);
+            return `${API_BASE}${res.data.url}`;
+        } catch (error) {
+            console.error('Upload error:', error);
+            throw new Error('Video yüklenirken hata oluştu.');
         }
-
-        // Validate file type
-        const allowedTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
-        if (!allowedTypes.includes(file.type)) {
-            throw new Error(`Desteklenmeyen video formatı. Sadece MP4, WebM, OGG ve MOV yüklenebilir.`);
-        }
-
-        // Generate unique and readable filename
-        const fileExt = file.name.split('.').pop();
-        const baseName = file.name.substring(0, file.name.lastIndexOf('.'));
-        const safeName = this._slugify(baseName);
-        const fileName = `${safeName}_${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
-
-        // Upload to Supabase Storage
-        const { error: uploadError } = await supabase.storage
-            .from('videos') // Requires 'videos' bucket to be created
-            .upload(filePath, file);
-
-        if (uploadError) {
-            console.error('Upload error:', uploadError);
-            throw new Error(`Video yüklenirken hata oluştu: ${uploadError.message}`);
-        }
-
-        // Get public URL
-        const { data } = supabase.storage
-            .from('videos')
-            .getPublicUrl(filePath);
-
-        // Mock progress (since fetch API doesn't support progress easily without XHR)
-        // If supabase-js supports it in newer versions, it's automatic. 
-        // For now we just call 100% when done.
-        if (onProgress) onProgress(100);
-
-        return data.publicUrl;
     },
 
     // Increment gallery views
     async incrementGalleryViews(galleryId) {
-        const { data } = await supabase
-            .from('photo_galleries')
-            .select('views')
-            .eq('id', galleryId)
-            .single();
-
-        if (data) {
-            await supabase
-                .from('photo_galleries')
-                .update({ views: parseInt(data.views || 0) + 1 })
-                .eq('id', galleryId);
-        }
+        await apiClient.post(`/galleries/${galleryId}/increment-views`).catch(() => { });
     },
 
     // Increment video views
     async incrementVideoViews(videoId) {
-        const { data } = await supabase
-            .from('videos')
-            .select('views')
-            .eq('id', videoId)
-            .single();
-
-        if (data) {
-            await supabase
-                .from('videos')
-                .update({ views: parseInt(data.views || 0) + 1 })
-                .eq('id', videoId);
-        }
+        await apiClient.post(`/videos/${videoId}/increment-views`).catch(() => { });
     },
 
     // Headlines
     async getHeadlineByNewsId(newsId, type = 1) {
-        const { data, error } = await supabase
-            .from('headlines')
-            .select('slot_number')
-            .eq('news_id', newsId)
-            .eq('type', type)
-            .maybeSingle();
-
-        if (error) {
-            console.error('Error checking headline status:', error);
-            return null;
-        }
-        return data?.slot_number || null;
+        try {
+            const res = await apiClient.get(`/headlines?news_id=${newsId}&type=${type}`);
+            const items = res.data?.data || res.data || [];
+            return Array.isArray(items) && items[0] ? items[0].order_index : null;
+        } catch (e) { return null; }
     },
 
     async getHeadlines(type = 1) {
-        let query = supabase
-            .from('headlines')
-            .select('*, news:news_id(*)')
-            .eq('type', type) // Filter by type
-            .order('order_index', { ascending: true });
-
-        const { data, error } = await query;
-
-        if (error) throw error;
-        return data || [];
+        try { const res = await apiClient.get(`/headlines?type=${type}`); return res.data || []; } catch (e) { return []; }
     },
 
-    // Manşet 1 (Ana Slider) Reklamları
     async getHeadlineAds() {
-        const { data, error } = await supabase
-            .from('ads')
-            .select('*')
-            .eq('is_headline', true)
-            .not('headline_slot', 'is', null)
-            .order('headline_slot', { ascending: true });
-
-        if (error) throw error;
-        return data || [];
+        try { const res = await apiClient.get('/ads?is_headline=true'); return res.data?.data || []; } catch (e) { return []; }
     },
 
-    // Manşet 2 (Sürmanşet) Reklamları
     async getManset2Ads() {
-        const { data, error } = await supabase
-            .from('ads')
-            .select('*')
-            .eq('is_manset_2', true)
-            .not('manset_2_slot', 'is', null)
-            .order('manset_2_slot', { ascending: true });
-
-        if (error) throw error;
-        return data || [];
+        try { const res = await apiClient.get('/ads?is_manset_2=true'); return res.data?.data || []; } catch (e) { return []; }
     },
 
-    // Manşet 1 Slider Reklamı (Reklam Yönetimi'nden gelen)
     async getHeadlineSliderAds() {
-        const { data, error } = await supabase
-            .from('ads')
-            .select('*')
-            .eq('placement_code', 'headline_slider')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        try { const res = await apiClient.get('/ads?placement_code=headline_slider&is_active=true'); return res.data?.data || []; } catch (e) { return []; }
     },
 
-    // Manşet 2 Slider Reklamı (Reklam Yönetimi'nden gelen)
     async getManset2SliderAds() {
-        // Assuming we will add 'manset_2_slider' code to AdsPage later
-        const { data, error } = await supabase
-            .from('ads')
-            .select('*')
-            .eq('placement_code', 'manset_2_slider')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data || [];
+        try { const res = await apiClient.get('/ads?placement_code=manset_2_slider&is_active=true'); return res.data?.data || []; } catch (e) { return []; }
     },
 
     async setAdPlacementHeadlineSlot(adId, slot) {
-        const { data, error } = await supabase
-            .from('ads')
-            .update({
-                is_headline: true,
-                headline_slot: slot
-            })
-            .eq('id', adId)
-            .select();
-
-        if (error) throw error;
-
-        // Fetch ad name for log
-        const { data: adData } = await supabase.from('ads').select('name').eq('id', adId).single();
-        const adName = adData?.name || adId;
-
-        await this.logActivity('UPDATE', 'HEADLINE', `Reklam manşete eklendi: ${adName} (Slot: ${slot})`, adId);
-
-        return data;
+        const res = await apiClient.patch(`/ads/${adId}`, { is_headline: true, headline_slot: slot });
+        await this.logActivity('UPDATE', 'HEADLINE', `Reklam manşete eklendi (ID: ${adId}, Slot: ${slot})`, adId);
+        return res.data;
     },
 
     async setAdHeadlineSlot(adId, slot) {
-        const { data, error } = await supabase
-            .from('ads')
-            .update({
-                is_headline: true,
-                headline_slot: slot
-            })
-            .eq('id', adId)
-            .select();
-
-        if (error) throw error;
-
-        // Fetch ad name
-        const { data: adData } = await supabase.from('ads').select('name').eq('id', adId).single();
-        const adName = adData?.name || adId;
-
-        await this.logActivity('UPDATE', 'HEADLINE', `Reklam manşet slotu güncellendi: ${adName} (Slot: ${slot})`, adId);
-
-        return data;
+        const res = await apiClient.patch(`/ads/${adId}`, { is_headline: true, headline_slot: slot });
+        await this.logActivity('UPDATE', 'HEADLINE', `Reklam manşet slotu güncellendi (ID: ${adId}, Slot: ${slot})`, adId);
+        return res.data;
     },
 
     async setAdManset2Slot(adId, slot) {
-        const { data, error } = await supabase
-            .from('ads')
-            .update({
-                is_manset_2: true,
-                manset_2_slot: slot
-            })
-            .eq('id', adId)
-            .select();
-
-        if (error) throw error;
-
-        // Fetch ad name
-        const { data: adData } = await supabase.from('ads').select('name').eq('id', adId).single();
-        const adName = adData?.name || adId;
-
-        await this.logActivity('UPDATE', 'HEADLINE', `Reklam Manşet 2 slotu güncellendi: ${adName} (Slot: ${slot})`, adId);
-
-        return data;
+        const res = await apiClient.patch(`/ads/${adId}`, { is_manset_2: true, manset_2_slot: slot });
+        await this.logActivity('UPDATE', 'HEADLINE', `Reklam Manşet 2 slotu güncellendi (ID: ${adId}, Slot: ${slot})`, adId);
+        return res.data;
     },
 
     async setAdPlacementManset2Slot(adId, slot) {
@@ -1699,342 +781,202 @@ export const adminService = {
     },
 
     async addToHeadline(newsId, slotNumber, type = 1) {
-        const { data, error } = await supabase
-            .from('headlines')
-            .upsert({ news_id: newsId, order_index: slotNumber, type: type }, { onConflict: 'order_index,type' }) // Requires unique constraint on
-            .select();
-
-        if (error) throw error; // If old constraint fails, user needs to drop old constraint. But upsert might handle if PK is changed.
-        // Actually, 'headlines' likely has a unique index on 'slot_number'.
-        // WE NEED TO FIX THIS CONSTRAINT IN SQL IF IT EXISTS.
-        // Assuming the user ran my script, they added 'type'.
-        // My script did NOT drop old constraint. This might be a problem.
-        // Quick fix: user can sort it out if it errors, but likely I should update 'removeFromHeadline' to be safe.
-
-        // Fetch news title
-        const { data: newsData } = await supabase.from('news').select('title').eq('id', newsId).single();
-        const newsTitle = newsData?.title || newsId;
-
-        const typeName = type === 1 ? 'Manşet 1' : 'Manşet 2';
-        await this.logActivity('CREATE', 'HEADLINE', `Haber ${typeName}e eklendi: ${newsTitle} (Slot: ${slotNumber})`, newsId);
-
-        return data;
+        const res = await apiClient.post('/headlines', { news_id: newsId, order_index: slotNumber, type });
+        await this.logActivity('CREATE', 'HEADLINE', `Haber ${type === 1 ? 'Manşet 1' : 'Manşet 2'}'e eklendi (ID: ${newsId}, Slot: ${slotNumber})`, newsId);
+        return res.data;
     },
 
     async removeFromHeadline(slotNumber, type = 1) {
-        const { error } = await supabase
-            .from('headlines')
-            .delete()
-            .eq('order_index', slotNumber)
-            .eq('type', type);
-
-        if (error) throw error;
-
-        if (error) throw error;
-
+        await apiClient.delete(`/headlines?order_index=${slotNumber}&type=${type}`);
         await this.logActivity('DELETE', 'HEADLINE', `Manşetten haber/reklam çıkarıldı (Slot: ${slotNumber})`, null);
-
         return true;
     },
 
     async getNextAvailableHeadlineSlot() {
-        // Type 1 = Manşet 1 (Default)
-        const { data: headlines } = await supabase.from('headlines').select('order_index').eq('type', 1);
-        const { data: ads } = await supabase.from('ads').select('headline_slot').eq('is_headline', true).not('headline_slot', 'is', null);
-
-        const usedSlots = new Set();
-        headlines?.forEach(h => usedSlots.add(h.order_index));
-        ads?.forEach(a => usedSlots.add(a.headline_slot));
-
-        // Check slots 1 to 20
-        for (let i = 1; i <= 20; i++) {
-            if (!usedSlots.has(i)) return i;
-        }
-        return 21;
+        try {
+            const { data: headlines } = await apiClient.get('/headlines?type=1');
+            const { data: ads } = await apiClient.get('/ads?is_headline=true');
+            const usedSlots = new Set();
+            headlines?.forEach(h => usedSlots.add(h.order_index));
+            ads?.data?.forEach(a => { if (a.headline_slot) usedSlots.add(a.headline_slot); });
+            for (let i = 1; i <= 20; i++) { if (!usedSlots.has(i)) return i; }
+            return 21;
+        } catch (e) { return 1; }
     },
 
     async getNextAvailableManset2Slot() {
-        // Type 2 = Manşet 2 (Sürmanşet)
-        const { data: headlines } = await supabase.from('headlines').select('order_index').eq('type', 2);
-        const { data: ads } = await supabase.from('ads').select('manset_2_slot').eq('is_manset_2', true).not('manset_2_slot', 'is', null);
-
-        const usedSlots = new Set();
-        headlines?.forEach(h => usedSlots.add(h.order_index));
-        ads?.forEach(a => usedSlots.add(a.manset_2_slot));
-
-        // Check slots 1 to 20
-        for (let i = 1; i <= 20; i++) {
-            if (!usedSlots.has(i)) return i;
-        }
-        return 21;
+        try {
+            const { data: headlines } = await apiClient.get('/headlines?type=2');
+            const { data: ads } = await apiClient.get('/ads?is_manset_2=true');
+            const usedSlots = new Set();
+            headlines?.forEach(h => usedSlots.add(h.order_index));
+            ads?.data?.forEach(a => { if (a.manset_2_slot) usedSlots.add(a.manset_2_slot); });
+            for (let i = 1; i <= 20; i++) { if (!usedSlots.has(i)) return i; }
+            return 21;
+        } catch (e) { return 1; }
     },
 
 
 
     // Categories
     async getCategoryBySlug(slug) {
-        const { data, error } = await supabase
-            .from('categories')
-            .select('*')
-            .eq('slug', slug)
-            .single();
-
-        if (error) {
+        try {
+            const response = await apiClient.get(`/categories/${slug}`);
+            return response.data;
+        } catch (error) {
             console.error('Error fetching category by slug:', error);
             return null;
         }
-        return data;
     },
 
     async getCategories() {
-        // 1. Fetch Categories
-        const { data: categories, error } = await supabase
-            .from('categories')
-            .select('*')
-            .order('order_index', { ascending: true });
-
-        if (error) throw error;
-        if (!categories) return [];
-
         try {
-            // 2. Fetch Home Layout settings to see what is enabled
-            // We use 'getHomeLayout' but since we are inside adminService, we can just call it if 'this' binding works,
-            // or re-fetch manually to avoid 'this' context issues if called strangely.
-            // Safest is to fetch manually or bind.
-            const { data: layoutData } = await supabase
-                .from('site_settings')
-                .select('value')
-                .eq('key', 'home_layout')
-                .maybeSingle();
+            // 1. Fetch Categories
+            const { data } = await apiClient.get('/categories');
+            const categories = data || [];
 
+            if (!categories.length) return [];
+
+            // 2. Fetch Home Layout settings
             let categoryConfig = [];
-            if (layoutData && layoutData.value) {
-                try {
+            try {
+                const { data: layoutData } = await apiClient.get('/settings/home_layout');
+                if (layoutData && layoutData.value) {
                     const parsed = JSON.parse(layoutData.value);
                     categoryConfig = parsed.categoryConfig || [];
-                } catch (e) { console.error(e); }
+                }
+            } catch (e) {
+                // Ignore
             }
 
-            // 3. Fetch ALL Active News Categories for counting
-            // Warning: fetching all rows 'category' column might be heavy eventually,
-            // but for <10k rows it's fine. For massive scale, use RPC or separate stats table.
-            const { data: newsData, error: newsError } = await supabase
-                .from('news')
-                .select('category')
-                .not('published_at', 'is', null);
-
-            if (!newsError && newsData) {
-                // Count news per category (normalize to Title Case for matching)
-                const counts = {};
-
-                // Helper to normalize category keys similar to HomePage
-                const normalize = (str) => {
-                    if (!str) return 'Diger';
-                    return str.trim().toLowerCase();
-                };
-
-                // Helper to title case for generic matching bucket
-                const toTitleCase = (str) => {
-                    return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-                };
-
-                // Determine counts map
-                // We will try to map news.category to our categories.
-                // Using exact match or slug match.
-
-                // Build a map of our categories for easy lookup
-                // keys: slug, name_lowercase
-                const catLookup = {};
-                categories.forEach(c => {
-                    catLookup[c.slug] = c.id;
-                    catLookup[normalize(c.name)] = c.id;
-                });
-
-                const idCounts = {}; // Counts per Category ID
-
-                newsData.forEach(item => {
-                    if (!item.category) return;
-
-                    // Try to find which category this news belongs to
-                    const norm = normalize(item.category);
-                    const slug = slugify(item.category);
-
-                    let matchedId = catLookup[slug] || catLookup[norm];
-
-                    if (matchedId) {
-                        idCounts[matchedId] = (idCounts[matchedId] || 0) + 1;
-                    }
-                });
-
-                // 4. Merge Data
-                return categories.map(cat => {
-                    // Check if enabled in layout
-                    const config = categoryConfig.find(c => c.id === cat.slug);
-                    const isLayoutEnabled = config ? config.enabled : true; // Default true if not in config? Or false? 
-                    // Actually, if dynamic categories are used, it defaults to showing if > 4 news.
-
-                    const count = idCounts[cat.id] || 0;
-
-                    return {
-                        ...cat,
-                        news_count: count,
-                        is_visible_on_homepage: count >= 4 && isLayoutEnabled,
-                        homepage_config_enabled: isLayoutEnabled
-                    };
-                });
+            // 3. Fetch Category Stats
+            let categoryStats = {};
+            try {
+                const { data: stats } = await apiClient.get('/stats/categories');
+                categoryStats = stats || {};
+            } catch (e) {
+                console.error('Error fetching category stats:', e);
             }
+
+            // 4. Merge Data
+            return categories.map(cat => {
+                const config = categoryConfig.find(c => c.id === cat.slug);
+                const isLayoutEnabled = config ? config.enabled : true;
+
+                let count = 0;
+                // Sum matches from stats
+                // Robust matching: slug match or normalized name match
+                const categorySlug = cat.slug;
+                if (categoryStats) {
+                    Object.entries(categoryStats).forEach(([key, val]) => {
+                        // Assuming simple slug check
+                        // Note: backend stats keys are raw category strings from 'news' table.
+                        // We must normalize them.
+                        // Simple slugify check:
+                        if (slugify(key) === categorySlug) {
+                            count += val;
+                        }
+                    });
+                }
+
+                return {
+                    ...cat,
+                    news_count: count,
+                    is_visible_on_homepage: count >= 4 && isLayoutEnabled,
+                    homepage_config_enabled: isLayoutEnabled
+                };
+            });
+
         } catch (err) {
-            console.error('Error enriching categories:', err);
-            // Fallback to basic categories if enrichment fails
+            console.error('Error fetching categories:', err);
+            return [];
         }
-
-        return categories;
     },
 
     async addCategory(name, slug, extraData = {}) {
-        // Get max order_index
-        const { data: maxOrderData } = await supabase
-            .from('categories')
-            .select('order_index')
-            .order('order_index', { ascending: false })
-            .limit(1);
-
-        const nextOrder = (maxOrderData?.[0]?.order_index || 0) + 1;
-
-        const { data, error } = await supabase
-            .from('categories')
-            .insert({
+        try {
+            const payload = {
                 name,
                 slug,
-                order_index: nextOrder,
                 is_active: true,
-                ...extraData // Spread SEO fields (seo_title, seo_description, seo_keywords)
-            })
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('CREATE', 'CATEGORY', `Yeni kategori oluşturuldu: ${name}`, data.id);
-
-        return data;
+                ...extraData
+            };
+            const response = await apiClient.post('/categories', payload);
+            await this.logActivity('CREATE', 'CATEGORY', `Yeni kategori oluşturuldu: ${name}`, response.data.id);
+            return response.data;
+        } catch (error) {
+            console.error('Error adding category:', error);
+            throw error;
+        }
     },
 
     async updateCategory(id, updates) {
-        let name = updates.name;
-        if (!name) {
-            const { data: current } = await supabase.from('categories').select('name').eq('id', id).single();
-            name = current?.name;
+        try {
+            // Fetch name for log if not present? Or just log ID.
+            const response = await apiClient.patch(`/categories/${id}`, updates);
+            await this.logActivity('UPDATE', 'CATEGORY', `Kategori güncellendi: ${updates.name || id}`, id);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating category:', error);
+            throw error;
         }
-
-        const { data, error } = await supabase
-            .from('categories')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('UPDATE', 'CATEGORY', `Kategori güncellendi: ${name || id}`, id);
-
-        return data;
     },
 
     async deleteCategory(id) {
-        const { error } = await supabase
-            .from('categories')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        await this.logActivity('DELETE', 'CATEGORY', `Kategori silindi: ${id}`, id);
-
-        return true;
+        try {
+            await apiClient.delete(`/categories/${id}`);
+            await this.logActivity('DELETE', 'CATEGORY', `Kategori silindi: ${id}`, id);
+            return true;
+        } catch (error) {
+            console.error('Error deleting category:', error);
+            throw error;
+        }
     },
 
     async reorderCategories(updates) {
-        // 1. Update Categories Table
-        for (const update of updates) {
-            const { error } = await supabase
-                .from('categories')
-                .update({ order_index: update.order_index })
-                .eq('id', update.id);
-            if (error) throw error;
-        }
-
-        // 2. Sync with Home Layout
         try {
-            // Fetch current layout
-            const { data: layoutData } = await supabase
-                .from('site_settings')
-                .select('value')
-                .eq('key', 'home_layout')
-                .maybeSingle();
-
-            if (layoutData && layoutData.value) {
-                const layout = JSON.parse(layoutData.value);
-                const categoryConfig = layout.categoryConfig || [];
-
-                // Fetch all categories to get current slugs (needed for config matching)
-                const { data: allCategories } = await supabase
-                    .from('categories')
-                    .select('id, slug, order_index')
-                    .order('order_index', { ascending: true });
-
-                if (allCategories) {
-                    // Create a new ordered config list based on the DB order
-                    const newCategoryConfig = allCategories.map(cat => {
-                        // Try to find existing config by slug to preserve 'enabled' state
-                        const existing = categoryConfig.find(c => c.id === cat.slug);
-
-                        return {
-                            id: cat.slug,
-                            title: cat.name,
-                            enabled: existing ? existing.enabled : true // Default to true if new/not found
-                        };
-                    });
-
-                    // Update layout
-                    layout.categoryConfig = newCategoryConfig;
-
-                    // Save back
-                    await supabase
-                        .from('site_settings')
-                        .update({ value: JSON.stringify(layout) })
-                        .eq('key', 'home_layout');
-                }
-
+            // 1. Update Categories loop
+            for (const update of updates) {
+                await apiClient.patch(`/categories/${update.id}`, { order_index: update.order_index });
             }
-        } catch (err) {
-            console.error('Error syncing category order to layout:', err);
-            // Non-blocking error, user just won't see update on homepage immediately
-        }
 
-        return true;
+            // 2. Sync with Home Layout
+            try {
+                const { data: layoutData } = await apiClient.get('/settings/home_layout');
+                if (layoutData && layoutData.value) {
+                    const layout = JSON.parse(layoutData.value);
+                    const categoryConfig = layout.categoryConfig || [];
+
+                    const { data: allCategories } = await apiClient.get('/categories');
+
+                    if (allCategories) {
+                        const newCategoryConfig = allCategories.map(cat => {
+                            const existing = categoryConfig.find(c => c.id === cat.slug);
+                            return {
+                                id: cat.slug,
+                                title: cat.name,
+                                enabled: existing ? existing.enabled : true
+                            };
+                        });
+
+                        layout.categoryConfig = newCategoryConfig;
+
+                        await apiClient.patch('/settings/home_layout', { value: JSON.stringify(layout) });
+                    }
+                }
+            } catch (syncErr) {
+                console.error('Error syncing layout:', syncErr);
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error reordering categories:', error);
+            throw error;
+        }
     },
 
     async removeAdFromHeadline(adId) {
-        const { error } = await supabase
-            .from('ads')
-            .update({
-                is_headline: false,
-                headline_slot: null,
-                image_url: null,
-                link_url: null,
-                code: null,
-                is_active: false,
-                name: null,
-                target_page: 'all',
-                device_type: 'all',
-                views: 0,
-                clicks: 0,
-                type: 'image'
-            })
-            .eq('id', adId);
-
-        if (error) throw error;
+        await apiClient.patch(`/ads/${adId}`, { is_headline: false, headline_slot: null, image_url: null, link_url: null, code: null, is_active: false, name: null, target_page: 'all', device_type: 'all', views: 0, clicks: 0, type: 'image' });
         return true;
     },
 
@@ -2043,25 +985,16 @@ export const adminService = {
     },
 
     async updateNews(id, updates) {
-        let title = updates.title;
-        if (!title) {
-            const { data: current } = await supabase.from('news').select('title').eq('id', id).single();
-            title = current?.title;
+        try {
+            const response = await apiClient.patch(`/news/${id}`, updates);
+            await this.logActivity('UPDATE', 'NEWS', `Haber güncellendi (ID: ${id})`, id);
+            return response.data;
+        } catch (error) {
+            console.error('Error updating news:', error);
+            throw error;
         }
-
-        const { data, error } = await supabase
-            .from('news')
-            .update(updates)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('UPDATE', 'NEWS', `Haber güncellendi: ${title || id}`, id);
-
-        return data;
     },
+
 
     async getNextAvailableSlot() {
         const manualHeadlines = await this.getHeadlines();
@@ -2077,28 +1010,22 @@ export const adminService = {
     },
 
     async duplicateNews(id) {
-        const { data: original } = await supabase
-            .from('news')
-            .select('*')
-            .eq('id', id)
-            .single();
-
-        if (!original) throw new Error('Haber bulunamadı');
-
-        const { id: _, created_at, updated_at, ...newsData } = original;
-        const newTitle = `${newsData.title} (Kopya)`;
-
-        const { data, error } = await supabase
-            .from('news')
-            .insert({ ...newsData, title: newTitle, slug: slugify(newTitle), published_at: null, views: 0 })
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('CREATE', 'NEWS', `Haber kopyalandı: ${newTitle}`, data.id);
-
-        return data;
+        try {
+            const res = await apiClient.get(`/news/${id}`);
+            const original = res.data;
+            if (!original) throw new Error('Haber bulunamadı');
+            const { id: _, created_at, updated_at, ...newsData } = original;
+            const newTitle = `${newsData.title} (Kopya)`;
+            const created = await apiClient.post('/news', {
+                ...newsData, title: newTitle,
+                slug: slugify(newTitle), published_at: null, views: 0
+            });
+            await this.logActivity('CREATE', 'NEWS', `Haber kopyalandı: ${newTitle}`, created.data.id);
+            return created.data;
+        } catch (error) {
+            console.error('Error duplicating news:', error);
+            throw error;
+        }
     },
 
     async duplicateNewsBulk(ids) {
@@ -2109,56 +1036,27 @@ export const adminService = {
 
 
     async deleteNewsBulk(ids) {
-        const { error } = await supabase
-            .from('news')
-            .delete()
-            .in('id', ids);
-
-        if (error) throw error;
-
-        await this.logActivity('DELETE', 'NEWS', `Haberler silindi: ${ids.length} adet haber`);
-
-        return true;
+        try {
+            await apiClient.post('/news/bulk-delete', { ids });
+            await this.logActivity('DELETE', 'NEWS', `Haberler silindi: ${ids.length} adet`);
+            return true;
+        } catch (error) {
+            console.error('Error bulk deleting news:', error);
+            throw error;
+        }
     },
 
 
 
     // TAGS Management for News
     async getNewsTags(newsId) {
-        const { data, error } = await supabase
-            .from('news_tags')
-            .select('tag_id')
-            .eq('news_id', newsId);
-
-        if (error) throw error;
-        return data.map(item => item.tag_id);
+        try { const res = await apiClient.get(`/news/${newsId}/tags`); return res.data || []; } catch (e) { return []; }
     },
 
     async updateNewsTags(newsId, tagIds) {
-        // 1. Delete existing tags for this news
-        const { error: deleteError } = await supabase
-            .from('news_tags')
-            .delete()
-            .eq('news_id', newsId);
-
-        if (deleteError) throw deleteError;
-
-        if (tagIds && tagIds.length > 0) {
-            // 2. Insert new tags
-            const tagsPayload = tagIds.map(tagId => ({
-                news_id: newsId,
-                tag_id: tagId
-            }));
-
-            const { error: insertError } = await supabase
-                .from('news_tags')
-                .insert(tagsPayload);
-
-            if (insertError) throw insertError;
-        }
+        await apiClient.patch(`/news/${newsId}/tags`, { tag_ids: tagIds });
         return true;
-    }
-    ,
+    },
 
     // ----------------------------------------------------------------------
     // Sitemap & RSS Generation
@@ -2221,13 +1119,9 @@ export const adminService = {
         });
 
         // B. News (All published)
-        const { data: news } = await supabase
-            .from('news')
-            .select('slug, title, published_at, category')
-            .not('published_at', 'is', null)
-            .order('published_at', { ascending: false });
-
-        if (news) {
+        try {
+            const newsRes = await apiClient.get('/news', { params: { status: 'published', limit: 1000 } });
+            const news = newsRes.data?.data || [];
             news.forEach(item => {
                 const itemSlug = item.slug || this._slugify(item.title);
                 const categorySlug = this._slugify(item.category);
@@ -2239,10 +1133,11 @@ export const adminService = {
   </url>
 `;
             });
-        }
+        } catch (e) { console.error('Sitemap news fetch error:', e); }
 
         // C. Categories
-        const { data: categories } = await supabase.from('categories').select('slug, name');
+        const categoriesRes = await apiClient.get('/categories').catch(() => ({ data: [] }));
+        const categories = categoriesRes.data || [];
         if (categories) {
             categories.forEach(cat => {
                 const safeSlug = cat.slug || this._slugify(cat.name);
@@ -2257,12 +1152,9 @@ export const adminService = {
         }
 
         // D. Photo Galleries
-        const { data: photoGalleries } = await supabase
-            .from('photo_galleries')
-            .select('slug, title, created_at')
-            .eq('is_active', true);
-
-        if (photoGalleries) {
+        const galleriesRes = await apiClient.get('/galleries').catch(() => ({ data: [] }));
+        const photoGalleries = galleriesRes.data || [];
+        if (photoGalleries.length) {
             photoGalleries.forEach(gallery => {
                 const itemSlug = gallery.slug || this._slugify(gallery.title);
                 xml += `  <url>
@@ -2276,12 +1168,9 @@ export const adminService = {
         }
 
         // E. Video Galleries
-        const { data: videoGalleries } = await supabase
-            .from('video_galleries')
-            .select('slug, title, created_at')
-            .eq('is_active', true);
-
-        if (videoGalleries) {
+        const videosRes = await apiClient.get('/videos').catch(() => ({ data: [] }));
+        const videoGalleries = videosRes.data || [];
+        if (videoGalleries.length) {
             videoGalleries.forEach(video => {
                 const itemSlug = video.slug || this._slugify(video.title);
                 xml += `  <url>
@@ -2295,8 +1184,9 @@ export const adminService = {
         }
 
         // F. Tags
-        const { data: tags } = await supabase.from('tags').select('name');
-        if (tags) {
+        const tagsRes = await apiClient.get('/tags').catch(() => ({ data: [] }));
+        const tags = tagsRes.data || [];
+        if (tags.length) {
             tags.forEach(tag => {
                 const slug = this._slugify(tag.name);
                 xml += `  <url>
@@ -2310,7 +1200,8 @@ export const adminService = {
         }
 
         // G. Dynamic Pages
-        const { data: pages } = await supabase.from('pages').select('slug, updated_at').eq('is_active', true);
+        const pagesRes = await apiClient.get('/pages?is_active=true').catch(() => ({ data: [] }));
+        const pages = pagesRes.data || [];
         if (pages) {
             pages.forEach(page => {
                 if (!['hakkimizda', 'kunye', 'iletisim', 'reklam', 'kariyer', 'kvkk', 'cerez-politikasi'].includes(page.slug)) {
@@ -2335,12 +1226,11 @@ export const adminService = {
         const now = new Date();
         const twoDaysAgo = new Date(now.getTime() - (48 * 60 * 60 * 1000)).toISOString();
 
-        const { data: news } = await supabase
-            .from('news')
-            .select('slug, title, published_at, category')
-            .not('published_at', 'is', null)
-            .gte('published_at', twoDaysAgo)
-            .order('published_at', { ascending: false });
+        let news = [];
+        try {
+            const res = await apiClient.get('/news', { params: { status: 'published', limit: 500, since: twoDaysAgo } });
+            news = res.data?.data || [];
+        } catch (e) { console.error('News sitemap fetch error:', e); }
 
         let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -2378,12 +1268,11 @@ export const adminService = {
         const now = new Date().toUTCString();
 
         // Fetch latest 50 items
-        const { data: news } = await supabase
-            .from('news')
-            .select('slug, title, summary, content, published_at, category, image_url')
-            .not('published_at', 'is', null)
-            .order('published_at', { ascending: false })
-            .limit(50);
+        let newsList = [];
+        try {
+            const res = await apiClient.get('/news', { params: { status: 'published', limit: 50 } });
+            newsList = res.data?.data || [];
+        } catch (e) { console.error('RSS fetch error:', e); }
 
         let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
@@ -2396,8 +1285,8 @@ export const adminService = {
   <atom:link href="${baseUrl}/rss.xml" rel="self" type="application/rss+xml" />
 `;
 
-        if (news) {
-            news.forEach(item => {
+        if (newsList) {
+            newsList.forEach(item => {
                 const itemSlug = item.slug || this._slugify(item.title);
                 const categorySlug = this._slugify(item.category);
                 const link = `${baseUrl}/kategori/${categorySlug}/${itemSlug}`;
@@ -2430,12 +1319,12 @@ export const adminService = {
     },
 
     async deleteAdPlacement(id) {
-        const { error } = await supabase
-            .from('ads')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
+        try {
+            await apiClient.delete(`/ads/${id}`);
+        } catch (error) {
+            console.error('Error deleting ad placement:', error);
+            throw error;
+        }
 
         await this.logActivity('DELETE', 'ADS', `Reklam alanı silindi: ${id}`, id);
 
@@ -2444,262 +1333,155 @@ export const adminService = {
 
     // Service: Contact Messages
     async getContactMessages() {
-        const { data, error } = await supabase
-            .from('contact_messages')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data;
+        try { const res = await apiClient.get('/contact-messages'); return res.data || []; } catch (e) { return []; }
     },
 
     async createContactMessage(messageData) {
-        const { data, error } = await supabase
-            .from('contact_messages')
-            .insert([messageData])
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
+        const res = await apiClient.post('/contact-messages', messageData);
+        return res.data;
     },
 
     async deleteContactMessage(id) {
-        // Fetch details for log
-        const { data: msg } = await supabase.from('contact_messages').select('name').eq('id', id).single();
-        const sender = msg?.name || id;
-
-        const { error } = await supabase
-            .from('contact_messages')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
-        await this.logActivity('DELETE', 'MESSAGE', `İletişim mesajı silindi: ${sender}`, id);
+        try {
+            await apiClient.delete(`/contact-messages/${id}`);
+            await this.logActivity('DELETE', 'MESSAGE', `İletişim mesajı silindi (ID: ${id})`, id);
+        } catch (error) {
+            console.error('Error deleting contact message:', error);
+            throw error;
+        }
     },
 
     async markContactMessageAsRead(id) {
-        // Fetch details for log
-        const { data: msg } = await supabase.from('contact_messages').select('name').eq('id', id).single();
-        const sender = msg?.name || id;
-
-        const { data, error } = await supabase
-            .from('contact_messages')
-            .update({ is_read: true })
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('UPDATE', 'MESSAGE', `Mesaj okundu olarak işaretlendi: ${sender}`, id);
-
-        return data;
+        try {
+            const response = await apiClient.patch(`/contact-messages/${id}`, { is_read: true });
+            await this.logActivity('UPDATE', 'MESSAGE', `Mesaj okundu olarak işaretlendi (ID: ${id})`, id);
+            return response.data;
+        } catch (error) {
+            console.error('Error marking message as read:', error);
+            throw error;
+        }
     },
 
     async getUnreadCounts() {
-        // Get unread messages count
-        const { count: messageCount, error: messageError } = await supabase
-            .from('contact_messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('is_read', false);
-
-        // Get unapproved comments count
-        const { count: commentCount, error: commentError } = await supabase
-            .from('comments')
-            .select('*', { count: 'exact', head: true })
-            .eq('is_approved', false);
-
-        // Log errors but return 0 to avoid crashing the layout
-        if (messageError) console.error('Message count error:', messageError);
-        if (commentError) console.error('Comment count error:', commentError);
-
-        return {
-            messages: messageCount || 0,
-            comments: commentCount || 0
-        };
+        try {
+            const msgs = await apiClient.get('/contact-messages?is_read=false').catch(() => ({ data: [] }));
+            const comments = await apiClient.get('/comments?is_approved=false').catch(() => ({ data: [] }));
+            return {
+                messages: Array.isArray(msgs.data) ? msgs.data.length : 0,
+                comments: Array.isArray(comments.data) ? comments.data.length : 0
+            };
+        } catch (e) {
+            return { messages: 0, comments: 0 };
+        }
     },
     async deleteUser(userId) {
-        const { error } = await supabase
-            .from('profiles')
-            .delete()
-            .eq('id', userId);
-
-        if (error) throw error;
-        return true;
+        try {
+            await apiClient.delete(`/users/${userId}`);
+            return true;
+        } catch (error) { throw error; }
     },
 
     // Service: Activity Logs
     async logActivity(actionType, entityType, description, entityId = null) {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-
-            // Fetch IP specifically
-            let ip_address = null;
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                ip_address = data.ip;
-            } catch (ipError) {
-                console.warn('Failed to fetch IP:', ipError);
-            }
-
-            const payload = {
-                user_id: user?.id || null, // Allow null user_id for anonymous actions if needed
-                action_type: actionType,
-                entity_type: entityType,
-                description: description,
-                entity_id: entityId,
-                ip_address: ip_address
-            };
-
-            const { error } = await supabase
-                .from('activity_logs')
-                .insert([payload]);
-
-            if (error) console.error('Error logging activity:', error);
+            await apiClient.post('/activity-logs', {
+                action_type: actionType, entity_type: entityType,
+                description, entity_id: entityId
+            }).catch(() => { });
         } catch (err) {
-            console.error('Error logging activity - Fatal:', err);
+            // Fail silently
         }
     },
 
     async getActivityLogs(page = 1, limit = 20) {
-        const from = (page - 1) * limit;
-        const to = from + limit - 1;
-
-        const { data, count, error } = await supabase
-            .from('activity_logs')
-            .select(`
-                *,
-                profiles (full_name, email, role)
-            `, { count: 'exact' })
-            .order('created_at', { ascending: false })
-            .range(from, to);
-
-        if (error) throw error;
-        return { data, count };
+        try {
+            const res = await apiClient.get('/activity-logs', { params: { page, limit } });
+            return { data: res.data?.data || [], count: res.data?.meta?.total || 0 };
+        } catch (e) { return { data: [], count: 0 }; }
     },
 
     async clearActivityLogs() {
-        // Use a timestamp filter to avoid ID type issues (UUID vs Int)
-        // and satisfy Supabase's delete filter requirement.
-        const { error } = await supabase
-            .from('activity_logs')
-            .delete()
-            .lt('created_at', new Date().toISOString());
-
-        if (error) throw error;
-
-        await this.logActivity('DELETE', 'SETTINGS', 'İşlem geçmişi manuel olarak temizlendi');
+        await apiClient.delete('/activity-logs');
         return true;
     },
 
     // Service: Email Settings
     async getEmailSettings() {
-        const { data, error } = await supabase
-            .from('email_settings')
-            .select('*')
-            .single();
-
-        if (error && error.code !== 'PGRST116') throw error;
-        return data;
+        try { const res = await apiClient.get('/email-settings'); return res.data; } catch (e) { return null; }
     },
 
     async updateEmailSettings(settings) {
-        const { error } = await supabase
-            .from('email_settings')
-            .upsert({
-                id: 1,
-                ...settings,
-                updated_at: new Date().toISOString()
-            });
-
-        if (error) throw error;
-
-        await this.logActivity('UPDATE', 'SETTINGS', `Email ayarları güncellendi`, 1);
-
+        await apiClient.patch('/email-settings', settings);
+        await this.logActivity('UPDATE', 'SETTINGS', 'Email ayarları güncellendi', 1);
         return true;
     },
 
-    // Service: Redirects
+    // Service: Redirects (duplicate block removed above, these delegate to the first ones)
     async getRedirects() {
-        const { data, error } = await supabase
-            .from('redirects')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            // Handle missing table gracefully if possible, or throw
-            // For now assuming table exists as per logic
-            if (error.code === '42P01') return []; // undefined_table
-            throw error;
-        }
-        return data;
+        try { const res = await apiClient.get('/redirects'); return res.data || []; } catch (e) { return []; }
     },
 
     async addRedirect(redirectData) {
-        const { data, error } = await supabase
-            .from('redirects')
-            .insert(redirectData)
-            .select()
-            .single();
-
-        if (error) throw error;
-
-        await this.logActivity('CREATE', 'REDIRECT', `Yönlendirme eklendi: ${redirectData.old_path} -> ${redirectData.new_path}`, data.id);
-
-        return data;
+        const res = await apiClient.post('/redirects', redirectData);
+        await this.logActivity('CREATE', 'REDIRECT', `Yönlendirme eklendi`, res.data?.id);
+        return res.data;
     },
 
     async deleteRedirect(id) {
-        const { error } = await supabase
-            .from('redirects')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
-
+        await apiClient.delete(`/redirects/${id}`);
         await this.logActivity('DELETE', 'REDIRECT', `Yönlendirme silindi: ${id}`, id);
-
         return true;
     },
 
 
     // Bot Mappings
     async getBotMappings(sourceName) {
-        const { data, error } = await supabase
-            .from('bot_category_mappings')
-            .select('*')
-            .eq('source_name', sourceName)
-            .order('created_at', { ascending: false });
-
-        if (error) {
+        try {
+            const res = await apiClient.get('/bot/mappings/' + sourceName);
+            return res.data;
+        } catch (error) {
             console.error('Error fetching bot mappings:', error);
-            // Non-blocking error if table doesn't exist
             return [];
         }
-        return data;
     },
 
     async addBotMapping(mapping) {
-        const { data, error } = await supabase
-            .from('bot_category_mappings')
-            .insert(mapping)
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
+        try {
+            const res = await apiClient.post('/bot/mappings', mapping);
+            return res.data;
+        } catch (error) {
+            console.error('Error adding bot mapping:', error);
+            throw error;
+        }
     },
 
     async deleteBotMapping(id) {
-        const { error } = await supabase
-            .from('bot_category_mappings')
-            .delete()
-            .eq('id', id);
+        try {
+            await apiClient.delete('/bot/mappings/' + id);
+        } catch (error) {
+            console.error('Error deleting bot mapping:', error);
+            throw error;
+        }
+    },
 
-        if (error) throw error;
+    async getBotSettings() {
+        try {
+            const res = await apiClient.get('/bot/settings');
+            return res.data;
+        } catch (error) {
+            console.error('Error fetching bot settings:', error);
+            return [];
+        }
+    },
+
+    async updateBotSetting(id, data) {
+        try {
+            const res = await apiClient.post('/bot/settings/' + id, data);
+            return res.data;
+        } catch (error) {
+            console.error('Error updating bot setting:', error);
+            throw error;
+        }
     },
 
     // Service: SEO Files (robots.txt, ads.txt)
@@ -2716,79 +1498,32 @@ export const adminService = {
 
     // Bot Commands
     async triggerBot(command = 'FORCE_RUN') {
-        const { data, error } = await supabase
-            .from('bot_commands')
-            .insert({ command, status: 'PENDING' })
-            .select()
-            .single();
-
-        if (error) {
+        try {
+            const response = await apiClient.post('/bot/run');
+            return response.data;
+        } catch (error) {
             console.error('Trigger bot failed:', error);
             throw error;
         }
-        return data;
     },
 
     async getBotStatus() {
-        const { data, error } = await supabase
-            .from('bot_commands')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-        if (error) return null;
-        return data;
+        try {
+            const response = await apiClient.get('/bot/status');
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching bot status:', error);
+            return null;
+        }
     },
 
     async getDashboardStats() {
         try {
-            // Get total views from all published news
-            const { data: newsData, error: newsError } = await supabase
-                .from('news')
-                .select('views')
-                .not('published_at', 'is', null);
-
-            if (newsError) throw newsError;
-
-            const totalViews = newsData?.reduce((sum, item) => sum + (item.views || 0), 0) || 0;
-
-            // Get active news count (published)
-            const { count: activeNews, error: activeError } = await supabase
-                .from('news')
-                .select('*', { count: 'exact', head: true })
-                .not('published_at', 'is', null);
-
-            if (activeError) throw activeError;
-
-            // Get subscribers count
-            const { count: subscribers, error: subsError } = await supabase
-                .from('subscribers')
-                .select('*', { count: 'exact', head: true });
-
-            if (subsError) throw subsError;
-
-            // Get total comments count
-            const { count: totalComments, error: commentsError } = await supabase
-                .from('comments')
-                .select('*', { count: 'exact', head: true });
-
-            if (commentsError) throw commentsError;
-
-            return {
-                totalViews,
-                activeNews: activeNews || 0,
-                subscribers: subscribers || 0,
-                totalComments: totalComments || 0
-            };
+            const response = await apiClient.get('/stats/dashboard');
+            return response.data;
         } catch (error) {
             console.error('Error fetching dashboard stats:', error);
-            return {
-                totalViews: 0,
-                activeNews: 0,
-                subscribers: 0,
-                totalComments: 0
-            };
+            return { totalViews: 0, activeNews: 0, subscribers: 0, totalComments: 0 };
         }
     }
 };

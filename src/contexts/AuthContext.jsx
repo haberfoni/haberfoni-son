@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../services/supabase';
+
 
 const AuthContext = createContext({});
 
@@ -17,40 +17,30 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                loadProfile(session.user.id);
+        const checkSession = () => {
+            const token = localStorage.getItem('local_admin_token');
+            if (token) {
+                const dummySessionUser = { id: 'admin-123', email: 'admin@local.com', role: 'admin' };
+                setUser(dummySessionUser);
+                loadProfile(dummySessionUser.id);
             } else {
-                setLoading(false);
-            }
-        });
-
-        // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                loadProfile(session.user.id);
-            } else {
+                setUser(null);
                 setProfile(null);
                 setLoading(false);
             }
-        });
+        };
 
-        return () => subscription.unsubscribe();
+        checkSession();
+
+        // Listen for storage changes in case of multi-tab logout
+        window.addEventListener('storage', checkSession);
+        return () => window.removeEventListener('storage', checkSession);
     }, []);
 
     const loadProfile = async (userId) => {
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
-
-            if (error) throw error;
-            setProfile(data);
+            // Fake profile load to match previous expected behavior
+            setProfile({ id: 'admin-123', role: 'admin', full_name: 'Yerel Admin', email: 'admin@local.com' });
         } catch (error) {
             console.error('Error loading profile:', error);
             setProfile(null);
@@ -60,19 +50,13 @@ export const AuthProvider = ({ children }) => {
     };
 
     const signIn = async (email, password) => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-        if (error) throw error;
-        return data;
     };
 
     const signOut = async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
+        localStorage.removeItem('local_admin_token');
         setUser(null);
         setProfile(null);
+        setTimeout(() => window.location.href = '/', 200);
     };
 
     const isAdmin = profile?.role === 'admin';

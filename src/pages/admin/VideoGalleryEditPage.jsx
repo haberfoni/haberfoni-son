@@ -314,7 +314,7 @@ const VideoGalleryEditPage = () => {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Video Kaynağı</label>
 
-                            {formData.video_url && formData.video_url.includes('supabase.co') ? (
+                            {formData.video_url && (formData.video_url.includes('/uploads/') || formData.video_url.startsWith('http://localhost')) ? (
                                 <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                                     <div className="flex items-center space-x-3 overflow-hidden">
                                         <div className="p-2 bg-green-100 rounded-full text-green-600 flex-shrink-0">

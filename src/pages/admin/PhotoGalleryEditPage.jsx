@@ -489,7 +489,7 @@ const PhotoGalleryEditPage = () => {
                                         </div>
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-500 mb-1">Görsel URL</label>
-                                            {img.image_url && img.image_url.includes('supabase.co') ? (
+                                            {img.image_url && (img.image_url.includes('/uploads/') || img.image_url.startsWith('http://localhost')) ? (
                                                 <div className="flex items-center justify-between p-2.5 bg-green-50 border border-green-200 rounded-lg">
                                                     <div className="flex items-center space-x-2 overflow-hidden">
                                                         <div className="p-1.5 bg-green-100 rounded-full text-green-600 flex-shrink-0">

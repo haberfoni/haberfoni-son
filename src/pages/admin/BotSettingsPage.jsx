@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../services/adminService';
-import { supabase } from '../../services/supabase';
-import { Save, RefreshCw, Power, AlertTriangle, CheckCircle, Plus, Trash2, Link as LinkIcon } from 'lucide-react';
+
+import { Save, RefreshCw, Power, AlertTriangle, CheckCircle, Plus, Trash2, Link as LinkIcon, Clock } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 const BotSettingsPage = () => {
     const [settings, setSettings] = useState([]);
@@ -45,17 +47,10 @@ const BotSettingsPage = () => {
         if (!silent) setLoading(true);
         try {
             // Load Settings
-            const { data: settingsData, error } = await supabase
-                .from('bot_settings')
-                .select('*')
-                .order('source_name');
+            const settingsData = await adminService.getBotSettings();
 
-            if (error) {
-                if (error.code === '42P01') {
-                    setMessage({ type: 'warning', text: 'Bot tabloları eksik. Lütfen SQL kurulumunu yapın.' });
-                } else {
-                    throw error;
-                }
+            if (!settingsData) {
+                setMessage({ type: 'warning', text: 'Bot ayarları alınamadı.' });
             } else {
                 setSettings(settingsData || []);
 
@@ -95,16 +90,12 @@ const BotSettingsPage = () => {
 
         setSaving(true);
         try {
-            const { error } = await supabase
-                .from('bot_settings')
-                .update({
-                    auto_publish: item.auto_publish,
-                    is_active: item.is_active,
-                    updated_at: new Date()
-                })
-                .eq('id', id);
+            await adminService.updateBotSetting(id, {
+                auto_publish: item.auto_publish,
+                is_active: item.is_active,
+                updated_at: new Date()
+            });
 
-            if (error) throw error;
             setMessage({ type: 'success', text: `${item.source_name} ayarları kaydedildi.` });
             setTimeout(() => setMessage(null), 3000);
         } catch (error) {
@@ -121,7 +112,7 @@ const BotSettingsPage = () => {
             const newEntry = {
                 source_name: sourceName,
                 source_url: newMapping.url,
-                target_category_slug: newMapping.category,
+                target_category: newMapping.category,
                 is_active: true
             };
 
@@ -182,14 +173,22 @@ const BotSettingsPage = () => {
                             <span className="w-3 h-3 rounded-full bg-green-500 mr-2 animate-pulse"></span>
                             Sistem Durumu
                         </h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                            Son Komut: {botStatus ? (
-                                <span className={`font-mono font-semibold ${botStatus.status === 'PENDING' ? 'text-yellow-600' : botStatus.status === 'COMPLETED' ? 'text-green-600' : 'text-gray-600'}`}>
-                                    {botStatus.command} ({botStatus.status})
-                                </span>
-                            ) : 'Yok'}
-                            {botStatus && botStatus.updated_at && <span className="text-xs ml-2 text-gray-400">({new Date(botStatus.updated_at).toLocaleTimeString()})</span>}
-                        </p>
+                        <div className="text-sm text-gray-600 mt-2 space-y-1">
+                            <p>
+                                <span className="font-medium text-gray-500">Son Komut:</span>{' '}
+                                {botStatus ? (
+                                    <span className={`font-mono font-semibold ${botStatus.status === 'PENDING' ? 'text-yellow-600' : botStatus.status === 'COMPLETED' ? 'text-green-600' : 'text-gray-600'}`}>
+                                        {botStatus.command} ({botStatus.status})
+                                    </span>
+                                ) : 'Yok'}
+                            </p>
+                            {botStatus && botStatus.updated_at && (
+                                <p className="flex items-center text-indigo-600 font-medium">
+                                    <Clock size={16} className="mr-1" />
+                                    Son İşlem: {formatDistanceToNow(new Date(botStatus.updated_at), { addSuffix: true, locale: tr })}
+                                </p>
+                            )}
+                        </div>
                     </div>
                     <button
                         onClick={handleTriggerBot}
@@ -253,7 +252,7 @@ const BotSettingsPage = () => {
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                                                     <div className="text-gray-600 truncate" title={map.source_url}>{map.source_url}</div>
                                                     <div className="font-semibold text-gray-800 flex items-center">
-                                                        <span className="text-gray-400 mr-2">→</span> {map.target_category_slug}
+                                                        <span className="text-gray-400 mr-2">→</span> {map.target_category}
                                                     </div>
                                                 </div>
                                                 <div className="text-xs text-gray-500 flex items-center">

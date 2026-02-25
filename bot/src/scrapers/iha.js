@@ -5,6 +5,20 @@ import * as cheerio from 'cheerio';
 
 const parser = new Parser();
 
+const BLOCKED_IMAGE_PATTERNS = [
+    'bip.png', 'bip.jpg',
+    'next-header-aa', 'aa-logo',
+    'default.jpg', 'placeholder',
+    'logo.png', 'logo.jpg', 'logo.svg',
+    'noimage', 'no-image', 'no_image',
+];
+
+function isBlockedImage(url) {
+    if (!url) return true;
+    const lower = url.toLowerCase();
+    return BLOCKED_IMAGE_PATTERNS.some(p => lower.includes(p));
+}
+
 /**
  * Scrapes an IHA HTML category page
  */
@@ -68,17 +82,62 @@ export async function scrapeIHAArticle(url, targetCategory) {
 
         const summaryRaw = $('meta[name="description"]').attr('content') || '';
         const summary = summaryRaw.replace(/\s+/g, ' ').trim();
-        const imageUrl = $('meta[property="og:image"]').attr('content') || $('article img').first().attr('src') || null;
 
-        // Content Extraction
-        // IHA often uses id="content" on multiple elements (h2 and div) containing the text
-        let articleBody = $('#content').text().trim() ||
-            $('.content').text().trim() ||
-            $('.content-text').text().trim() ||
-            $('article p').text().trim() ||
-            summary;
-        articleBody = articleBody.replace(/\s+/g, ' ').trim();
-        const content = articleBody.substring(0, 3000);
+        // Image Extraction - skip blocked/placeholder images
+        let imageUrl = null;
+        const candidateSelectors = [
+            $('meta[property="og:image"]').attr('content'),
+            $('div.gallery-img img').first().attr('src'),
+            $('figure img').first().attr('src'),
+            $('.article-img img').first().attr('src'),
+            $('article img').first().attr('src'),
+        ];
+        for (const candidate of candidateSelectors) {
+            if (candidate && !isBlockedImage(candidate)) {
+                imageUrl = candidate.startsWith('http') ? candidate : 'https://www.iha.com.tr' + candidate;
+                break;
+            }
+        }
+
+        // Content Extraction - paragraph by paragraph to get full text
+        // Remove noise elements first
+        $('script, style, .share-buttons, .tags, .related-news, .ad-banner, .breadcrumb').remove();
+
+        // Try content containers in priority order
+        let contentEl = $('.habericerik').length ? $('.habericerik') : null;
+        if (!contentEl) contentEl = $('#habericerik').length ? $('#habericerik') : null;
+        if (!contentEl) contentEl = $('.content-text').length ? $('.content-text') : null;
+        if (!contentEl) contentEl = $('article').length ? $('article') : null;
+
+        let content = '';
+        if (contentEl && contentEl.length > 0) {
+            const parts = [];
+            contentEl.find('p, h2, h3, h4, figure, img').each((i, el) => {
+                const $el = $(el);
+                const tag = el.tagName.toLowerCase();
+                if (tag === 'figure' || tag === 'img') {
+                    const imgEl = tag === 'img' ? $el : $el.find('img');
+                    let src = imgEl.attr('data-src') || imgEl.attr('src') || '';
+                    if (src && !isBlockedImage(src)) {
+                        if (!src.startsWith('http')) src = 'https://www.iha.com.tr' + src;
+                        const alt = imgEl.attr('alt') || '';
+                        parts.push(`<figure class="my-6"><img src="${src}" alt="${alt}" class="w-full h-auto rounded-lg" /></figure>`);
+                    }
+                } else if (tag.startsWith('h')) {
+                    const text = $el.text().trim();
+                    if (text) parts.push(`<h3>${text}</h3>`);
+                } else {
+                    const html = $el.html()?.trim();
+                    if (html && $el.text().trim().length > 10) parts.push(`<p>${html}</p>`);
+                }
+            });
+            content = parts.join('');
+        }
+
+        // Fallback to plain text extraction if HTML extraction yields nothing
+        if (!content) {
+            content = $('article').text().trim() || summary;
+        }
 
         // Author Extraction
         let author = $('meta[name="author"]').attr('content') || '';
@@ -120,7 +179,7 @@ export async function scrapeIHA() {
         let totalSaved = 0;
 
         for (const mapping of mappings) {
-            console.log(`Fetching IHA: ${mapping.source_url} -> ${mapping.target_category_slug}`);
+            console.log(`Fetching IHA: ${mapping.source_url} -> ${mapping.target_category}`);
 
             try {
                 let count = 0;
@@ -143,7 +202,7 @@ export async function scrapeIHA() {
                             original_url: item.link,
                             image_url: imageUrl,
                             source: 'IHA',
-                            category: mapping.target_category_slug,
+                            category: mapping.target_category,
                             keywords: ''
                         };
 
@@ -152,10 +211,10 @@ export async function scrapeIHA() {
                     }
                 } else {
                     // HTML scraping
-                    count = await scrapeIHAHTML(mapping.source_url, mapping.target_category_slug);
+                    count = await scrapeIHAHTML(mapping.source_url, mapping.target_category);
                 }
 
-                console.log(`   Saved ${count} items for ${mapping.target_category_slug}`);
+                console.log(`   Saved ${count} items for ${mapping.target_category}`);
                 totalSaved += count;
 
                 // Log Success

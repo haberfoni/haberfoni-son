@@ -5,6 +5,21 @@ import * as cheerio from 'cheerio';
 
 const parser = new Parser();
 
+// Images that should never appear in articles
+const BLOCKED_IMAGE_PATTERNS = [
+    'bip.png', 'bip.jpg',
+    'next-header-aa', 'aa-logo',
+    'default.jpg', 'placeholder',
+    'logo.png', 'logo.jpg', 'logo.svg',
+    'noimage', 'no-image', 'no_image',
+];
+
+function isBlockedImage(url) {
+    if (!url) return true;
+    const lower = url.toLowerCase();
+    return BLOCKED_IMAGE_PATTERNS.some(p => lower.includes(p));
+}
+
 /**
  * Scrapes an AA HTML category page (e.g., https://www.aa.com.tr/tr/gundem)
  */
@@ -94,18 +109,22 @@ async function scrapeAAArticle(url, targetCategory) {
         const summary = summaryRaw.replace(/\s+/g, ' ').trim();
 
         // Extract image
-        const imageUrl = $('meta[property="og:image"]').attr('content') ||
+        const imageUrlRaw = $('meta[property="og:image"]').attr('content') ||
             $('article img').first().attr('src') ||
             null;
+        const imageUrl = isBlockedImage(imageUrlRaw) ? null : imageUrlRaw;
 
 
         // Extract content - try to find article body
         let contentEl = $('.detay-icerik');
         if (contentEl.length === 0) contentEl = $('article');
 
+        // Strip only ads/share/tag junk — keep iframe and video!
+        contentEl.find('script, style, .ad, .share, .tags, .related').remove();
+
         let content = '';
         if (contentEl.length > 0) {
-            content = contentEl.find('p, h2, h3, h4, img, figure').map((i, el) => {
+            content = contentEl.find('p, h2, h3, h4, img, figure, iframe, video').map((i, el) => {
                 const $el = $(el);
                 const tag = el.tagName.toLowerCase();
                 const text = $el.text().trim();
@@ -135,16 +154,26 @@ async function scrapeAAArticle(url, targetCategory) {
 
 
                     // Strict validation: filter out empty, placeholder, or invalid images
-                    if (src &&
-                        src.length > 10 &&
-                        !src.toLowerCase().includes('bip') &&
-                        !src.toLowerCase().includes('placeholder') &&
-                        !src.toLowerCase().includes('blank') &&
-                        !src.toLowerCase().includes('next-header') &&
-                        !src.toLowerCase().includes('aa-logo') &&
-                        !src.toLowerCase().includes('/logo') &&
-                        !(src.startsWith('data:') && src.length < 100)) {
+                    if (src && src.length > 10 && !isBlockedImage(src) && !(src.startsWith('data:') && src.length < 100)) {
                         return `<figure class="my-6"><img src="${src}" class="w-full h-auto rounded-lg" /></figure>`;
+                    }
+                    return '';
+                }
+
+                // Handle iframes (YouTube, etc.)
+                if (tag === 'iframe') {
+                    const src = $el.attr('src') || '';
+                    if (src && (src.includes('youtube') || src.includes('youtu.be') || src.includes('dailymotion') || src.includes('vimeo'))) {
+                        return `<div class="my-6 aspect-video"><iframe src="${src}" class="w-full h-full rounded-lg" allowfullscreen></iframe></div>`;
+                    }
+                    return '';
+                }
+
+                // Handle native video
+                if (tag === 'video') {
+                    const src = $el.attr('src') || $el.find('source').attr('src') || '';
+                    if (src && src.startsWith('http')) {
+                        return `<div class="my-6"><video src="${src}" controls class="w-full rounded-lg"></video></div>`;
                     }
                     return '';
                 }
@@ -174,7 +203,7 @@ async function scrapeAAArticle(url, targetCategory) {
         return {
             title: title,
             summary: summary, // Full summary, no truncation
-            content: content.substring(0, 60000), // Increased limit
+            content: content,
             original_url: url,
             image_url: imageUrl,
             source: 'AA',
@@ -205,7 +234,7 @@ export async function scrapeAA() {
         let totalSaved = 0;
 
         for (const mapping of mappings) {
-            console.log(`Fetching AA: ${mapping.source_url} -> ${mapping.target_category_slug}`);
+            console.log(`Fetching AA: ${mapping.source_url} -> ${mapping.target_category}`);
 
             try {
                 let count = 0;
@@ -228,7 +257,7 @@ export async function scrapeAA() {
                             original_url: item.link,
                             image_url: imageUrl,
                             source: 'AA',
-                            category: mapping.target_category_slug,
+                            category: mapping.target_category,
                             keywords: ''
                         };
 
@@ -237,10 +266,10 @@ export async function scrapeAA() {
                     }
                 } else {
                     // HTML scraping
-                    count = await scrapeAAHTML(mapping.source_url, mapping.target_category_slug);
+                    count = await scrapeAAHTML(mapping.source_url, mapping.target_category);
                 }
 
-                console.log(`   Saved ${count} items for ${mapping.target_category_slug}`);
+                console.log(`   Saved ${count} items for ${mapping.target_category}`);
                 totalSaved += count;
 
                 // Log Success

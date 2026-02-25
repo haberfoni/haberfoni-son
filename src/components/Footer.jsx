@@ -4,7 +4,7 @@ import { Facebook, Twitter, Instagram, Youtube, Mail } from 'lucide-react';
 import { fetchCategories } from '../services/api';
 import { SOCIAL_MEDIA_LINKS } from '../constants/socialMedia';
 import { slugify } from '../utils/slugify';
-import { supabase } from '../services/supabase';
+import apiClient from '../services/apiClient';
 import { adminService } from '../services/adminService';
 
 import { getSocialLinksFromSettings, getIcon } from '../utils/iconMapper';
@@ -64,31 +64,17 @@ const Footer = () => {
         setStatus('loading');
 
         try {
-            // Save to Supabase subscribers table
-            const { data, error } = await supabase
-                .from('subscribers')
-                .insert([{ email, is_active: true }])
-                .select();
+            await apiClient.post('/subscribers', { email, is_active: true });
 
-            if (error) {
-                // Check if email already exists
-                if (error.code === '23505') {
-                    setStatus('error');
-                    setMessage('Bu e-posta adresi zaten kayıtlı.');
-                } else {
-                    throw error;
-                }
-            } else {
-                setStatus('success');
-                setMessage('Bültenimize başarıyla abone oldunuz!');
-                setEmail('');
+            setStatus('success');
+            setMessage('Bültenimize başarıyla abone oldunuz!');
+            setEmail('');
 
-                // Reset message after 3 seconds
-                setTimeout(() => {
-                    setStatus('idle');
-                    setMessage('');
-                }, 3000);
-            }
+            // Reset message after 3 seconds
+            setTimeout(() => {
+                setStatus('idle');
+                setMessage('');
+            }, 3000);
         } catch (error) {
             console.error('Subscription error:', error);
             setStatus('error');

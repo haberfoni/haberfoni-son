@@ -5,7 +5,7 @@ import AdBanner from './AdBanner';
 import CommentSection from './CommentSection';
 import { getEmbedUrl } from '../utils/videoUtils';
 import ImageWithFallback from './ImageWithFallback';
-import { supabase } from '../services/supabase';
+
 import SourceBadge from './SourceBadge';
 import { formatDate } from '../utils/mappers';
 
