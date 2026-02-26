@@ -6,10 +6,10 @@ services:
     container_name: haberfoni_db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Pr0duct10n_Root!2026}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-haberfoni}
       MYSQL_USER: ${MYSQL_USER:-haberfoni_user}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-userpassword}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-Haberfoni_Secur3!DB}
     ports:
       - "3306:3306"
     volumes:
@@ -17,7 +17,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}" ]
       interval: 10s
       timeout: 20s
       retries: 10
@@ -32,7 +32,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: mysql://${MYSQL_USER:-haberfoni_user}:${MYSQL_PASSWORD:-userpassword}@db:3306/${MYSQL_DATABASE:-haberfoni}
+      DATABASE_URL: mysql://${MYSQL_USER:-haberfoni_user}:${MYSQL_PASSWORD:-Haberfoni_Secur3!DB}@db:3306/${MYSQL_DATABASE:-haberfoni}
       NODE_ENV: production
       PORT: 3000
     depends_on:
@@ -48,7 +48,7 @@ services:
     container_name: haberfoni_bot
     restart: always
     environment:
-      DATABASE_URL: mysql://${MYSQL_USER:-haberfoni_user}:${MYSQL_PASSWORD:-userpassword}@db:3306/${MYSQL_DATABASE:-haberfoni}
+      DATABASE_URL: mysql://${MYSQL_USER:-haberfoni_user}:${MYSQL_PASSWORD:-Haberfoni_Secur3!DB}@db:3306/${MYSQL_DATABASE:-haberfoni}
     depends_on:
       db:
         condition: service_healthy
@@ -63,7 +63,7 @@ services:
     environment:
       PMA_HOST: db
       PMA_USER: root
-      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Pr0duct10n_Root!2026}
       UPLOAD_LIMIT: 64M
     ports:
       - "8080:80"
