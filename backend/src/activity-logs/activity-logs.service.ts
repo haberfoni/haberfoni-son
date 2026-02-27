@@ -10,7 +10,11 @@ export class ActivityLogsService {
     }
 
     async create(data: any) {
-        return this.prisma.activityLog.create({ data });
+        const payload = { ...data };
+        if (payload.entity_id) {
+            payload.entity_id = Number(payload.entity_id);
+        }
+        return this.prisma.activityLog.create({ data: payload });
     }
 
     async remove(id: number) {
