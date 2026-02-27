@@ -8,7 +8,7 @@ export class StatsService {
     async getDashboardStats() {
         const [activeNews, subscribers, totalComments, viewsResult] = await Promise.all([
             this.prisma.news.count({ where: { published_at: { not: null } } }),
-            0, // this.prisma.subscriber.count(), // Assumes Subscriber model exists
+            this.prisma.subscriber.count(),
             this.prisma.comment.count(),
             this.prisma.news.aggregate({
                 _sum: {
