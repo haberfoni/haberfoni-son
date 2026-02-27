@@ -56,4 +56,14 @@ export class NewsController {
   incrementViews(@Param('id') id: string) {
     return this.newsService.incrementViews(+id);
   }
+
+  @Get(':id/tags')
+  getTags(@Param('id') id: string) {
+    return this.newsService.getTags(+id);
+  }
+
+  @Patch(':id/tags')
+  updateTags(@Param('id') id: string, @Body() body: { tag_ids: number[] }) {
+    return this.newsService.updateTags(+id, body.tag_ids);
+  }
 }

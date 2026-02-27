@@ -123,6 +123,35 @@ export class NewsService {
     });
   }
 
+  async getTags(id: number) {
+    const newsTags = await this.prisma.newsTag.findMany({
+      where: { news_id: id },
+      include: { Tag: true } // Assuming 'Tag' is the relation name in Prisma schema
+    });
+    return newsTags.map(nt => nt.Tag);
+  }
+
+  async updateTags(newsId: number, tagIds: number[]) {
+    // 1. Delete all existing tags for this news
+    await this.prisma.newsTag.deleteMany({
+      where: { news_id: newsId },
+    });
+
+    // 2. Insert new tags
+    if (tagIds && tagIds.length > 0) {
+      const newsTagsData = tagIds.map(tagId => ({
+        news_id: newsId,
+        tag_id: tagId,
+      }));
+
+      await this.prisma.newsTag.createMany({
+        data: newsTagsData,
+      });
+    }
+
+    return true;
+  }
+
   private slugify(text: string) {
     return text
       .toString()

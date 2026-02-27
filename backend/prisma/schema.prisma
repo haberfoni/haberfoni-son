@@ -37,6 +37,7 @@ model News {
   Comments        Comment[]
   TargetedAds     Ad[]
   Headlines       Headline[]
+  NewsTags        NewsTag[]
 
   @@map("news")
   @@index([category])
@@ -205,7 +206,21 @@ model Tag {
   slug        String   @unique @db.VarChar(100)
   created_at  DateTime @default(now())
 
+  NewsTags    NewsTag[]
+
   @@map("tags")
+}
+
+model NewsTag {
+  news_id     Int
+  tag_id      Int
+  created_at  DateTime @default(now())
+
+  News        News     @relation(fields: [news_id], references: [id], onDelete: Cascade)
+  Tag         Tag      @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([news_id, tag_id])
+  @@map("news_tags")
 }
 
 model Subscriber {
