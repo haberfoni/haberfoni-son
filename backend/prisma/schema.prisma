@@ -108,11 +108,13 @@ model Comment {
 model Page {
   id          Int      @id @default(autoincrement())
   title       String   @db.VarChar(255)
-  slug        String   @unique @db.VarChar(255)
-  content     String?  @db.LongText
-  is_active   Boolean  @default(true)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  slug             String   @unique @db.VarChar(255)
+  content          String?  @db.LongText
+  meta_title       String?  @db.VarChar(255)
+  meta_description String?  @db.Text
+  is_active        Boolean  @default(true)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
 
   @@map("pages")
 }
