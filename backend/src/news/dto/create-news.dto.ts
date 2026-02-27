@@ -9,7 +9,7 @@ export class CreateNewsDto {
     original_url?: string;
     source?: string;
     author?: string;
-    author_id?: number;
+    author_id?: string;
     published_at?: string | Date; // Date is handled by Prisma
     is_active?: boolean;
     views?: number;

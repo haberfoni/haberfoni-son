@@ -38,7 +38,7 @@ export class NewsService {
       where.slug = slug;
     }
     if (authorId) {
-      where.author_id = +authorId;
+      where.author_id = authorId;
     }
     if (isSlider !== undefined) {
       where.is_slider = isSlider;
@@ -82,14 +82,14 @@ export class NewsService {
   async findBySlug(slug: string) {
     return this.prisma.news.findFirst({
       where: { slug },
-      include: { Category: true, AuthorRelation: true }
+      include: { Category: true }
     });
   }
 
   findOne(id: number) {
     return this.prisma.news.findUnique({
       where: { id },
-      include: { Category: true, AuthorRelation: true },
+      include: { Category: true },
     });
   }
 
