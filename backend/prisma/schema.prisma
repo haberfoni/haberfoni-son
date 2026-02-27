@@ -19,7 +19,7 @@ model News {
   original_url    String?   @unique @db.VarChar(512)
   source          String?   @db.VarChar(100)
   author          String?   @db.VarChar(100)
-  author_id       Int?
+  author_id       String?   @db.VarChar(100)
   published_at    DateTime?
   is_active       Boolean   @default(true)
   views           Int       @default(0)
@@ -34,7 +34,6 @@ model News {
   updated_at      DateTime  @updatedAt
 
   Category        Category? @relation(fields: [category_id], references: [id])
-  AuthorRelation  Author?   @relation(fields: [author_id], references: [id])
   Comments        Comment[]
   TargetedAds     Ad[]
   Headlines       Headline[]
@@ -69,8 +68,6 @@ model Author {
   bio         String?  @db.Text
   email       String?  @db.VarChar(255)
   created_at  DateTime @default(now())
-
-  News        News[]
 
   @@map("authors")
 }
@@ -243,12 +240,14 @@ model ContactMessage {
 }
 
 model ActivityLog {
-  id         Int      @id @default(autoincrement())
-  user_id    String   @db.VarChar(100)
-  action     String   @db.VarChar(255)
-  details    String?  @db.Text
-  ip_address String?  @db.VarChar(45)
-  created_at DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  user_id     String?  @db.VarChar(100)
+  action_type String   @db.VarChar(100)
+  entity_type String?  @db.VarChar(100)
+  entity_id   Int?
+  description String?  @db.Text
+  ip_address  String?  @db.VarChar(45)
+  created_at  DateTime @default(now())
 
   @@map("activity_logs")
 }
