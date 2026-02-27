@@ -26,7 +26,9 @@ const PhotoGalleryPage = () => {
     React.useEffect(() => {
         const loadGalleries = async () => {
             const data = await fetchPhotoGalleries();
-            const mappedData = data.map(mapPhotoGalleryItem);
+            // Backend returns { data: [...], meta: {...} } or [...]
+            const galleryList = Array.isArray(data) ? data : (data.data || []);
+            const mappedData = galleryList.map(mapPhotoGalleryItem);
 
             if (mappedData.length > 0) {
                 setFeaturedAlbum(mappedData[0]);

@@ -25,8 +25,9 @@ export class NewsService {
     status?: 'published' | 'draft';
     authorId?: number;
     isSlider?: boolean;
+    since?: string;
   }) {
-    const { page = 1, limit = 20, category, search, slug, status, authorId, isSlider } = params;
+    const { page = 1, limit = 20, category, search, slug, status, authorId, isSlider, since } = params;
     const skip = (page - 1) * limit;
 
     const where: any = { is_active: true };
@@ -49,6 +50,12 @@ export class NewsService {
       } else if (status === 'draft') {
         where.published_at = null;
       }
+    }
+    if (since) {
+      where.published_at = {
+        ...(where.published_at || {}),
+        gte: new Date(since),
+      };
     }
     if (search) {
       where.OR = [

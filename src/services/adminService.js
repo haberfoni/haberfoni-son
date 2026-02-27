@@ -1,7 +1,8 @@
 import { slugify } from '../utils/slugify.js';
 import apiClient from './apiClient';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://142.132.229.92:3000';
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const API_BASE = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:3000' : 'http://142.132.229.92:3000');
 
 export const adminService = {
     // ... (rest of the file)
@@ -51,7 +52,8 @@ export const adminService = {
 
         try {
             const response = await apiClient.patch(`/pages/${id}`, updateData);
-            await this.logActivity('UPDATE', 'PAGE', `Sayfa güncellendi: ${pageData.title || id}`, id);
+            const changedFields = Object.keys(updateData).join(', ');
+            await this.logActivity('UPDATE', 'PAGE', `Sayfa güncellendi: ${pageData.title || id} (Değişenler: ${changedFields})`, id);
             return response.data;
         } catch (error) {
             console.error('Error updating page:', error);
@@ -101,10 +103,28 @@ export const adminService = {
     },
 
     async updateSettingsBulk(settingsArray) {
-        for (const s of settingsArray) {
+        // Fetch current to find deltas
+        const currentRes = await apiClient.get('/settings').catch(() => ({ data: [] }));
+        const currentMap = {};
+        (currentRes.data || []).forEach(item => { currentMap[item.key] = item.value; });
+
+        // Safely check if changes exist (handle JSON strings from social_links safely)
+        const changedSettings = settingsArray.filter(s => {
+            const currentVal = currentMap[s.key] || '';
+            const newVal = s.value || '';
+            // If they are exactly equal, skip
+            if (currentVal === newVal) return false;
+            // Otherwise, keep it as changed
+            return true;
+        });
+
+        if (changedSettings.length === 0) return true;
+
+        for (const s of changedSettings) {
             await apiClient.patch(`/settings/${s.key}`, { value: s.value }).catch(() => { });
         }
-        await this.logActivity('UPDATE', 'SETTINGS', `Ayarlar toplu güncellendi`, 1);
+        const updatedKeys = changedSettings.map(s => s.key).join(', ');
+        await this.logActivity('UPDATE', 'SETTINGS', `Ayarlar güncellendi (Değişenler: ${updatedKeys})`, 1);
         return true;
     },
 
@@ -205,11 +225,8 @@ export const adminService = {
         try {
             const response = await apiClient.patch(`/ads/${id}`, updates);
 
-            // Simplified logging
-            let desc = `Reklam güncellendi: ${updates.name || id}`;
-            if (updates.image_url !== undefined) {
-                desc += ' (Görsel güncellendi)';
-            }
+            const changedFields = Object.keys(updates).join(', ');
+            let desc = `Reklam güncellendi: ${updates.name || id} (Değişenler: ${changedFields})`;
             await this.logActivity('UPDATE', 'ADS', desc, id);
 
             return response.data;
@@ -394,6 +411,7 @@ export const adminService = {
     async createNews(news) {
         try {
             const response = await apiClient.post('/news', news);
+            await this.logActivity('CREATE', 'NEWS', `Yeni haber eklendi: ${news.title}`, response.data.id);
             return response.data;
         } catch (error) {
             console.error('Error creating news:', error);
@@ -404,6 +422,8 @@ export const adminService = {
     async updateNews(id, updates) {
         try {
             const response = await apiClient.patch(`/news/${id}`, updates);
+            const changedFields = Object.keys(updates).join(', ');
+            await this.logActivity('UPDATE', 'NEWS', `Haber güncellendi (ID: ${id}) (Değişenler: ${changedFields})`, id);
             return response.data;
         } catch (error) {
             console.error(`Error updating news ${id}:`, error);
@@ -437,6 +457,12 @@ export const adminService = {
         await apiClient.delete(`/subscribers/${id}`);
         await this.logActivity('DELETE', 'SUBSCRIBER', `Abone silindi: ${id}`, id);
         return true;
+    },
+
+    async sendNewsletter(subject, content) {
+        const response = await apiClient.post('/subscribers/send', { subject, content });
+        await this.logActivity('SEND', 'NEWSLETTER', `Bülten gönderildi: ${subject}`, null);
+        return response.data;
     },
 
     // Service: Photo Galleries
@@ -491,7 +517,8 @@ export const adminService = {
             console.error('Error syncing gallery images:', e);
         }
 
-        await this.logActivity('UPDATE', 'PHOTO_GALLERY', `Galeri güncellendi: ${gallery.title || id}`, id);
+        const changedFields = Object.keys(gallery).join(', ');
+        await this.logActivity('UPDATE', 'PHOTO_GALLERY', `Galeri güncellendi: ${gallery.title || id} (Değişenler: ${changedFields})`, id);
         return true;
     },
 
@@ -564,7 +591,8 @@ export const adminService = {
     async updateVideo(id, video) {
         try {
             const response = await apiClient.patch(`/videos/${id}`, video);
-            await this.logActivity('UPDATE', 'VIDEO', `Video güncellendi (ID: ${id})`, id);
+            const changedFields = Object.keys(video).join(', ');
+            await this.logActivity('UPDATE', 'VIDEO', `Video güncellendi (ID: ${id}) (Değişenler: ${changedFields})`, id);
             return response.data;
         } catch (error) {
             console.error('Error updating video:', error);
@@ -624,7 +652,8 @@ export const adminService = {
 
     async updateUserProfile(id, updates) {
         const res = await apiClient.patch(`/users/${id}`, updates);
-        await this.logActivity('UPDATE', 'USER', `Kullanıcı güncellendi: ${id}`, id);
+        const changedFields = Object.keys(updates).join(', ');
+        await this.logActivity('UPDATE', 'USER', `Kullanıcı güncellendi: ${id} (Değişenler: ${changedFields})`, id);
         return res.data;
     },
 
@@ -914,7 +943,8 @@ export const adminService = {
         try {
             // Fetch name for log if not present? Or just log ID.
             const response = await apiClient.patch(`/categories/${id}`, updates);
-            await this.logActivity('UPDATE', 'CATEGORY', `Kategori güncellendi: ${updates.name || id}`, id);
+            const changedFields = Object.keys(updates).join(', ');
+            await this.logActivity('UPDATE', 'CATEGORY', `Kategori güncellendi: ${updates.name || id} (Değişenler: ${changedFields})`, id);
             return response.data;
         } catch (error) {
             console.error('Error updating category:', error);
@@ -968,6 +998,7 @@ export const adminService = {
                 console.error('Error syncing layout:', syncErr);
             }
 
+            await this.logActivity('UPDATE', 'CATEGORY', `Kategori sıralamaları güncellendi (${updates.length} kategori)`);
             return true;
         } catch (error) {
             console.error('Error reordering categories:', error);
@@ -1055,14 +1086,13 @@ export const adminService = {
 
     async updateNewsTags(newsId, tagIds) {
         await apiClient.patch(`/news/${newsId}/tags`, { tag_ids: tagIds });
+        await this.logActivity('UPDATE', 'NEWS', `Haber etiketleri güncellendi (ID: ${newsId}, Etiket sayısı: ${tagIds.length})`, newsId);
         return true;
     },
 
     // ----------------------------------------------------------------------
-    // Sitemap & RSS Generation
+    // Sitemap & RSS Generation (Moved to Backend / SeoModule)
     // ----------------------------------------------------------------------
-
-    // Helper: Slugify for Turkish chars (reused internally)
     _slugify(text) {
         if (!text) return '';
         const trMap = {
@@ -1081,241 +1111,6 @@ export const adminService = {
             .replace(/\-+/g, '-')
             .replace(/^-+/, '')
             .replace(/-+$/, '');
-    },
-
-    // 1. General Sitemap (All Content)
-    async generateSitemap() {
-        const baseUrl = 'https://haberfoni.com'; // Enforcing production URL for sitemap
-        const now = new Date().toISOString();
-
-        // A. Static Pages
-        const staticPages = [
-            '/',
-            '/tum-haberler',
-            '/hakkimizda',
-            '/kunye',
-            '/iletisim',
-            '/reklam',
-            '/kariyer',
-            '/kvkk',
-            '/cerez-politikasi',
-            '/video-galeri',
-            '/foto-galeri'
-        ];
-
-        let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated at: ${now} -->
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-`;
-
-        staticPages.forEach(page => {
-            xml += `  <url>
-    <loc>${baseUrl}${page}</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-`;
-        });
-
-        // B. News (All published)
-        try {
-            const newsRes = await apiClient.get('/news', { params: { status: 'published', limit: 1000 } });
-            const news = newsRes.data?.data || [];
-            news.forEach(item => {
-                const itemSlug = item.slug || this._slugify(item.title);
-                const categorySlug = this._slugify(item.category);
-                xml += `  <url>
-    <loc>${baseUrl}/kategori/${categorySlug}/${itemSlug}</loc>
-    <lastmod>${item.published_at || now}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-`;
-            });
-        } catch (e) { console.error('Sitemap news fetch error:', e); }
-
-        // C. Categories
-        const categoriesRes = await apiClient.get('/categories').catch(() => ({ data: [] }));
-        const categories = categoriesRes.data || [];
-        if (categories) {
-            categories.forEach(cat => {
-                const safeSlug = cat.slug || this._slugify(cat.name);
-                xml += `  <url>
-    <loc>${baseUrl}/kategori/${safeSlug}</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-`;
-            });
-        }
-
-        // D. Photo Galleries
-        const galleriesRes = await apiClient.get('/galleries').catch(() => ({ data: [] }));
-        const photoGalleries = galleriesRes.data || [];
-        if (photoGalleries.length) {
-            photoGalleries.forEach(gallery => {
-                const itemSlug = gallery.slug || this._slugify(gallery.title);
-                xml += `  <url>
-    <loc>${baseUrl}/foto-galeri/${itemSlug}</loc>
-    <lastmod>${gallery.created_at || now}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-`;
-            });
-        }
-
-        // E. Video Galleries
-        const videosRes = await apiClient.get('/videos').catch(() => ({ data: [] }));
-        const videoGalleries = videosRes.data || [];
-        if (videoGalleries.length) {
-            videoGalleries.forEach(video => {
-                const itemSlug = video.slug || this._slugify(video.title);
-                xml += `  <url>
-    <loc>${baseUrl}/video-galeri/${itemSlug}</loc>
-    <lastmod>${video.created_at || now}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-`;
-            });
-        }
-
-        // F. Tags
-        const tagsRes = await apiClient.get('/tags').catch(() => ({ data: [] }));
-        const tags = tagsRes.data || [];
-        if (tags.length) {
-            tags.forEach(tag => {
-                const slug = this._slugify(tag.name);
-                xml += `  <url>
-    <loc>${baseUrl}/etiket/${slug}</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.5</priority>
-  </url>
-`;
-            });
-        }
-
-        // G. Dynamic Pages
-        const pagesRes = await apiClient.get('/pages?is_active=true').catch(() => ({ data: [] }));
-        const pages = pagesRes.data || [];
-        if (pages) {
-            pages.forEach(page => {
-                if (!['hakkimizda', 'kunye', 'iletisim', 'reklam', 'kariyer', 'kvkk', 'cerez-politikasi'].includes(page.slug)) {
-                    xml += `  <url>
-    <loc>${baseUrl}/${page.slug}</loc>
-    <lastmod>${page.updated_at || now}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-`;
-                }
-            });
-        }
-
-        xml += '</urlset>';
-        return xml;
-    },
-
-    // 2. Google News Sitemap (Last 48 Hours)
-    async generateNewsSitemap() {
-        const baseUrl = 'https://haberfoni.com';
-        const now = new Date();
-        const twoDaysAgo = new Date(now.getTime() - (48 * 60 * 60 * 1000)).toISOString();
-
-        let news = [];
-        try {
-            const res = await apiClient.get('/news', { params: { status: 'published', limit: 500, since: twoDaysAgo } });
-            news = res.data?.data || [];
-        } catch (e) { console.error('News sitemap fetch error:', e); }
-
-        let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
-`;
-
-        if (news) {
-            news.forEach(item => {
-                const itemSlug = item.slug || this._slugify(item.title);
-                const categorySlug = this._slugify(item.category);
-                const date = item.published_at ? new Date(item.published_at).toISOString() : new Date().toISOString();
-
-                xml += `  <url>
-    <loc>${baseUrl}/kategori/${categorySlug}/${itemSlug}</loc>
-    <news:news>
-      <news:publication>
-        <news:name>Haberfoni</news:name>
-        <news:language>tr</news:language>
-      </news:publication>
-      <news:publication_date>${date}</news:publication_date>
-      <news:title>${item.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')}</news:title>
-    </news:news>
-  </url>
-`;
-            });
-        }
-
-        xml += '</urlset>';
-        return xml;
-    },
-
-    // 3. RSS Feed
-    async generateRSS() {
-        const baseUrl = 'https://haberfoni.com';
-        const now = new Date().toUTCString();
-
-        // Fetch latest 50 items
-        let newsList = [];
-        try {
-            const res = await apiClient.get('/news', { params: { status: 'published', limit: 50 } });
-            newsList = res.data?.data || [];
-        } catch (e) { console.error('RSS fetch error:', e); }
-
-        let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
-<channel>
-  <title>Haberfoni</title>
-  <link>${baseUrl}</link>
-  <description>Haberfoni - Güncel Haberler, Son Dakika Gelişmeleri</description>
-  <language>tr</language>
-  <lastBuildDate>${now}</lastBuildDate>
-  <atom:link href="${baseUrl}/rss.xml" rel="self" type="application/rss+xml" />
-`;
-
-        if (newsList) {
-            newsList.forEach(item => {
-                const itemSlug = item.slug || this._slugify(item.title);
-                const categorySlug = this._slugify(item.category);
-                const link = `${baseUrl}/kategori/${categorySlug}/${itemSlug}`;
-                const pubDate = item.published_at ? new Date(item.published_at).toUTCString() : now;
-
-                // Construct absolute image URL
-                let imageUrl = item.image_url;
-                if (imageUrl && !imageUrl.startsWith('http')) {
-                    // Assuming standard supabase storage or local path, best effort to make it absolute
-                    imageUrl = `${baseUrl}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
-                }
-
-                xml += `  <item>
-    <title>${item.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</title>
-    <link>${link}</link>
-    <guid isPermaLink="true">${link}</guid>
-    <description><![CDATA[${item.summary || ''}]]></description>
-    <pubDate>${pubDate}</pubDate>
-    <category>${item.category}</category>
-    ${imageUrl ? `<media:content url="${imageUrl}" medium="image" />` : ''}
-    ${imageUrl ? `<enclosure url="${imageUrl}" type="image/jpeg" />` : ''}
-  </item>
-`;
-            });
-        }
-
-        xml += `</channel>
-</rss>`;
-        return xml;
     },
 
     async deleteAdPlacement(id) {
@@ -1384,9 +1179,16 @@ export const adminService = {
     // Service: Activity Logs
     async logActivity(actionType, entityType, description, entityId = null) {
         try {
+            let user_id = null;
+            const authUserStr = localStorage.getItem('local_admin_profile');
+            if (authUserStr) {
+                const authUser = JSON.parse(authUserStr);
+                user_id = authUser.id;
+            }
+
             await apiClient.post('/activity-logs', {
                 action_type: actionType, entity_type: entityType,
-                description, entity_id: entityId
+                description, entity_id: entityId, user_id
             }).catch(() => { });
         } catch (err) {
             // Fail silently
@@ -1448,6 +1250,7 @@ export const adminService = {
     async addBotMapping(mapping) {
         try {
             const res = await apiClient.post('/bot/mappings', mapping);
+            await this.logActivity('CREATE', 'SETTINGS', `Bot kategori eşleşmesi eklendi (${mapping.source_name} -> ${mapping.target_category})`);
             return res.data;
         } catch (error) {
             console.error('Error adding bot mapping:', error);
@@ -1458,6 +1261,7 @@ export const adminService = {
     async deleteBotMapping(id) {
         try {
             await apiClient.delete('/bot/mappings/' + id);
+            await this.logActivity('DELETE', 'SETTINGS', `Bot kategori eşleşmesi silindi: ${id}`);
         } catch (error) {
             console.error('Error deleting bot mapping:', error);
             throw error;
@@ -1477,6 +1281,8 @@ export const adminService = {
     async updateBotSetting(id, data) {
         try {
             const res = await apiClient.post('/bot/settings/' + id, data);
+            const changedFields = Object.keys(data).join(', ');
+            await this.logActivity('UPDATE', 'SETTINGS', `Bot ayarı güncellendi (ID: ${id}) (Değişenler: ${changedFields})`);
             return res.data;
         } catch (error) {
             console.error('Error updating bot setting:', error);
@@ -1484,22 +1290,23 @@ export const adminService = {
         }
     },
 
-    // Service: SEO Files (robots.txt, ads.txt)
-    async getSeoFile(type) {
-        // Since we don't have a DB table for this in the provided context, 
-        // usually these are files or settings. 
-        // Assuming they are stored in 'site_settings' or unique table based on SeoFilesPage content.
-        // I will assume SeoFilesPage uses 'site_settings' or specific table.
-        // Let's wait for SeoFilesPage view to be precise. 
-        // For now, I will add the method stub and fill it after viewing the file.
-        // But to be efficient, I will use generic updateSetting for now if it's key-value.
-        return null;
+    // Service: SEO Files (robots.txt, ads.txt, sitemaps)
+    async getSeoFileContent(filename) {
+        try {
+            // Fetch raw file from backend root
+            const response = await apiClient.get(`/${filename}`);
+            return typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+        } catch (error) {
+            console.error(`Error fetching SEO file ${filename}:`, error);
+            return 'Dosya yüklenemedi...';
+        }
     },
 
     // Bot Commands
     async triggerBot(command = 'FORCE_RUN') {
         try {
             const response = await apiClient.post('/bot/run');
+            await this.logActivity('UPDATE', 'SETTINGS', `Bot tetiklendi: ${command}`);
             return response.data;
         } catch (error) {
             console.error('Trigger bot failed:', error);

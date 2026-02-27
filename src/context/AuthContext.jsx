@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { login } from '../services/api';
+import apiClient from '../services/apiClient';
 
 
 const AuthContext = createContext();
@@ -10,19 +12,21 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const checkSession = () => {
+        const checkSession = async () => {
             const token = localStorage.getItem('local_admin_token');
-            if (token) {
-                const dummySessionUser = { id: 'admin-123', email: 'admin@local.com', role: 'admin' };
-                setSession({ user: dummySessionUser });
-                setUser(dummySessionUser);
-                loadProfile(dummySessionUser.id);
-            } else {
-                setSession(null);
-                setUser(null);
-                setProfile(null);
-                setLoading(false);
+            const savedProfile = localStorage.getItem('local_admin_profile');
+
+            if (token && savedProfile) {
+                try {
+                    const parsedProfile = JSON.parse(savedProfile);
+                    setProfile(parsedProfile);
+                    setUser(parsedProfile);
+                    setSession({ user: parsedProfile });
+                } catch (e) {
+                    console.error('Error parsing profile:', e);
+                }
             }
+            setLoading(false);
         };
 
         checkSession();
@@ -31,25 +35,17 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const loadProfile = async (userId) => {
-        try {
-            console.log('🔍 Loading profile for user:', userId);
-            const data = { id: 'admin-123', role: 'admin', full_name: 'Yerel Admin', email: 'admin@local.com' };
-            console.log('✅ Profile loaded:', data);
-            setProfile(data);
-        } catch (error) {
-            console.error('❌ Error loading profile:', error);
-            setProfile(null);
-        } finally {
-            setLoading(false);
-        }
+        // Since we get the profile during login, we might not need separate load
+        setLoading(false);
     };
 
     const signOut = () => {
         localStorage.removeItem('local_admin_token');
+        localStorage.removeItem('local_admin_profile');
         setProfile(null);
         setUser(null);
         setSession(null);
-        setTimeout(() => window.location.href = '/', 200);
+        setTimeout(() => window.location.href = '/admin/login', 200);
     };
 
     const isAdmin = profile?.role === 'admin';
@@ -65,9 +61,20 @@ export const AuthProvider = ({ children }) => {
         canAccessAdmin,
         signOut,
         signIn: async (email, password) => {
-            localStorage.setItem('local_admin_token', 'true');
-            setTimeout(() => window.location.reload(), 200);
-            return { data: { user: { id: 'admin-123' } }, error: null };
+            try {
+                const data = await login(email, password);
+                if (data && data.user) {
+                    localStorage.setItem('local_admin_token', data.access_token || 'true');
+                    localStorage.setItem('local_admin_profile', JSON.stringify(data.user));
+                    setProfile(data.user);
+                    setUser(data.user);
+                    setSession({ user: data.user });
+                    return { data: { user: data.user }, error: null };
+                }
+                return { data: null, error: { message: 'Giriş başarısız.' } };
+            } catch (error) {
+                return { data: null, error: error.response?.data || error };
+            }
         },
     };
 

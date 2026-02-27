@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Save, Download } from 'lucide-react';
 import { adminService } from '../../services/adminService';
+import apiClient from '../../services/apiClient';
 
 const SeoFilesPage = () => {
     const [files, setFiles] = useState({
@@ -24,10 +25,10 @@ const SeoFilesPage = () => {
             setLoading(true);
             const settings = await adminService.getSettings();
 
-            // Generate all dynamic files
-            const sitemap = await adminService.generateSitemap();
-            const newsSitemap = await adminService.generateNewsSitemap();
-            const rss = await adminService.generateRSS();
+            // Fetch generated files from backend
+            const sitemap = await adminService.getSeoFileContent('sitemap.xml');
+            const newsSitemap = await adminService.getSeoFileContent('sitemap-news.xml');
+            const rss = await adminService.getSeoFileContent('rss.xml');
 
             setFiles({
                 robots_txt: settings.robots_txt || `User-agent: *
@@ -87,30 +88,6 @@ Sitemap: ${window.location.origin}/rss.xml`,
         document.body.removeChild(element);
     };
 
-    const handleRegenerate = async () => {
-        setLoading(true);
-        try {
-            const sitemap = await adminService.generateSitemap();
-            const newsSitemap = await adminService.generateNewsSitemap();
-            const rss = await adminService.generateRSS();
-
-            setFiles(prev => ({
-                ...prev,
-                sitemap_xml: sitemap,
-                sitemap_news_xml: newsSitemap,
-                rss_xml: rss
-            }));
-
-            setMessage({ type: 'success', text: 'Tüm dinamik dosyalar güncellendi.' });
-            setTimeout(() => setMessage({ type: '', text: '' }), 3000);
-        } catch (error) {
-            console.error('Error generating files:', error);
-            setMessage({ type: 'error', text: 'Dosyalar oluşturulamadı.' });
-        } finally {
-            setLoading(false);
-        }
-    };
-
     if (loading) return <div className="p-8 text-center">Yükleniyor...</div>;
 
     const tabs = [
@@ -153,16 +130,7 @@ Sitemap: ${window.location.origin}/rss.xml`,
                         <span className="hidden md:inline">İndir</span>
                     </button>
 
-                    {isDynamic ? (
-                        <button
-                            onClick={handleRegenerate}
-                            disabled={loading}
-                            className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                        >
-                            <FileText size={18} />
-                            <span>Tümünü Yenile</span>
-                        </button>
-                    ) : (
+                    {!isDynamic && (
                         <button
                             onClick={handleSave}
                             disabled={saving}
@@ -218,7 +186,7 @@ Sitemap: ${window.location.origin}/rss.xml`,
                 {isDynamic ? (
                     <div className="bg-blue-50 p-4 border-t border-blue-100 text-sm text-blue-800">
                         <strong className="block mb-1">Otomatik Üretilen İçerik</strong>
-                        Bu dosya veritabanındaki içeriklere göre otomatik oluşturulur. Canlı olarak <a href={`/${tabs.find(t => t.id === activeTab).filename}`} target="_blank" rel="noopener noreferrer" className="underline font-bold">buradan</a> görüntüleyebilirsiniz.
+                        Bu dosya veritabanındaki içeriklere göre otomatik oluşturulur. Canlı olarak <a href={`${apiClient.defaults.baseURL}/${tabs.find(t => t.id === activeTab).filename}`} target="_blank" rel="noopener noreferrer" className="underline font-bold">buradan</a> görüntüleyebilirsiniz.
                     </div>
                 ) : (
                     <div className="bg-orange-50 p-4 border-t border-orange-100 text-sm text-orange-800 flex items-start space-x-3">

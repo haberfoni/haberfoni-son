@@ -5,8 +5,18 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ActivityLogsService {
     constructor(private prisma: PrismaService) { }
 
-    async findAll() {
-        return this.prisma.activityLog.findMany({ orderBy: { created_at: 'desc' } });
+    async findAll(page: number = 1, limit: number = 20) {
+        const offset = (page - 1) * limit;
+        const [data, total] = await Promise.all([
+            this.prisma.activityLog.findMany({
+                skip: offset,
+                take: limit,
+                orderBy: { created_at: 'desc' },
+                include: { User: { select: { id: true, full_name: true, email: true } } }
+            }),
+            this.prisma.activityLog.count()
+        ]);
+        return { data, meta: { total } };
     }
 
     async create(data: any) {

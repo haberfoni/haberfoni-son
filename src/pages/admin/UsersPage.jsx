@@ -238,17 +238,17 @@ const UsersPage = () => {
                 </table>
             </div >
 
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-start">
-                    <Shield className="text-blue-600 mt-1 mr-3" size={20} />
+                    <Shield className="text-green-600 mt-1 mr-3" size={20} />
                     <div>
-                        <h3 className="text-blue-800 font-semibold mb-1">Yetkilendirme Hakkında</h3>
-                        <div className="text-sm text-blue-600">
-                            Roller şu an sadece bilgilendirme amaçlıdır. İleride şu şekilde kısıtlamalar eklenebilir:
+                        <h3 className="text-green-800 font-semibold mb-1">Yetkilendirme Aktif</h3>
+                        <div className="text-sm text-green-600">
+                            Atanan roller panel erişim kısıtlamalarını anlık olarak günceller.
                             <ul className="list-disc ml-4 mt-2">
                                 <li><strong>Yönetici:</strong> Tüm ayarlara ve kullanıcılara erişebilir.</li>
-                                <li><strong>Editör:</strong> Sadece haber, galeri ve yorum yönetebilir.</li>
-                                <li><strong>Yazar:</strong> Sadece kendi yazılarını görebilir ve düzenleyebilir.</li>
+                                <li><strong>Editör:</strong> Haber, galeri ve yorum yönetebilir.</li>
+                                <li><strong>Yazar:</strong> Sadece kendi haberlerini yönetebilir.</li>
                             </ul>
                         </div>
                     </div>

@@ -4,6 +4,7 @@ import { Image, Edit2, Trash2, Plus, Eye, Copy, Trash, RefreshCw, Layers } from 
 import { adminService } from '../../services/adminService';
 import { formatDate } from '../../utils/mappers';
 import { slugify } from '../../utils/slugify';
+import { getOptimizedImageUrl } from '../../utils/imageUtils';
 
 const PhotoGalleryListPage = () => {
     const [galleries, setGalleries] = useState([]);
@@ -275,7 +276,7 @@ const PhotoGalleryListPage = () => {
                                         </td>
                                         <td className="p-4">
                                             <div className="w-16 h-12 bg-gray-100 rounded overflow-hidden">
-                                                <img src={item.thumbnail_url || 'https://via.placeholder.com/150'} alt="" className="w-full h-full object-cover" />
+                                                <img src={getOptimizedImageUrl(item.thumbnail_url) || 'https://via.placeholder.com/150'} alt="" className="w-full h-full object-cover" />
                                             </div>
                                         </td>
                                         <td className="p-4 font-medium text-gray-900">{item.title}</td>

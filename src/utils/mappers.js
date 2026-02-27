@@ -1,5 +1,6 @@
 import { format, formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { getOptimizedImageUrl } from './imageUtils';
 
 export const formatDate = (date) => {
     if (!date) return '-';
@@ -12,7 +13,7 @@ export const mapNewsItem = (item) => {
         title: item.title,
         summary: item.summary,
         content: item.content,
-        image: item.image_url || item.image, // Support both
+        image: getOptimizedImageUrl(item.image_url || item.image), // Support both
         category: item.categories ? item.categories.name : (item.category || 'Genel'),
         time: item.published_at ? formatDistanceToNow(new Date(item.published_at), { addSuffix: true, locale: tr }) : (item.time || ''),
         views: item.views,
@@ -25,7 +26,7 @@ export const mapNewsItem = (item) => {
         // Preserve ad-specific properties
         type: item.type, // 'ad', 'slider-ad', or 'news'
         link_url: item.link_url, // For ads
-        image_url: item.image_url, // For ads
+        image_url: getOptimizedImageUrl(item.image_url), // For ads
         adPlacementId: item.adPlacementId, // For ad tracking
         adPlacementId: item.adPlacementId, // For ad tracking
         tags: item.tags, // Pass tags through
@@ -42,7 +43,7 @@ export const mapVideoItem = (item) => {
     return {
         id: item.id,
         title: item.title,
-        thumbnail: item.thumbnail_url,
+        thumbnail: getOptimizedImageUrl(item.thumbnail_url),
         videoUrl: item.video_url,
         duration: item.duration,
         views: item.views,
@@ -59,7 +60,7 @@ export const mapPhotoGalleryItem = (item) => {
     return {
         id: item.id,
         title: item.title,
-        thumbnail: item.thumbnail_url,
+        thumbnail: getOptimizedImageUrl(item.thumbnail_url),
         views: parseInt(item.views) || 0,
         formattedDate: item.published_at ? formatDate(item.published_at) : '',
         date: item.published_at ? formatDistanceToNow(new Date(item.published_at), { addSuffix: true, locale: tr }) : '',

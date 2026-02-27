@@ -3,6 +3,7 @@ import { Users, Eye, FileText, MessageSquare, ArrowUp, ArrowDown, Calendar } fro
 import { adminService } from '../../services/adminService';
 import { formatDate } from '../../utils/mappers';
 import { Link } from 'react-router-dom';
+import { getOptimizedImageUrl } from '../../utils/imageUtils';
 
 const DashboardPage = () => {
     const [loading, setLoading] = useState(true);
@@ -126,7 +127,7 @@ const DashboardPage = () => {
                                             <div className="flex items-center space-x-3">
                                                 {news.image_url && (
                                                     <img
-                                                        src={news.image_url}
+                                                        src={getOptimizedImageUrl(news.image_url)}
                                                         alt=""
                                                         className="w-10 h-10 rounded object-cover"
                                                     />

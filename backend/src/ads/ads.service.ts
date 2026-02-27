@@ -14,9 +14,7 @@ export class AdsService {
   }
 
   findAll() {
-    return this.prisma.ad.findMany({
-      where: { is_active: true },
-    });
+    return this.prisma.ad.findMany();
   }
 
   findOne(id: number) {

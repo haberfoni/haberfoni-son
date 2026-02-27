@@ -182,44 +182,76 @@ export const fetchFinancialData = async () => {
 };
 
 // Video Gallery
-// Video Gallery
-export const fetchVideoGalleries = async () => {
-    return videoGalleryItems || [];
+export const fetchVideoGalleries = async (page = 1, limit = 20) => {
+    try {
+        const response = await apiClient.get('/videos', {
+            params: { page, limit, status: 'published' }
+        });
+        return response.data.data || [];
+    } catch (error) {
+        console.error('Error fetching video galleries:', error);
+        return [];
+    }
 };
 
 export const fetchHomeVideos = async () => {
-    return (videoGalleryItems || []).slice(0, 4);
+    const videos = await fetchVideoGalleries(1, 4);
+    return videos;
 };
 
 export const fetchVideoDetail = async (id) => {
-    const numericId = parseInt(id, 10);
-    return (videoGalleryItems || []).find(v => v.id === numericId) || null;
+    try {
+        const response = await apiClient.get(`/videos/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching video detail ${id}:`, error);
+        return null;
+    }
 };
 
 // Photo Gallery
-export const fetchPhotoGalleries = async () => {
-    return photoGalleryItems || [];
+export const fetchPhotoGalleries = async (page = 1, limit = 20) => {
+    try {
+        const response = await apiClient.get('/galleries', {
+            params: { page, limit, status: 'published' }
+        });
+        return response.data.data || [];
+    } catch (error) {
+        console.error('Error fetching photo galleries:', error);
+        return [];
+    }
 };
 
 export const fetchHomePhotoGalleries = async () => {
-    return (photoGalleryItems || []).slice(0, 4);
+    const galleries = await fetchPhotoGalleries(1, 4);
+    return galleries;
 };
 
 export const fetchPhotoGalleryDetail = async (id) => {
-    const numericId = parseInt(id, 10);
-    return (photoGalleryItems || []).find(p => p.id === numericId) || null;
+    try {
+        const response = await apiClient.get(`/galleries/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching photo gallery detail ${id}:`, error);
+        return null;
+    }
 };
 
 export const fetchGalleryImages = async (galleryId) => {
-    return []; // Mock data doesn't have deep images setup
+    try {
+        const response = await apiClient.get(`/galleries/${galleryId}/images`);
+        return response.data || [];
+    } catch (error) {
+        console.error(`Error fetching gallery images for ${galleryId}:`, error);
+        return [];
+    }
 };
 
 // Subscribers
 export const subscribeEmail = async (email) => {
     try {
-        // Mock success since endpoint is not ready
-        await delay(500);
-        return { email };
+        const res = await apiClient.post('/subscribers', { email });
+        return res.data;
     } catch (error) {
         throw new Error('Abonelik servisi şu an kullanılamıyor.');
     }
@@ -255,21 +287,42 @@ export const incrementNewsViews = async (id) => {
     }
 };
 
-export const incrementVideoView = async (id) => { };
-export const incrementPhotoGalleryView = async (id) => { };
+export const incrementVideoView = async (id) => {
+    try {
+        await apiClient.post(`/videos/${id}/increment-views`);
+    } catch (error) {
+        console.error('Error tracking video view:', error);
+    }
+};
+
+export const incrementPhotoGalleryView = async (id) => {
+    try {
+        await apiClient.post(`/galleries/${id}/increment-views`);
+    } catch (error) {
+        console.error('Error tracking gallery view:', error);
+    }
+};
 
 // Alias for backward compatibility
 export const incrementNewsView = incrementNewsViews;
 
 // Comments
 export const fetchComments = async (newsId) => {
-    return []; // Feature currently not supported by backend
+    try {
+        const response = await apiClient.get('/comments', {
+            params: { news_id: newsId, is_approved: true }
+        });
+        return response.data || [];
+    } catch (error) {
+        console.error('Error fetching comments:', error);
+        return [];
+    }
 };
 
 export const submitComment = async (comment) => {
     try {
-        await delay(500);
-        return { ...comment, id: Date.now(), is_approved: false };
+        const response = await apiClient.post('/comments', comment);
+        return response.data;
     } catch (error) {
         console.error('Error submitting comment:', error);
         throw new Error('Yorum servisi şu an kullanılamıyor.');
@@ -280,3 +333,24 @@ export const submitComment = async (comment) => {
 export const fetchPhotoGallery = fetchPhotoGalleries;
 export const fetchVideoGallery = fetchVideoGalleries;
 export const fetchVideos = fetchVideoGalleries;
+// Newsletter
+export const subscribeNewsletter = async (email) => {
+    try {
+        const response = await apiClient.post('/subscribers', { email });
+        return response.data;
+    } catch (error) {
+        console.error('Error subscribing to newsletter:', error);
+        throw error;
+    }
+};
+
+// Auth
+export const login = async (email, password) => {
+    try {
+        const response = await apiClient.post('/auth/login', { email, password });
+        return response.data;
+    } catch (error) {
+        console.error('Login error:', error);
+        throw error;
+    }
+};

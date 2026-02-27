@@ -6,6 +6,7 @@ import AdBanner from '../components/AdBanner'; // Import AdBanner
 import { fetchVideos } from '../services/api';
 import { mapVideoItem } from '../utils/mappers';
 import { slugify } from '../utils/slugify';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 const VideoGalleryPage = () => {
     const [featuredVideo, setFeaturedVideo] = React.useState(null);
@@ -26,7 +27,9 @@ const VideoGalleryPage = () => {
     React.useEffect(() => {
         const loadVideos = async () => {
             const data = await fetchVideos();
-            const mappedData = data.map(mapVideoItem);
+            // Backend returns { data: [...], meta: {...} } or [...]
+            const videoList = Array.isArray(data) ? data : (data.data || []);
+            const mappedData = videoList.map(mapVideoItem);
 
             if (mappedData.length > 0) {
                 setFeaturedVideo(mappedData[0]);
@@ -73,7 +76,7 @@ const VideoGalleryPage = () => {
                         <Link to={`/video-galeri/${slugify(featuredVideo.title)}`} className="block bg-white rounded-lg shadow-sm overflow-hidden group cursor-pointer">
                             <div className="relative aspect-video">
                                 <img
-                                    src={featuredVideo.thumbnail}
+                                    src={getOptimizedImageUrl(featuredVideo.thumbnail)}
                                     alt={featuredVideo.title}
                                     className="w-full h-full object-cover"
                                 />
@@ -130,7 +133,7 @@ const VideoGalleryPage = () => {
                                                 <Link key={video.id} to={`/video-galeri/${slugify(video.title)}`} className="bg-white rounded-lg shadow-sm overflow-hidden group cursor-pointer hover:shadow-md transition-shadow">
                                                     <div className="relative aspect-video">
                                                         <img
-                                                            src={video.thumbnail}
+                                                            src={getOptimizedImageUrl(video.thumbnail)}
                                                             alt={video.title}
                                                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                         />
@@ -190,7 +193,7 @@ const VideoGalleryPage = () => {
                                     <Link key={video.id} to={`/video-galeri/${slugify(video.title)}`} className="flex space-x-3 group cursor-pointer border-b border-gray-100 pb-4 last:border-0 last:pb-0">
                                         <div className="relative w-24 h-16 flex-shrink-0 overflow-hidden rounded">
                                             <img
-                                                src={video.thumbnail}
+                                                src={getOptimizedImageUrl(video.thumbnail)}
                                                 alt={video.title}
                                                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                             />

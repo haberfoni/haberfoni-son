@@ -4,6 +4,7 @@ import { FileText, Edit2, Trash2, Plus, Eye, Copy, Trash, RefreshCw } from 'luci
 import { adminService } from '../../services/adminService';
 import { formatDate } from '../../utils/mappers';
 import { slugify } from '../../utils/slugify';
+import { getOptimizedImageUrl } from '../../utils/imageUtils';
 import { useAuth } from '../../context/AuthContext';
 
 const NewsListPage = () => {
@@ -107,7 +108,7 @@ const NewsListPage = () => {
     };
 
     const handleBulkDuplicate = async () => {
-        if (!window.confirm(`${selectedIds.length} haberi çoğaltmak istediğinize emin misiniz?`)) return;
+        if (!window.confirm(`${selectedIds.length} haberi çoğaltmak istediğinize emin misiniz ? `)) return;
         try {
             await adminService.duplicateNewsBulk(selectedIds);
             loadNews();
@@ -133,7 +134,7 @@ const NewsListPage = () => {
     };
 
     const handleBulkDelete = async () => {
-        if (!window.confirm(`${selectedIds.length} haberi silmek istediğinize emin misiniz?`)) return;
+        if (!window.confirm(`${selectedIds.length} haberi silmek istediğinize emin misiniz ? `)) return;
         try {
             await adminService.deleteNewsBulk(selectedIds);
             loadNews();
@@ -141,7 +142,7 @@ const NewsListPage = () => {
             alert('Seçilen haberler silindi.');
         } catch (error) {
             console.error('Bulk delete failed:', error);
-            alert(`Toplu silme başarısız: ${error.message || error}`);
+            alert(`Toplu silme başarısız: ${error.message || error} `);
         }
     };
 
@@ -329,7 +330,7 @@ const NewsListPage = () => {
                                 </tr>
                             ) : (
                                 news.map(item => (
-                                    <tr key={item.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50' : ''}`}>
+                                    <tr key={item.id} className={`hover: bg - gray - 50 transition - colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50' : ''} `}>
                                         <td className="p-4">
                                             <input
                                                 type="checkbox"
@@ -341,7 +342,7 @@ const NewsListPage = () => {
                                         <td className="p-4">
                                             <div className="w-16 h-10 bg-gray-100 rounded overflow-hidden">
                                                 {item.image_url ? (
-                                                    <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                                                    <img src={getOptimizedImageUrl(item.image_url)} alt="" className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-gray-400">
                                                         <FileText size={16} />
@@ -368,17 +369,17 @@ const NewsListPage = () => {
                                                             alert('Güncelleme başarısız');
                                                         }
                                                     }}
-                                                    className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold cursor-pointer transition-colors ${item.published_at ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                                    className={`inline - flex items - center px - 2 py - 1 rounded text - xs font - bold cursor - pointer transition - colors ${item.published_at ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} `}
                                                 >
                                                     {item.published_at ? 'Aktif' : 'Pasif'}
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={(e) => { e.stopPropagation(); handleToggleHeadline(item.id, headlineNewsIds.has(item.id)); }}
-                                                    className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold cursor-pointer transition-colors ${headlineNewsIds.has(item.id)
-                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                        : 'bg-red-100 text-red-600 hover:bg-red-200'
-                                                        }`}
+                                                    className={`inline - flex items - center px - 2 py - 1 rounded text - xs font - bold cursor - pointer transition - colors ${headlineNewsIds.has(item.id)
+                                                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                            : 'bg-red-100 text-red-600 hover:bg-red-200'
+                                                        } `}
                                                     title={headlineNewsIds.has(item.id) ? 'Manşetten Kaldır' : 'Manşete Sabitle'}
                                                 >
                                                     {headlineNewsIds.has(item.id) ? 'Sabitlemeyi Kaldır' : 'Manşete Sabitle'}
@@ -389,7 +390,7 @@ const NewsListPage = () => {
                                             <div className="flex items-center justify-center gap-1">
                                                 {item.views >= 1000 && <span title="Çok popüler!">🔥</span>}
                                                 {item.views >= 500 && item.views < 1000 && <span title="Popüler">⭐</span>}
-                                                <span className={`font-semibold ${item.views >= 1000 ? 'text-orange-600' : item.views >= 500 ? 'text-blue-600' : 'text-gray-600'}`}>
+                                                <span className={`font - semibold ${item.views >= 1000 ? 'text-orange-600' : item.views >= 500 ? 'text-blue-600' : 'text-gray-600'} `}>
                                                     {(item.views || 0).toLocaleString('tr-TR')}
                                                 </span>
                                             </div>
@@ -403,9 +404,9 @@ const NewsListPage = () => {
                                             >
                                                 <span className="text-xs font-bold">Tekrarla</span>
                                             </button>
-                                            <Link to={`/kategori/${item.category}/${item.slug || slugify(item.title)}`} target="_blank" className="inline-block p-2 text-gray-400 hover:text-primary transition-colors" title="Görüntüle">
+                                            <Link to={`/ kategori / ${item.category}/${item.slug || slugify(item.title)}`} target="_blank" className="inline-block p-2 text-gray-400 hover:text-primary transition-colors" title="Görüntüle" >
                                                 <Eye size={18} />
-                                            </Link>
+                                            </Link >
                                             <Link to={`/admin/news/edit/${item.id}`} className="inline-block p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Düzenle">
                                                 <Edit2 size={18} />
                                             </Link>
@@ -417,13 +418,13 @@ const NewsListPage = () => {
                                             >
                                                 <Trash2 size={18} />
                                             </button>
-                                        </td>
-                                    </tr>
+                                        </td >
+                                    </tr >
                                 ))
                             )}
-                        </tbody>
-                    </table>
-                </div>
+                        </tbody >
+                    </table >
+                </div >
 
                 {totalPages > 1 && (
                     <div className="flex justify-center p-4 border-t border-gray-100 space-x-2">
@@ -444,8 +445,8 @@ const NewsListPage = () => {
                         </button>
                     </div>
                 )}
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

@@ -6,6 +6,7 @@ import NewsCard from '../components/NewsCard';
 import SEO from '../components/SEO';
 import { Video, Camera, Image as ImageIcon, Play, FileText } from 'lucide-react';
 import { slugify } from '../utils/slugify';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 const SearchPage = () => {
     const location = useLocation();
@@ -106,7 +107,7 @@ const SearchPage = () => {
                                 {results.videos.map((item) => (
                                     <Link key={`video-${item.id}`} to={`/video-galeri/${slugify(item.title)}`} className="bg-white rounded-lg shadow-sm overflow-hidden group hover:shadow-md transition-shadow">
                                         <div className="relative aspect-video">
-                                            <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                                            <img src={getOptimizedImageUrl(item.thumbnail)} alt={item.title} className="w-full h-full object-cover" />
                                             <div className="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/30 transition-colors">
                                                 <div className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow">
                                                     <Play size={20} className="text-red-600 ml-0.5" fill="currentColor" />
@@ -144,7 +145,7 @@ const SearchPage = () => {
                                 {results.photos.map((item) => (
                                     <Link key={`photo-${item.id}`} to={`/foto-galeri/${slugify(item.title)}`} className="bg-white rounded-lg shadow-sm overflow-hidden group hover:shadow-md transition-shadow">
                                         <div className="relative aspect-[4/3]">
-                                            <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover" />
+                                            <img src={getOptimizedImageUrl(item.thumbnail)} alt={item.title} className="w-full h-full object-cover" />
                                             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3 pt-8">
                                                 <div className="flex items-center space-x-1 text-white text-xs font-bold">
                                                     <ImageIcon size={14} />

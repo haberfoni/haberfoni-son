@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import apiClient from './apiClient';
 
 /**
  * PDF oluşturma fonksiyonu
@@ -76,11 +77,11 @@ export const blobToBase64 = (blob) => {
  */
 const sendEmailToSubscriber = async (email, newsletterData, pdfBase64) => {
     try {
-        const response = await apiClient.post('/newsletter/send', {
+        const response = await apiClient.post('/subscribers/send', {
             email: email,
             subject: newsletterData.subject,
             content: newsletterData.content,
-            pdfBase64: pdfBase64
+            pdfBase64: pdfBase64 // Optional: for future implementation on backend
         });
         return response.data;
     } catch (error) {

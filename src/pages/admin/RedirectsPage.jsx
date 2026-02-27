@@ -4,7 +4,7 @@ import { adminService } from '../../services/adminService';
 
 const RedirectsPage = () => {
     const [redirects, setRedirects] = useState([]);
-    const [newRedirect, setNewRedirect] = useState({ old_path: '', new_path: '' });
+    const [newRedirect, setNewRedirect] = useState({ source_url: '', target_url: '' });
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -27,23 +27,23 @@ const RedirectsPage = () => {
 
     const handleAddRedirect = async (e) => {
         e.preventDefault();
-        if (!newRedirect.old_path.trim() || !newRedirect.new_path.trim()) return;
+        if (!newRedirect.source_url.trim() || !newRedirect.target_url.trim()) return;
 
         // Ensure paths start with /
-        let oldPath = newRedirect.old_path.trim();
+        let oldPath = newRedirect.source_url.trim();
         if (!oldPath.startsWith('/')) oldPath = '/' + oldPath;
 
-        let newPath = newRedirect.new_path.trim();
+        let newPath = newRedirect.target_url.trim();
         if (!newPath.startsWith('http') && !newPath.startsWith('/')) newPath = '/' + newPath;
 
         try {
             const added = await adminService.addRedirect({
-                old_path: oldPath,
-                new_path: newPath,
-                status_code: 301
+                source_url: oldPath,
+                target_url: newPath,
+                code: 301
             });
             setRedirects([added, ...redirects]);
-            setNewRedirect({ old_path: '', new_path: '' });
+            setNewRedirect({ source_url: '', target_url: '' });
             setMessage({ type: 'success', text: 'Yönlendirme eklendi.' });
             setTimeout(() => setMessage({ type: '', text: '' }), 3000);
         } catch (error) {
@@ -88,8 +88,8 @@ const RedirectsPage = () => {
                         <label className="block text-xs font-medium text-gray-500 mb-1">Eski Yol (Örn: /kategori/gundem/eski-baslik.html)</label>
                         <input
                             type="text"
-                            value={newRedirect.old_path}
-                            onChange={(e) => setNewRedirect({ ...newRedirect, old_path: e.target.value })}
+                            value={newRedirect.source_url}
+                            onChange={(e) => setNewRedirect({ ...newRedirect, source_url: e.target.value })}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary font-mono text-sm"
                             placeholder="/kategori/gundem/eski-baslik.html"
                         />
@@ -98,8 +98,8 @@ const RedirectsPage = () => {
                         <label className="block text-xs font-medium text-gray-500 mb-1">Yeni Yol (Örn: /kategori/gundem/yeni-baslik)</label>
                         <input
                             type="text"
-                            value={newRedirect.new_path}
-                            onChange={(e) => setNewRedirect({ ...newRedirect, new_path: e.target.value })}
+                            value={newRedirect.target_url}
+                            onChange={(e) => setNewRedirect({ ...newRedirect, target_url: e.target.value })}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary font-mono text-sm"
                             placeholder="/kategori/gundem/yeni-baslik"
                         />
@@ -107,7 +107,7 @@ const RedirectsPage = () => {
                     <button
                         type="submit"
                         className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center space-x-2 whitespace-nowrap"
-                        disabled={!newRedirect.old_path || !newRedirect.new_path}
+                        disabled={!newRedirect.source_url || !newRedirect.target_url}
                     >
                         <Plus size={18} />
                         <span>Ekle</span>
@@ -135,16 +135,16 @@ const RedirectsPage = () => {
                         ) : (
                             redirects.map(redirect => (
                                 <tr key={redirect.id} className="hover:bg-gray-50">
-                                    <td className="p-4 font-mono text-sm text-red-600">{redirect.old_path}</td>
+                                    <td className="p-4 font-mono text-sm text-red-600">{redirect.source_url}</td>
                                     <td className="p-4">
                                         <div className="flex items-center space-x-2">
                                             <ArrowRight size={16} className="text-gray-400" />
-                                            <span className="font-mono text-sm text-green-600">{redirect.new_path}</span>
+                                            <span className="font-mono text-sm text-green-600">{redirect.target_url}</span>
                                         </div>
                                     </td>
                                     <td className="p-4">
                                         <span className="inline-flex items-center px-2 py-1 rounded text-xs font-bold bg-gray-100 text-gray-600">
-                                            {redirect.status_code || 301}
+                                            {redirect.code || 301}
                                         </span>
                                     </td>
                                     <td className="p-4 text-right">

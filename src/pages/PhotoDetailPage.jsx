@@ -5,6 +5,7 @@ import { fetchPhotoGalleries, fetchGalleryImages, incrementPhotoGalleryView } fr
 import { mapPhotoGalleryItem } from '../utils/mappers';
 import SEO from '../components/SEO';
 import { slugify } from '../utils/slugify';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 const PhotoDetailPage = () => {
     const { slug, id } = useParams();
@@ -58,7 +59,7 @@ const PhotoDetailPage = () => {
                     }
 
                     setImages(galleryImages.map(img => ({
-                        image_url: img.image_url,
+                        image_url: getOptimizedImageUrl(img.image_url),
                         caption: img.caption
                     })));
 
@@ -175,7 +176,7 @@ const PhotoDetailPage = () => {
                                     <div key={index} className="space-y-2">
                                         <div className="relative rounded-lg overflow-hidden shadow-sm">
                                             <img
-                                                src={img.image_url}
+                                                src={getOptimizedImageUrl(img.image_url)}
                                                 alt={`${album.title} - ${index + 1}`}
                                                 className="w-full h-auto"
                                                 loading="lazy"

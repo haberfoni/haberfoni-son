@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Facebook, Twitter, Instagram, Youtube, Mail } from 'lucide-react';
-import { fetchCategories } from '../services/api';
+import { fetchCategories, subscribeNewsletter } from '../services/api';
 import { SOCIAL_MEDIA_LINKS } from '../constants/socialMedia';
 import { slugify } from '../utils/slugify';
 import apiClient from '../services/apiClient';
@@ -64,7 +64,7 @@ const Footer = () => {
         setStatus('loading');
 
         try {
-            await apiClient.post('/subscribers', { email, is_active: true });
+            await subscribeNewsletter(email);
 
             setStatus('success');
             setMessage('Bültenimize başarıyla abone oldunuz!');

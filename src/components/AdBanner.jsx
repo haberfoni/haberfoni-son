@@ -6,7 +6,7 @@ import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 // Critical placements that should always show (even when empty)
 // These are strategic positions that should remain visible regardless of settings
-const CRITICAL_PLACEMENTS = ['home_top'];
+const CRITICAL_PLACEMENTS = ['home_top', 'home_between_mansets'];
 
 const AdBanner = ({ vertical = false, small = false, image = null, href = null, customHeight = null, customDimensions = null, customMobileDimensions = null, text = null, placementCode = null, newsId = null, noContainer = false, fetchPriority = "auto", loading = "lazy", className = "", objectFit = "cover" }) => {
     // Refs for IntersectionObserver
@@ -227,6 +227,13 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
         return `https://${url}`;
     };
 
+    const getPlaceholderLabel = () => {
+        if (placementCode === 'home_top') return "Üst Reklam Alanı";
+        if (placementCode === 'home_list_top') return "Liste Üstü Reklam Alanı";
+        if (placementCode === 'home_between_mansets') return "Manşetler Arası Reklam Alanı";
+        return "Reklam Alanı";
+    };
+
     const renderAdContent = (ad, isMobile) => {
         if (!ad) return null;
 
@@ -319,7 +326,7 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                                 ) : (
                                     <div className="flex flex-col items-center justify-center">
                                         <span className={`${vertical ? "text-xl" : (small ? "text-lg md:text-2xl" : "text-2xl md:text-4xl")} font-semibold tracking-tight opacity-75 select-none text-center`}>
-                                            Reklam Alanı
+                                            {getPlaceholderLabel()}
                                         </span>
                                         <span className="text-sm font-bold opacity-60 mt-1">{desktopDimensions} px</span>
                                     </div>
@@ -346,7 +353,7 @@ const AdBanner = ({ vertical = false, small = false, image = null, href = null, 
                                     <img src={getOptimizedImageUrl(image, { width: parseInt(mobileDims.w) || 300 })} alt="Reklam" className="w-full h-full object-cover opacity-100" />
                                 ) : (
                                     <div className="flex flex-col items-center justify-center p-4 text-center">
-                                        <span className="text-sm font-medium text-gray-400 break-all">{mobileText.replace(/\+/g, ' ')}</span>
+                                        <span className="text-sm font-medium text-gray-400 break-all">{getPlaceholderLabel()}</span>
                                         <span className="text-xs font-bold text-gray-300 mt-1 block">{mobileDimensions} px</span>
                                     </div>
                                 )}

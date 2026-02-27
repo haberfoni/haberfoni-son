@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Megaphone, Edit2, Monitor, Smartphone, Layout, CheckCircle, XCircle, Eye, MousePointer2, BarChart2, Plus, Trash2, Home, List, FileText, Upload, Loader, EyeOff, ArrowUpDown, ArrowUp, ArrowDown, LayoutTemplate, PlusCircle, Edit, GripVertical, Move } from 'lucide-react';
 import { adminService } from '../../services/adminService';
+import { getOptimizedImageUrl } from '../../utils/imageUtils';
 import { useSiteSettings } from '../../context/SiteSettingsContext';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { fetchCategories } from '../../services/api';
@@ -63,17 +64,17 @@ const AdsPage = () => {
 
     // Standard Placements Definition with Dimensions
     const BASE_PLACEMENTS = {
-        'headline_slider': { name: 'Manşet 1 (Ana Manşet)', w: 1200, h: 600, mobile: '100%x400' },
-        'manset_2_slider': { name: 'Manşet 2 (Sürmanşet)', w: 1200, h: 600, mobile: '100%x400' },
-        'home_top': { name: 'Logo Yanı Reklam', w: 970, h: 250, mobile: '300x250' },
-        'home_top_mobile': { name: 'Logo Yanı (Mobil)', w: 300, h: 250, mobile: '300x250' },
+        'headline_slider': { name: 'Ana Manşet (Slider)', w: 1200, h: 600, mobile: '100%x400' },
+        'manset_2_slider': { name: 'Sürmanşet (Manşet 2)', w: 1200, h: 600, mobile: '100%x400' },
+        'home_top': { name: 'Üst Reklam Alanı (Logo Yanı)', w: 970, h: 250, mobile: '300x250' },
+        'home_top_mobile': { name: 'Üst Reklam Alanı (Mobil)', w: 300, h: 250, mobile: '300x250' },
         'home_breaking_news_sidebar_1': { name: 'Son Dakika Yanı 1', w: 300, h: 250, mobile: '300x250' },
         'home_breaking_news_sidebar_2': { name: 'Son Dakika Yanı 2', w: 300, h: 250, mobile: '300x250' },
         'home_breaking_news_sidebar_3': { name: 'Son Dakika Yanı 3', w: 300, h: 250, mobile: '300x250' },
         'home_surmanset_sidebar_1': { name: 'Sürmanşet Yanı 1', w: 300, h: 250, mobile: '300x250' },
         'home_surmanset_sidebar_2': { name: 'Sürmanşet Yanı 2', w: 300, h: 250, mobile: '300x250' },
         'home_surmanset_sidebar_3': { name: 'Sürmanşet Yanı 3', w: 300, h: 250, mobile: '300x250' },
-        'home_list_top': { name: 'Liste Üstü Reklam', w: 970, h: 250, mobile: '300x250' },
+        'home_between_mansets': { name: 'Manşetler Arası Reklam', w: 970, h: 250, mobile: '300x250' },
         'home_multimedia_bottom': { name: 'Multimedya Altı', w: 970, h: 250, mobile: '300x250' },
         'home_horizontal': { name: 'Ana Sayfa Yatay', w: 970, h: 250, mobile: '300x250' },
 
@@ -695,7 +696,7 @@ const AdsPage = () => {
                         onClick={() => ads.length === 0 && startCreate(code)}
                     >
                         {/* Label mimicking frontend */}
-                        <div className="absolute top-0 right-0 bg-[#374151] text-white text-[9px] px-2 py-0.5 z-10 rounded-bl-lg opacity-50 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute top-0 right-0 bg-gray-700/80 text-white text-[9px] px-2 py-0.5 z-10 rounded-bl-lg">
                             {displayLabel}
                         </div>
                         {/* Empty State */}
@@ -913,18 +914,19 @@ const AdsPage = () => {
                                     </div>
 
                                     <SectionHeader title="Header / Navigasyon" />
-                                    <AdSlot code="home_top" h="h-32" />
+                                    <AdSlot code="home_top" h="h-48" />
 
-                                    <SectionHeader title="Manşet 1 (Ana Manşet)" />
+                                    <SectionHeader title="Ana Manşet (Slider)" />
                                     <AdSlot code="headline_slider" h="h-64" />
 
+                                    <SectionHeader title="Manşetler Arası Reklam" />
+                                    <AdSlot code="home_between_mansets" h="h-48" />
+
                                     {/* Manşet 2 (Sürmanşet) Section (Full Width) */}
-                                    <SectionHeader title="Manşet 2 (Sürmanşet)" />
+                                    <SectionHeader title="Sürmanşet (Manşet 2 Slider)" />
                                     <div className="w-full">
                                         <AdSlot code="manset_2_slider" h="h-[400px]" />
                                     </div>
-
-                                    <AdSlot code="home_list_top" h="h-28" />
 
                                     {/* Breaking News Section with Sidebar Ads */}
                                     <SectionHeader title="Son Dakika Bölümü" />
@@ -983,7 +985,7 @@ const AdsPage = () => {
                                     <div className="flex flex-col lg:flex-row gap-6">
                                         {/* MAIN CONTENT */}
                                         <div className="w-full lg:w-2/3 flex flex-col gap-6">
-                                            <AdSlot code="category_top" h="h-32" />
+                                            <AdSlot code="category_top" h="h-48" />
 
                                             <div className="h-12 w-full bg-gray-100 rounded border-l-4 border-gray-300 flex items-center pl-4 text-gray-400 font-bold">
                                                 Kategori Başlığı (Örn: Gündem)
@@ -996,7 +998,7 @@ const AdsPage = () => {
                                                 <ContentBlock h="h-40" />
                                             </div>
 
-                                            <AdSlot code="category_horizontal" h="h-28" />
+                                            <AdSlot code="category_horizontal" h="h-48" />
 
                                             <div className="grid grid-cols-2 gap-4">
                                                 <ContentBlock h="h-40" />
@@ -1007,11 +1009,11 @@ const AdsPage = () => {
                                             <div className="border-t-2 border-dashed border-gray-300 pt-6 mt-6">
                                                 <h3 className="text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider text-center">Infinite Scroll / Daha Fazla Gör</h3>
                                                 <div className="space-y-4">
-                                                    <AdSlot code="category_horizontal_2" h="h-28" />
+                                                    <AdSlot code="category_horizontal_2" h="h-48" />
                                                     <div className="grid grid-cols-2 gap-4 opacity-50"><ContentBlock h="h-40" /><ContentBlock h="h-40" /></div>
-                                                    <AdSlot code="category_horizontal_3" h="h-28" />
+                                                    <AdSlot code="category_horizontal_3" h="h-48" />
                                                     <div className="grid grid-cols-2 gap-4 opacity-50"><ContentBlock h="h-40" /><ContentBlock h="h-40" /></div>
-                                                    <AdSlot code="category_horizontal_4" h="h-28" />
+                                                    <AdSlot code="category_horizontal_4" h="h-48" />
                                                 </div>
                                             </div>
                                         </div>
@@ -1136,82 +1138,90 @@ const AdsPage = () => {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-200">
-                                                    {Object.entries(STANDARD_PLACEMENTS).map(([code, info]) => {
-                                                        const ads = getAdsForSlot(code);
-                                                        const isEmpty = ads.length === 0;
-                                                        const pageType = code.startsWith('home_') ? 'Ana Sayfa' :
-                                                            code.startsWith('category_') ? 'Kategori' :
-                                                                code.startsWith('news_') ? 'Haber Detay' : 'Diğer';
+                                                    {Object.entries(STANDARD_PLACEMENTS)
+                                                        .sort(([codeA], [codeB]) => {
+                                                            const order = ['home_', 'category_', 'news_', 'site_'];
+                                                            const idxA = order.findIndex(p => codeA.startsWith(p));
+                                                            const idxB = order.findIndex(p => codeB.startsWith(p));
+                                                            if (idxA !== idxB) return idxA - idxB;
+                                                            return codeA.localeCompare(codeB);
+                                                        })
+                                                        .map(([code, info]) => {
+                                                            const ads = getAdsForSlot(code);
+                                                            const isEmpty = ads.length === 0;
+                                                            const pageType = code.startsWith('home_') || code.startsWith('headline') ? 'Ana Sayfa' :
+                                                                code.startsWith('category_') ? 'Kategori' :
+                                                                    code.startsWith('news_') ? 'Haber Detay' : 'Diğer';
 
-                                                        return (
-                                                            <tr key={code} className={`hover:bg-gray-50 transition-colors ${isEmpty ? 'bg-orange-50/30' : ''}`}>
-                                                                <td className="px-6 py-4">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className={`w-2 h-2 rounded-full ${isEmpty ? 'bg-orange-400' : 'bg-green-500'}`}></div>
-                                                                        <div>
-                                                                            <div className="font-medium text-gray-900">{info.name}</div>
-                                                                            <div className="text-xs text-gray-500 font-mono">{code}</div>
+                                                            return (
+                                                                <tr key={code} className={`hover:bg-gray-50 transition-colors ${isEmpty ? 'bg-orange-50/30' : ''}`}>
+                                                                    <td className="px-6 py-4">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className={`w-2 h-2 rounded-full ${isEmpty ? 'bg-orange-400' : 'bg-green-500'}`}></div>
+                                                                            <div>
+                                                                                <div className="font-medium text-gray-900">{info.name}</div>
+                                                                                <div className="text-xs text-gray-500 font-mono">{code}</div>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    <div className="text-sm text-gray-700">
-                                                                        <div className="font-medium">{info.w}×{info.h}</div>
-                                                                        {info.mobile && (
-                                                                            <div className="text-xs text-gray-500">Mobil: {info.mobile}</div>
+                                                                    </td>
+                                                                    <td className="px-6 py-4">
+                                                                        <div className="text-sm text-gray-700">
+                                                                            <div className="font-medium">{info.w}×{info.h}</div>
+                                                                            {info.mobile && (
+                                                                                <div className="text-xs text-gray-500">Mobil: {info.mobile}</div>
+                                                                            )}
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-6 py-4">
+                                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${pageType === 'Ana Sayfa' ? 'bg-blue-100 text-blue-800' :
+                                                                            pageType === 'Kategori' ? 'bg-purple-100 text-purple-800' :
+                                                                                pageType === 'Haber Detay' ? 'bg-green-100 text-green-800' :
+                                                                                    'bg-gray-100 text-gray-800'
+                                                                            }`}>
+                                                                            {pageType}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="px-6 py-4 text-center">
+                                                                        {isEmpty ? (
+                                                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                                                                <XCircle size={12} />
+                                                                                Boş
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                                                <CheckCircle size={12} />
+                                                                                Dolu
+                                                                            </span>
                                                                         )}
-                                                                    </div>
-                                                                </td>
-                                                                <td className="px-6 py-4">
-                                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${pageType === 'Ana Sayfa' ? 'bg-blue-100 text-blue-800' :
-                                                                        pageType === 'Kategori' ? 'bg-purple-100 text-purple-800' :
-                                                                            pageType === 'Haber Detay' ? 'bg-green-100 text-green-800' :
-                                                                                'bg-gray-100 text-gray-800'
-                                                                        }`}>
-                                                                        {pageType}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-center">
-                                                                    {isEmpty ? (
-                                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                                                            <XCircle size={12} />
-                                                                            Boş
+                                                                    </td>
+                                                                    <td className="px-6 py-4 text-center">
+                                                                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-bold text-sm">
+                                                                            {ads.length}
                                                                         </span>
-                                                                    ) : (
-                                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                                            <CheckCircle size={12} />
-                                                                            Dolu
-                                                                        </span>
-                                                                    )}
-                                                                </td>
-                                                                <td className="px-6 py-4 text-center">
-                                                                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 font-bold text-sm">
-                                                                        {ads.length}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="px-6 py-4 text-right">
-                                                                    <div className="flex items-center justify-end gap-2">
-                                                                        {ads.length > 0 && (
+                                                                    </td>
+                                                                    <td className="px-6 py-4 text-right">
+                                                                        <div className="flex items-center justify-end gap-2">
+                                                                            {ads.length > 0 && (
+                                                                                <button
+                                                                                    onClick={() => startEdit(ads[0])}
+                                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
+                                                                                >
+                                                                                    <Edit size={12} />
+                                                                                    Düzenle
+                                                                                </button>
+                                                                            )}
                                                                             <button
-                                                                                onClick={() => startEdit(ads[0])}
-                                                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
+                                                                                onClick={() => startCreate(code)}
+                                                                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
                                                                             >
-                                                                                <Edit size={12} />
-                                                                                Düzenle
+                                                                                <Plus size={12} />
+                                                                                Yeni Ekle
                                                                             </button>
-                                                                        )}
-                                                                        <button
-                                                                            onClick={() => startCreate(code)}
-                                                                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
-                                                                        >
-                                                                            <Plus size={12} />
-                                                                            Yeni Ekle
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                        );
-                                                    })}
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
                                                 </tbody>
                                             </table>
                                         </div>
@@ -1286,7 +1296,17 @@ const AdsPage = () => {
                                                     let rowClass = 'bg-white hover:bg-gray-50';
 
                                                     if (!ad.is_active) {
-                                                        statusBadge = <span className="bg-red-100 text-red-800 px-2.5 py-0.5 rounded text-xs font-semibold">Pasif</span>;
+                                                        statusBadge = (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    adminService.updateAdPlacement(ad.id, { is_active: true }).then(() => loadData());
+                                                                }}
+                                                                className="bg-red-100 hover:bg-red-200 text-red-800 px-2.5 py-0.5 rounded text-xs font-semibold transition-colors flex items-center gap-1"
+                                                            >
+                                                                <EyeOff size={10} /> Pasif
+                                                            </button>
+                                                        );
                                                         rowClass = 'bg-red-50 hover:bg-red-100';
                                                     } else if (endDate && now > endDate) {
                                                         statusBadge = <span className="bg-red-100 text-red-800 px-2.5 py-0.5 rounded text-xs font-semibold">Süresi Doldu</span>;
@@ -1295,7 +1315,17 @@ const AdsPage = () => {
                                                         statusBadge = <span className="bg-yellow-100 text-yellow-800 px-2.5 py-0.5 rounded text-xs font-semibold">Planlandı</span>;
                                                         rowClass = 'bg-yellow-50 hover:bg-yellow-100';
                                                     } else {
-                                                        statusBadge = <span className="bg-green-100 text-green-800 px-2.5 py-0.5 rounded text-xs font-semibold">Aktif</span>;
+                                                        statusBadge = (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    adminService.updateAdPlacement(ad.id, { is_active: false }).then(() => loadData());
+                                                                }}
+                                                                className="bg-green-100 hover:bg-green-200 text-green-800 px-2.5 py-0.5 rounded text-xs font-semibold transition-colors flex items-center gap-1"
+                                                            >
+                                                                <Eye size={10} /> Aktif
+                                                            </button>
+                                                        );
                                                         rowClass = 'bg-white hover:bg-gray-50';
                                                     }
 
@@ -1316,7 +1346,7 @@ const AdsPage = () => {
                                                             </td>
                                                             <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap flex items-center gap-2">
                                                                 {ad.image_url ? (
-                                                                    <img src={ad.image_url} alt="" className="w-10 h-10 object-cover rounded bg-gray-100" />
+                                                                    <img src={getOptimizedImageUrl(ad.image_url)} alt="" className="w-10 h-10 object-cover rounded bg-gray-100" />
                                                                 ) : (
                                                                     <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-400">Kod</div>
                                                                 )}
@@ -1465,6 +1495,21 @@ const AdsPage = () => {
                                     </div>
                                 )}
 
+                                {/* Status Toggle */}
+                                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className={`w-3 h-3 rounded-full ${editingAd.is_active ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500'}`}></div>
+                                        <span className="text-sm font-bold text-gray-700">Reklam Durumu: {editingAd.is_active ? 'YAYINDA' : 'PASİF'}</span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingAd({ ...editingAd, is_active: !editingAd.is_active })}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ring-2 ring-offset-2 ${editingAd.is_active ? 'bg-green-600 ring-green-100' : 'bg-gray-300 ring-gray-100'}`}
+                                    >
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${editingAd.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </button>
+                                </div>
+
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Reklam Adı (Tanımlayıcı)</label>
                                     <input
@@ -1589,7 +1634,7 @@ const AdsPage = () => {
                                                     {isUploading ? (
                                                         <Loader className="animate-spin text-gray-400" size={32} />
                                                     ) : editingAd.image_url ? (
-                                                        <img src={editingAd.image_url} alt="Preview" className="max-h-40 object-contain rounded" />
+                                                        <img src={getOptimizedImageUrl(editingAd.image_url)} alt="Preview" className="max-h-40 object-contain rounded" />
                                                     ) : (
                                                         <>
                                                             <Upload className="text-gray-400 mb-2" size={32} />

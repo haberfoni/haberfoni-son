@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { RedirectsService } from './redirects.service';
 
 @Controller('redirects')
@@ -8,6 +8,11 @@ export class RedirectsController {
     @Post()
     create(@Body() createData: any) {
         return this.redirectsService.create(createData);
+    }
+
+    @Get('check')
+    async check(@Query('path') path: string) {
+        return this.redirectsService.findByPath(path);
     }
 
     @Get()

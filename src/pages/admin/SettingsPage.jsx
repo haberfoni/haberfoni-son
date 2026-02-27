@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, Globe, Share2, Search, Key, Shield, AlertTriangle, Plus, Trash2, Image } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { SOCIAL_PLATFORMS, getIcon } from '../../utils/iconMapper';
+import { getOptimizedImageUrl } from '../../utils/imageUtils';
 
 const SettingsPage = () => {
     const [loading, setLoading] = useState(true);
@@ -22,6 +23,7 @@ const SettingsPage = () => {
         logo_mobile: '',
         favicon: '',
         site_copyright: '', // Added copyright
+        site_url: '', // Dynamic Site URL
         google_analytics_id: '',
         google_adsense_id: '',
         yandex_metrica_id: '',
@@ -238,6 +240,20 @@ const SettingsPage = () => {
                                     placeholder="© 2024 Haberfoni. Tüm hakları saklıdır."
                                 />
                             </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Site URL (Opsiyonel)</label>
+                                <input
+                                    type="url"
+                                    name="site_url"
+                                    value={settings.site_url || ''}
+                                    onChange={handleChange}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
+                                    placeholder="Örn: https://haberfoni.com"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Boş bırakırsanız sistem site adresini (domaini) otomatik algılayacaktır. Sadece özel durumlarda (örn: farklı domain yönlendirmeleri) doldurunuz.
+                                </p>
+                            </div>
                         </div>
                     )}
 
@@ -269,7 +285,7 @@ const SettingsPage = () => {
                                             <div className="text-gray-500">Yükleniyor...</div>
                                         ) : settings.logo_desktop ? (
                                             <div className="relative group w-full h-full flex items-center justify-center p-4">
-                                                <img src={settings.logo_desktop} alt="Desktop Logo" className="max-h-24 max-w-full object-contain" />
+                                                <img src={getOptimizedImageUrl(settings.logo_desktop)} alt="Desktop Logo" className="max-h-24 max-w-full object-contain" />
                                                 <button
                                                     onClick={() => setSettings(prev => ({ ...prev, logo_desktop: '' }))}
                                                     className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -310,7 +326,7 @@ const SettingsPage = () => {
                                             <div className="text-gray-500">Yükleniyor...</div>
                                         ) : settings.logo_mobile ? (
                                             <div className="relative group w-full h-full flex items-center justify-center p-4">
-                                                <img src={settings.logo_mobile} alt="Mobile Logo" className="max-h-24 max-w-full object-contain" />
+                                                <img src={getOptimizedImageUrl(settings.logo_mobile)} alt="Mobile Logo" className="max-h-24 max-w-full object-contain" />
                                                 <button
                                                     onClick={() => setSettings(prev => ({ ...prev, logo_mobile: '' }))}
                                                     className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -351,7 +367,7 @@ const SettingsPage = () => {
                                             <div className="text-gray-500">Yükleniyor...</div>
                                         ) : settings.favicon ? (
                                             <div className="relative group w-full h-full flex items-center justify-center p-4">
-                                                <img src={settings.favicon} alt="Favicon" className="w-8 h-8 object-contain" />
+                                                <img src={getOptimizedImageUrl(settings.favicon)} alt="Favicon" className="w-8 h-8 object-contain" />
                                                 <button
                                                     onClick={() => setSettings(prev => ({ ...prev, favicon: '' }))}
                                                     className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"

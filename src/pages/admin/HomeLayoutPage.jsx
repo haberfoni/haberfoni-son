@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Save, RotateCcw, ChevronUp, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, Save, RotateCcw, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { adminService } from '../../services/adminService';
 import { fetchCategories } from '../../services/api';
 
 const HomeLayoutPage = () => {
     const [sections, setSections] = useState([
         { id: 'home_top', name: 'Üst Reklam', type: 'ad', enabled: true, removable: false },
-        { id: 'headline_slider', name: 'Manşet 1 (Ana Manşet)', type: 'content', enabled: true, removable: false },
-        { id: 'surmanset', name: 'Manşet 2 (Sürmanşet)', type: 'content', enabled: true, removable: true },
-        { id: 'home_list_top', name: 'Ana Sayfa Liste Üstü', type: 'ad', enabled: true, removable: true },
+        { id: 'headline_slider', name: 'Ana Manşet (Slider)', type: 'content', enabled: true, removable: false },
+        { id: 'home_between_mansets', name: 'Manşetler Arası Reklam', type: 'ad', enabled: true, removable: true },
+        { id: 'surmanset', name: 'Sürmanşet (Manşet 2)', type: 'content', enabled: true, removable: true },
         { id: 'breaking_news', name: 'Son Dakika', type: 'content', enabled: true, removable: false },
         { id: 'multimedia', name: 'Multimedya (Video & Foto)', type: 'content', enabled: true, removable: true },
         { id: 'categories', name: 'Kategori Bölümleri (Dinamik)', type: 'content', enabled: true, removable: true }
@@ -25,7 +26,7 @@ const HomeLayoutPage = () => {
         try {
             const [layout, categories] = await Promise.all([
                 adminService.getHomeLayout(),
-                fetchCategories()
+                adminService.getCategories()
             ]);
 
             if (layout && layout.sections) {
@@ -58,18 +59,32 @@ const HomeLayoutPage = () => {
         }
     };
 
-    const moveUp = (index) => {
-        if (index === 0) return;
-        const newSections = [...sections];
-        [newSections[index - 1], newSections[index]] = [newSections[index], newSections[index - 1]];
-        setSections(newSections);
-    };
+    const handleDragEnd = (result) => {
+        if (!result.destination) return;
 
-    const moveDown = (index) => {
-        if (index === sections.length - 1) return;
-        const newSections = [...sections];
-        [newSections[index], newSections[index + 1]] = [newSections[index + 1], newSections[index]];
-        setSections(newSections);
+        const { source, destination, type } = result;
+
+        if (type === 'sections') {
+            const movedItem = sections[source.index];
+
+            // Protection for Ad sections
+            if (movedItem.type === 'ad') {
+                const confirmed = window.confirm(
+                    `'${movedItem.name}' alanının yerini değiştirmek sitenizin görünüm düzenini etkileyebilir. Devam etmek istiyor musunuz?`
+                );
+                if (!confirmed) return;
+            }
+
+            const items = Array.from(sections);
+            const [reorderedItem] = items.splice(source.index, 1);
+            items.splice(destination.index, 0, reorderedItem);
+            setSections(items);
+        } else if (type === 'categories') {
+            const items = Array.from(categoryConfig);
+            const [reorderedItem] = items.splice(source.index, 1);
+            items.splice(destination.index, 0, reorderedItem);
+            setCategoryConfig(items);
+        }
     };
 
     const toggleSection = (id) => {
@@ -79,19 +94,6 @@ const HomeLayoutPage = () => {
     };
 
     // Category Management Functions
-    const moveCategoryUp = (index) => {
-        if (index === 0) return;
-        const newConfig = [...categoryConfig];
-        [newConfig[index - 1], newConfig[index]] = [newConfig[index], newConfig[index - 1]];
-        setCategoryConfig(newConfig);
-    };
-
-    const moveCategoryDown = (index) => {
-        if (index === categoryConfig.length - 1) return;
-        const newConfig = [...categoryConfig];
-        [newConfig[index], newConfig[index + 1]] = [newConfig[index + 1], newConfig[index]];
-        setCategoryConfig(newConfig);
-    };
 
     const toggleCategory = (id) => {
         setCategoryConfig(categoryConfig.map(cat =>
@@ -124,8 +126,9 @@ const HomeLayoutPage = () => {
         if (window.confirm('Ana sayfa düzenini ve kategori ayarlarını varsayılana döndürmek istediğinize emin misiniz?')) {
             const defaultLayout = [
                 { id: 'home_top', name: 'Üst Reklam', type: 'ad', enabled: true, removable: false },
-                { id: 'headline_slider', name: 'Manşet 1 (Ana Manşet)', type: 'content', enabled: true, removable: false },
-                { id: 'surmanset', name: 'Manşet 2 (Sürmanşet)', type: 'content', enabled: true, removable: true },
+                { id: 'headline_slider', name: 'Ana Manşet (Slider)', type: 'content', enabled: true, removable: false },
+                { id: 'home_between_mansets', name: 'Manşetler Arası Reklam', type: 'ad', enabled: true, removable: true },
+                { id: 'surmanset', name: 'Sürmanşet (Manşet 2)', type: 'content', enabled: true, removable: true },
                 { id: 'breaking_news', name: 'Son Dakika', type: 'content', enabled: true, removable: false },
                 { id: 'multimedia', name: 'Multimedya (Video & Foto)', type: 'content', enabled: true, removable: true },
                 { id: 'categories', name: 'Kategori Bölümleri (Dinamik)', type: 'content', enabled: true, removable: true }
@@ -190,78 +193,107 @@ const HomeLayoutPage = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Section Ordering */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-fit">
-                    <h2 className="text-xl font-bold text-gray-900 mb-6 pb-2 border-b">Bölüm Sıralaması</h2>
-                    <div className="space-y-3">
-                        {sections.map((section, index) => (
-                            <div
-                                key={section.id}
-                                className={`
-                                    flex items-center gap-3 p-3 rounded-lg border-2 transition-all
-                                    ${section.enabled
-                                        ? 'bg-white border-gray-100 hover:border-blue-100'
-                                        : 'bg-gray-50 border-gray-100 opacity-60'}
-                                `}
-                            >
-                                <div className="flex flex-col gap-1">
-                                    <button onClick={() => moveUp(index)} disabled={index === 0} className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><ChevronUp size={18} /></button>
-                                    <button onClick={() => moveDown(index)} disabled={index === sections.length - 1} className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><ChevronDown size={18} /></button>
-                                </div>
+                <DragDropContext onDragEnd={handleDragEnd}>
+                    {/* Section Ordering */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-fit">
+                        <h2 className="text-xl font-bold text-gray-900 mb-6 pb-2 border-b">Bölüm Sıralaması</h2>
+                        <Droppable droppableId="sections-list" type="sections">
+                            {(provided) => (
+                                <div
+                                    {...provided.droppableProps}
+                                    ref={provided.innerRef}
+                                    className="space-y-3"
+                                >
+                                    {sections.map((section, index) => (
+                                        <Draggable key={section.id} draggableId={section.id} index={index}>
+                                            {(provided, snapshot) => (
+                                                <div
+                                                    ref={provided.innerRef}
+                                                    {...provided.draggableProps}
+                                                    className={`
+                                                        flex items-center gap-3 p-3 rounded-lg border-2 transition-all
+                                                        ${snapshot.isDragging ? 'border-blue-400 shadow-lg bg-blue-50' : (section.enabled ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-100 opacity-60')}
+                                                    `}
+                                                >
+                                                    <div {...provided.dragHandleProps} className="text-gray-400 cursor-grab active:cursor-grabbing hover:text-gray-600">
+                                                        <GripVertical size={20} />
+                                                    </div>
 
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`px-1.5 py-0.5 text-[10px] font-bold uppercase rounded ${section.type === 'ad' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
-                                            {section.type === 'ad' ? 'Reklam' : 'İçerik'}
-                                        </span>
-                                        <span className="font-medium text-gray-900 text-sm">{section.name}</span>
-                                    </div>
-                                </div>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`px-1.5 py-0.5 text-[10px] font-bold uppercase rounded ${section.type === 'ad' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                                {section.type === 'ad' ? 'Reklam' : 'İçerik'}
+                                                            </span>
+                                                            <span className="font-medium text-gray-900 text-sm">{section.name}</span>
+                                                        </div>
+                                                    </div>
 
-                                <button onClick={() => toggleSection(section.id)} className={`p-1.5 rounded-lg ${section.enabled ? 'text-green-600 bg-green-50' : 'text-gray-400 bg-gray-100'}`}>
-                                    {section.enabled ? <Eye size={18} /> : <EyeOff size={18} />}
-                                </button>
-                            </div>
-                        ))}
+                                                    <button onClick={() => toggleSection(section.id)} className={`p-1.5 rounded-lg ${section.enabled ? 'text-green-600 bg-green-50' : 'text-gray-400 bg-gray-100'}`}>
+                                                        {section.enabled ? <Eye size={18} /> : <EyeOff size={18} />}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </Draggable>
+                                    ))}
+                                    {provided.placeholder}
+                                </div>
+                            )}
+                        </Droppable>
                     </div>
-                </div>
 
-                {/* Categories Management */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-fit">
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">Kategori Yönetimi</h2>
-                    <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-100 mb-4">
-                        ⚠️ Dikkat: Bir kategorinin ana sayfada görünebilmesi için <strong>en az 4 haberi</strong> olması gerekmektedir. Yeterli haberi olmayan kategoriler burada aktif olsa bile ana sayfada görünmez.
-                    </p>
+                    {/* Categories Management */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-fit">
+                        <h2 className="text-xl font-bold text-gray-900 mb-2">Kategori Yönetimi</h2>
+                        <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-100 mb-4">
+                            ⚠️ Dikkat: Bir kategorinin ana sayfada görünebilmesi için <strong>en az 4 haberi</strong> olması gerekmektedir. Yeterli haberi olmayan kategoriler burada aktif olsa bile ana sayfada görünmez.
+                        </p>
 
-                    <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
-                        {categoryConfig.map((cat, index) => (
-                            <div key={cat.id} className={`flex items-center gap-3 p-3 rounded-lg border border-gray-100 ${cat.enabled ? 'bg-white' : 'bg-gray-50 opacity-70'}`}>
-                                <div className="flex flex-col gap-1">
-                                    <button onClick={() => moveCategoryUp(index)} disabled={index === 0} className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><ChevronUp size={16} /></button>
-                                    <button onClick={() => moveCategoryDown(index)} disabled={index === categoryConfig.length - 1} className="p-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"><ChevronDown size={16} /></button>
+                        <Droppable droppableId="categories-list" type="categories">
+                            {(provided) => (
+                                <div
+                                    {...provided.droppableProps}
+                                    ref={provided.innerRef}
+                                    className="space-y-3 max-h-[600px] overflow-y-auto pr-2"
+                                >
+                                    {categoryConfig.map((cat, index) => (
+                                        <Draggable key={cat.id} draggableId={cat.id} index={index}>
+                                            {(provided, snapshot) => (
+                                                <div
+                                                    ref={provided.innerRef}
+                                                    {...provided.draggableProps}
+                                                    className={`flex items-center gap-3 p-3 rounded-lg border border-gray-100 ${snapshot.isDragging ? 'border-blue-300 shadow bg-blue-50' : (cat.enabled ? 'bg-white' : 'bg-gray-50 opacity-70')}`}
+                                                >
+                                                    <div {...provided.dragHandleProps} className="text-gray-400 cursor-grab active:cursor-grabbing hover:text-gray-600">
+                                                        <GripVertical size={18} />
+                                                    </div>
+
+                                                    <div className="flex-1">
+                                                        <div className="text-xs text-gray-400 mb-1">Kategori: {cat.id}</div>
+                                                        <input
+                                                            type="text"
+                                                            value={cat.title}
+                                                            onChange={(e) => updateCategoryTitle(cat.id, e.target.value)}
+                                                            className="w-full text-sm font-medium border-b border-dashed border-gray-300 focus:border-blue-500 outline-none bg-transparent py-1"
+                                                            placeholder="Görünen Başlık"
+                                                        />
+                                                    </div>
+
+                                                    <button onClick={() => toggleCategory(cat.id)} className={`p-1.5 rounded-lg ${cat.enabled ? 'text-green-600 bg-green-50' : 'text-gray-400 bg-gray-100'}`}>
+                                                        {cat.enabled ? <Eye size={18} /> : <EyeOff size={18} />}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </Draggable>
+                                    ))}
+                                    {provided.placeholder}
+                                    {categoryConfig.length === 0 && (
+                                        <div className="text-center py-8 text-gray-500 text-sm">Hiç kategori bulunamadı.</div>
+                                    )}
                                 </div>
-
-                                <div className="flex-1">
-                                    <div className="text-xs text-gray-400 mb-1">Kategori: {cat.id}</div>
-                                    <input
-                                        type="text"
-                                        value={cat.title}
-                                        onChange={(e) => updateCategoryTitle(cat.id, e.target.value)}
-                                        className="w-full text-sm font-medium border-b border-dashed border-gray-300 focus:border-blue-500 outline-none bg-transparent py-1"
-                                        placeholder="Görünen Başlık"
-                                    />
-                                </div>
-
-                                <button onClick={() => toggleCategory(cat.id)} className={`p-1.5 rounded-lg ${cat.enabled ? 'text-green-600 bg-green-50' : 'text-gray-400 bg-gray-100'}`}>
-                                    {cat.enabled ? <Eye size={18} /> : <EyeOff size={18} />}
-                                </button>
-                            </div>
-                        ))}
-                        {categoryConfig.length === 0 && (
-                            <div className="text-center py-8 text-gray-500 text-sm">Hiç kategori bulunamadı.</div>
-                        )}
+                            )}
+                        </Droppable>
                     </div>
-                </div>
+                </DragDropContext>
             </div>
 
             <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">

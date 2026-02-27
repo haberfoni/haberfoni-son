@@ -106,10 +106,10 @@ const CommentsPage = () => {
                     <div className="divide-y divide-gray-100">
                         {filteredComments.map((comment) => {
                             // Helper to parse news object safely
-                            const newsItem = Array.isArray(comment.news) ? comment.news[0] : comment.news;
+                            const newsItem = comment.News || comment.news;
                             const newsCategory = newsItem?.category || 'gundem';
                             const newsTitle = newsItem?.title || 'Bilinmeyen Haber';
-                            const newsSlug = newsItem?.slug || slugify(newsTitle);
+                            const newsSlug = newsItem?.slug || (newsItem?.title ? slugify(newsItem.title) : '');
 
                             return (
                                 <div key={comment.id} className="p-6 hover:bg-gray-50 transition-colors">
@@ -118,7 +118,12 @@ const CommentsPage = () => {
                                             <div className="flex items-center space-x-2">
                                                 <span className="font-semibold text-gray-900">{comment.user_name}</span>
                                                 <span className="text-gray-400 text-xs">•</span>
-                                                <span className="text-gray-500 text-sm">{new Date(comment.created_at).toLocaleString('tr-TR')}</span>
+                                                <div className="flex flex-col text-xs">
+                                                    <span className="text-gray-500">Yazıldı: {new Date(comment.created_at).toLocaleString('tr-TR')}</span>
+                                                    {comment.approved_at && (
+                                                        <span className="text-green-600 font-medium">Onaylandı: {new Date(comment.approved_at).toLocaleString('tr-TR')}</span>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="flex items-center space-x-2 mt-2">
                                                 {newsItem ? (
@@ -127,7 +132,7 @@ const CommentsPage = () => {
                                                             {newsCategory}
                                                         </span>
                                                         <Link
-                                                            to={`/kategori/${slugify(newsCategory)}/${slugify(newsTitle)}`}
+                                                            to={`/kategori/${slugify(newsCategory)}/${newsSlug}`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="text-sm text-blue-600 hover:text-blue-800 flex items-center hover:underline font-medium"

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Video, Edit2, Trash2, Plus, Eye, PlayCircle, Copy, Trash, RefreshCw } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 import { formatDate } from '../../utils/mappers';
+import { slugify } from '../../utils/slugify';
+import { getOptimizedImageUrl } from '../../utils/imageUtils';
 
 const VideoGalleryListPage = () => {
     const [videos, setVideos] = useState([]);
@@ -95,7 +97,7 @@ const VideoGalleryListPage = () => {
     };
 
     const handleBulkDuplicate = async () => {
-        if (!window.confirm(`${selectedIds.length} videoyu çoğaltmak istediğinize emin misiniz?`)) return;
+        if (!window.confirm(`${selectedIds.length} videoyu çoğaltmak istediğinize emin misiniz ? `)) return;
         try {
             await adminService.duplicateVideosBulk(selectedIds);
             loadVideos();
@@ -108,7 +110,7 @@ const VideoGalleryListPage = () => {
     };
 
     const handleBulkDelete = async () => {
-        if (!window.confirm(`${selectedIds.length} videoyu silmek istediğinize emin misiniz?`)) return;
+        if (!window.confirm(`${selectedIds.length} videoyu silmek istediğinize emin misiniz ? `)) return;
         try {
             await adminService.deleteVideosBulk(selectedIds);
             loadVideos();
@@ -232,7 +234,7 @@ const VideoGalleryListPage = () => {
                                 <tr><td colSpan="8" className="p-8 text-center text-gray-500">Video bulunamadı.</td></tr>
                             ) : (
                                 videos.map(item => (
-                                    <tr key={item.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50' : ''}`}>
+                                    <tr key={item.id} className={`hover: bg - gray - 50 transition - colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50' : ''} `}>
                                         <td className="p-4">
                                             <input
                                                 type="checkbox"
@@ -243,7 +245,7 @@ const VideoGalleryListPage = () => {
                                         </td>
                                         <td className="p-4 w-24">
                                             <div className="w-20 h-14 bg-gray-100 rounded overflow-hidden relative">
-                                                <img src={item.thumbnail_url || 'https://via.placeholder.com/150'} alt="" className="w-full h-full object-cover" />
+                                                <img src={getOptimizedImageUrl(item.thumbnail_url) || 'https://via.placeholder.com/150'} alt="" className="w-full h-full object-cover" />
                                                 <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                                                     <PlayCircle className="text-white" size={20} />
                                                 </div>
@@ -253,10 +255,10 @@ const VideoGalleryListPage = () => {
                                         <td className="p-4 text-center">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); toggleStatus(item); }}
-                                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${item.published_at
-                                                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                                    }`}
+                                                className={`px - 3 py - 1 rounded - full text - xs font - medium transition - colors ${item.published_at
+                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                                    } `}
                                             >
                                                 {item.published_at ? 'Yayında' : 'Taslak'}
                                             </button>
@@ -273,17 +275,17 @@ const VideoGalleryListPage = () => {
                                         </td>
                                         <td className="p-4 text-center">
                                             <div className="flex items-center justify-center gap-1">
-                                                <span className={`font-semibold ${item.views >= 1000 ? 'text-orange-600' : 'text-gray-600'}`}>
+                                                <span className={`font - semibold ${item.views >= 1000 ? 'text-orange-600' : 'text-gray-600'} `}>
                                                     {(item.views || 0).toLocaleString('tr-TR')}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="p-4 text-sm text-gray-500">{formatDate(item.created_at)}</td>
                                         <td className="p-4 text-right space-x-2 whitespace-nowrap">
-                                            <Link to={`/video-galeri/${item.id}`} target="_blank" className="inline-block p-2 text-gray-400 hover:text-primary transition-colors" title="Görüntüle">
+                                            <Link to={`/ video - galeri / ${item.id} `} target="_blank" className="inline-block p-2 text-gray-400 hover:text-primary transition-colors" title="Görüntüle">
                                                 <Eye size={18} />
                                             </Link>
-                                            <Link to={`/admin/video-galleries/edit/${item.id}`} className="inline-block p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Düzenle">
+                                            <Link to={`/ admin / video - galleries / edit / ${item.id} `} className="inline-block p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Düzenle">
                                                 <Edit2 size={18} />
                                             </Link>
                                             <button onClick={() => handleDelete(item.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Sil">

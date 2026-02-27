@@ -114,12 +114,12 @@ const ActivityLogsPage = () => {
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center">
-                                            {log.profiles?.full_name ? (
+                                            {log.User?.full_name || log.profiles?.full_name ? (
                                                 <>
                                                     <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold mr-2">
-                                                        {log.profiles.full_name.charAt(0)}
+                                                        {(log.User?.full_name || log.profiles?.full_name).charAt(0)}
                                                     </div>
-                                                    <span className="text-sm text-gray-600">{log.profiles.full_name}</span>
+                                                    <span className="text-sm text-gray-600">{log.User?.full_name || log.profiles?.full_name}</span>
                                                 </>
                                             ) : (
                                                 <>
@@ -127,7 +127,7 @@ const ActivityLogsPage = () => {
                                                         ?
                                                     </div>
                                                     <span className="text-sm text-gray-500 font-mono">
-                                                        {log.ip_address ? `IP: ${log.ip_address}` : 'Bilinmiyor'}
+                                                        {log.User?.email || log.ip_address ? `IP: ${log.ip_address}` : 'Bilinmiyor'}
                                                     </span>
                                                 </>
                                             )}

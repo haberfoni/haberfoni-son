@@ -123,7 +123,7 @@ const TopSponsorBanner = () => {
 
                     {/* Link */}
                     <Link to="/reklam" className="flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-gray-500 transition-colors no-underline">
-                        <span className="text-2xl md:text-4xl font-semibold tracking-tight opacity-75 select-none text-center">Reklam Alanı</span>
+                        <span className="text-2xl md:text-4xl font-semibold tracking-tight opacity-75 select-none text-center">Üst Reklam Alanı</span>
                     </Link>
 
                     {/* Hover Call to Action */}

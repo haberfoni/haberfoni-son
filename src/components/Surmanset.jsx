@@ -71,7 +71,7 @@ const Surmanset = ({ items = [] }) => {
                         const content = (
                             <>
                                 <img
-                                    src={item.image || item.image_url}
+                                    src={getOptimizedImageUrl(item.image || item.image_url)}
                                     alt={item.title}
                                     className="w-full h-full object-cover"
                                     loading="lazy"

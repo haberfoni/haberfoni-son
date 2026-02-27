@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { ActivityLogsService } from '../activity-logs/activity-logs.service';
 import { scrapeAA } from './scrapers/aa.scraper';
 import { scrapeIHA } from './scrapers/iha.scraper';
 import { scrapeDHA } from './scrapers/dha.scraper';
@@ -9,7 +10,7 @@ import { scrapeDHA } from './scrapers/dha.scraper';
 export class BotService implements OnModuleInit {
     private readonly logger = new Logger(BotService.name);
 
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService, private activityLogsService: ActivityLogsService) { }
 
     async onModuleInit() {
         this.logger.log('BotService initialized');
@@ -99,6 +100,11 @@ export class BotService implements OnModuleInit {
                 });
             }
             this.logger.log('Scrape cycle finished.');
+            await this.activityLogsService.create({
+                action_type: 'BOT_RUN',
+                entity_type: 'BOT',
+                description: 'Haber botu otomatik tarama döngüsünü başarıyla tamamladı.'
+            }).catch(() => {});
         } catch (error) {
             this.logger.error(`Scrape cycle failed: ${error.message}`);
             if (cmdId) {
@@ -202,7 +208,7 @@ export class BotService implements OnModuleInit {
             const slug = this.slugify(newsItem.title);
 
             // 5. Insert
-            await this.prisma.news.create({
+            const createdNews = await this.prisma.news.create({
                 data: {
                     title: newsItem.title,
                     slug: slug,
@@ -222,6 +228,13 @@ export class BotService implements OnModuleInit {
                     seo_keywords: newsItem.keywords,
                 },
             });
+
+            await this.activityLogsService.create({
+                action_type: 'CREATE',
+                entity_type: 'NEWS',
+                entity_id: createdNews.id,
+                description: `Haber botu tarafından eklendi: ${newsItem.title} (Kaynak: ${newsItem.source})`
+            }).catch(() => {});
 
             return true;
         } catch (e) {

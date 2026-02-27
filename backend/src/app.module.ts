@@ -19,6 +19,14 @@ import { StatsModule } from './stats/stats.module';
 import { TagsModule } from './tags/tags.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { PagesModule } from './pages/pages.module';
+import { GalleriesModule } from './galleries/galleries.module';
+import { VideosModule } from './videos/videos.module';
+import { SubscribersModule } from './subscribers/subscribers.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { RedirectMiddleware } from './redirects/redirect.middleware';
+import { SeoModule } from './seo/seo.module';
+import { NestModule, MiddlewareConsumer } from '@nestjs/common';
 
 const UPLOAD_DIR = join(process.cwd(), '..', 'public', 'uploads');
 
@@ -28,15 +36,21 @@ const UPLOAD_DIR = join(process.cwd(), '..', 'public', 'uploads');
       rootPath: UPLOAD_DIR,
       serveRoot: '/uploads',
     }),
-    PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule, StatsModule, TagsModule, ActivityLogsModule, PagesModule
+    PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule, StatsModule, TagsModule, ActivityLogsModule, PagesModule, GalleriesModule, VideosModule, SubscribersModule, UsersModule, AuthModule, SeoModule
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {
+export class AppModule implements NestModule {
   constructor() {
     if (!existsSync(UPLOAD_DIR)) {
       mkdirSync(UPLOAD_DIR, { recursive: true });
     }
+  }
+
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(RedirectMiddleware)
+      .forRoutes('*');
   }
 }

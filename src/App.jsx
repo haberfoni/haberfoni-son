@@ -74,10 +74,12 @@ const PageLoader = () => (
 // Popup Ad Component
 import PopupAd from './components/PopupAd';
 import SiteWarning from './components/SiteWarning';
+import SiteAlert from './components/SiteAlert';
 
 // Layouts
 const PublicLayout = () => (
   <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
+    <SiteAlert />
     <SiteWarning />
     <PopupAd />
     <Header />

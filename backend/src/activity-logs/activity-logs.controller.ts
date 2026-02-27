@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Query } from '@nestjs/common';
 import { ActivityLogsService } from './activity-logs.service';
 
 @Controller('activity-logs')
@@ -11,8 +11,8 @@ export class ActivityLogsController {
     }
 
     @Get()
-    findAll() {
-        return this.activityLogsService.findAll();
+    findAll(@Query('page') page: string, @Query('limit') limit: string) {
+        return this.activityLogsService.findAll(Number(page) || 1, Number(limit) || 20);
     }
 
     @Delete(':id')

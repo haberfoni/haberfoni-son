@@ -5,6 +5,7 @@ import { slugify } from '../../utils/slugify';
 import { adminService } from '../../services/adminService';
 import RichTextEditor from '../../components/RichTextEditor';
 import SeoPreview from '../../components/admin/SeoPreview';
+import { getOptimizedImageUrl } from '../../utils/imageUtils';
 
 const extractYoutubeId = (url) => {
     const match = url?.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -479,7 +480,7 @@ const VideoGalleryEditPage = () => {
                         {thumbnailPreview && (
                             <div className="mb-3 relative inline-block">
                                 <img
-                                    src={thumbnailPreview}
+                                    src={getOptimizedImageUrl(thumbnailPreview)}
                                     alt="Kapak önizleme"
                                     className="w-48 h-32 object-cover rounded-lg border-2 border-gray-300"
                                     onError={(e) => {

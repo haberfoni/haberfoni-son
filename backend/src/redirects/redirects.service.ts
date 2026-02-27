@@ -9,6 +9,12 @@ export class RedirectsService {
         return this.prisma.redirect.findMany({ orderBy: { id: 'desc' } });
     }
 
+    async findByPath(source_url: string) {
+        return this.prisma.redirect.findUnique({
+            where: { source_url }
+        });
+    }
+
     async create(data: any) {
         return this.prisma.redirect.create({ data });
     }

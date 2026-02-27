@@ -5,6 +5,7 @@ import { Save, ArrowLeft, Image as ImageIcon, Video, AlertTriangle, Eye, Trash2,
 import { adminService } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
 import { slugify } from '../../utils/slugify';
+import { getOptimizedImageUrl } from '../../utils/imageUtils';
 import { getYouTubeId } from '../../utils/videoUtils';
 import RichTextEditor from '../../components/RichTextEditor';
 import TagSelector from '../../components/admin/TagSelector';
@@ -540,7 +541,7 @@ const NewsEditPage = () => {
                                 {/* Preview Box */}
                                 <div className="w-40 h-24 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
                                     {formData.image_url ? (
-                                        <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+                                        <img src={getOptimizedImageUrl(formData.image_url)} alt="Preview" className="w-full h-full object-cover" />
                                     ) : (
                                         <div className="flex flex-col items-center text-gray-400">
                                             <ImageIcon size={24} className="mb-1" />

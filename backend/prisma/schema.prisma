@@ -99,6 +99,7 @@ model Comment {
   comment     String   @db.Text
   is_approved Boolean  @default(false)
   created_at  DateTime @default(now())
+  approved_at DateTime?
 
   News        News     @relation(fields: [news_id], references: [id], onDelete: Cascade)
 
@@ -258,7 +259,7 @@ model ContactMessage {
 
 model ActivityLog {
   id          Int      @id @default(autoincrement())
-  user_id     String?  @db.VarChar(100)
+  user_id     Int?
   action_type String   @db.VarChar(100)
   entity_type String?  @db.VarChar(100)
   entity_id   Int?
@@ -266,5 +267,72 @@ model ActivityLog {
   ip_address  String?  @db.VarChar(45)
   created_at  DateTime @default(now())
 
+  User        User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
   @@map("activity_logs")
+}
+
+model Video {
+  id              Int       @id @default(autoincrement())
+  title           String    @db.VarChar(255)
+  video_url       String    @db.Text
+  thumbnail_url   String?   @db.Text
+  duration        String?   @db.VarChar(50)
+  description     String?   @db.Text
+  views           Int       @default(0)
+  published_at    DateTime?
+  seo_title       String?   @db.VarChar(255)
+  seo_description String?   @db.VarChar(512)
+  seo_keywords    String?   @db.VarChar(255)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  @@map("videos")
+}
+
+model PhotoGallery {
+  id              Int       @id @default(autoincrement())
+  title           String    @db.VarChar(255)
+  slug            String    @unique @db.VarChar(255)
+  description     String?   @db.Text
+  thumbnail_url   String?   @db.Text
+  views           Int       @default(0)
+  published_at    DateTime?
+  seo_title       String?   @db.VarChar(255)
+  seo_description String?   @db.VarChar(512)
+  seo_keywords    String?   @db.VarChar(255)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  gallery_images  PhotoGalleryImage[]
+
+  @@map("photo_galleries")
+}
+
+model PhotoGalleryImage {
+  id              Int       @id @default(autoincrement())
+  gallery_id      Int
+  image_url       String    @db.Text
+  caption         String?   @db.Text
+  order_index     Int       @default(0)
+  created_at      DateTime  @default(now())
+
+  Gallery         PhotoGallery @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
+
+  @@map("photo_gallery_images")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique @db.VarChar(255)
+  password     String        @db.VarChar(255)
+  full_name    String?       @db.VarChar(255)
+  role         String        @default("author") @db.VarChar(50) // 'admin', 'editor', 'author'
+  is_active    Boolean       @default(true)
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+
+  ActivityLogs ActivityLog[]
+
+  @@map("users")
 }

@@ -5,6 +5,7 @@ import { adminService } from '../../services/adminService';
 import RichTextEditor from '../../components/RichTextEditor';
 import SeoPreview from '../../components/admin/SeoPreview';
 import { slugify } from '../../utils/slugify';
+import { getOptimizedImageUrl } from '../../utils/imageUtils';
 
 const PhotoGalleryEditPage = () => {
     const { id } = useParams();
@@ -298,7 +299,7 @@ const PhotoGalleryEditPage = () => {
                             {(thumbnailPreview || formData.thumbnail_url) && (
                                 <div className="mb-3 relative inline-block">
                                     <img
-                                        src={thumbnailPreview || formData.thumbnail_url}
+                                        src={thumbnailPreview || (formData.thumbnail_url ? getOptimizedImageUrl(formData.thumbnail_url) : '')}
                                         alt="Kapak önizleme"
                                         className="w-48 h-32 object-cover rounded-lg border-2 border-gray-300"
                                     />
@@ -479,7 +480,7 @@ const PhotoGalleryEditPage = () => {
                                     <div className="md:col-span-4 space-y-3">
                                         <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden border border-gray-300 flex items-center justify-center relative group-hover:border-primary/50 transition-colors">
                                             {img.image_url ? (
-                                                <img src={img.image_url} alt="" className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} />
+                                                <img src={getOptimizedImageUrl(img.image_url)} alt="" className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} />
                                             ) : (
                                                 <div className="text-center">
                                                     <ImageIcon className="mx-auto text-gray-400 mb-2" size={24} />

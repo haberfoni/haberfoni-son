@@ -12,6 +12,7 @@ import { fetchNews, fetchHeadlines, fetchSurmanset, fetchHomeVideos, fetchHomePh
 import { mapNewsItem } from '../utils/mappers';
 import { slugify } from '../utils/slugify';
 import { toTurkishTitleCase } from '../utils/turkishCase';
+import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 // Helper to get icon for category (case-insensitive)
 const getCategoryIcon = (categoryName) => {
@@ -144,7 +145,7 @@ const HomePage = () => {
                                 const adItem = {
                                     id: `ad-${ad.id}`,
                                     title: ad.name || 'Sponsorlu İçerik',
-                                    image: ad.image_url,
+                                    image: getOptimizedImageUrl(ad.image_url),
                                     type: 'ad',
                                     link_url: ad.link_url,
                                     category: 'REKLAM',
@@ -201,10 +202,14 @@ const HomePage = () => {
         if (!layoutConfig || !layoutConfig.sections) {
             return ['home_top', 'headline_slider', 'surmanset', 'breaking_news', 'multimedia', 'categories'];
         }
-        // Filter only enabled sections and return their IDs in order
-        return layoutConfig.sections
-            .filter(s => s.enabled !== false)
-            .map(s => s.id);
+
+        const defaultOrder = ['home_top', 'headline_slider', 'home_between_mansets', 'surmanset', 'breaking_news', 'multimedia', 'categories'];
+        const savedSections = layoutConfig.sections.map(s => s.id);
+
+        // Find sections that might be missing in saved config but should exist
+        const missing = defaultOrder.filter(id => !savedSections.includes(id));
+
+        return [...savedSections, ...missing];
     };
 
     const renderSection = (sectionId) => {
@@ -218,22 +223,26 @@ const HomePage = () => {
             case 'headline_slider':
                 return <Hero items={heroItems} />;
 
-
+            case 'home_between_mansets':
+                return (
+                    <div className="container mx-auto px-4 mt-8">
+                        <AdBanner placementCode="home_between_mansets" customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px]" noContainer={true} />
+                    </div>
+                );
 
             case 'surmanset':
                 return surmansetItems.length > 0 ? (
                     <div className="container mx-auto px-4 mt-8">
-                        {/* Made full width per user request to move ads to Son Dakika sidebar */}
                         <div className="w-full">
                             <Surmanset items={surmansetItems} />
                         </div>
                     </div>
                 ) : null;
 
-            case 'home_list_top':
+            case 'home_between_mansets':
                 return (
                     <div className="container mx-auto px-4 mt-8">
-                        <AdBanner placementCode="home_list_top" customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px]" noContainer={true} />
+                        <AdBanner placementCode="home_between_mansets" customDimensions="970x250" customMobileDimensions="300x250" customHeight="h-[250px]" noContainer={true} />
                     </div>
                 );
 
@@ -503,11 +512,8 @@ const HomePage = () => {
             {/* Main Content Areas */}
             <div className="min-h-screen bg-gray-50 pb-12">
 
-                {/* FIXED: Always render TopSponsorBanner at the top, regardless of settings */}
-                <TopSponsorBanner />
-
                 {/* Sections */}
-                {getOrderedSections().filter(id => id !== 'home_top').map(sectionId => (
+                {getOrderedSections().map(sectionId => (
                     <React.Fragment key={sectionId}>
                         {renderSection(sectionId)}
                     </React.Fragment>

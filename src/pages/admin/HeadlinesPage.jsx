@@ -4,6 +4,7 @@ import { adminService } from '../../services/adminService';
 import { fetchHeadlines, fetchSurmanset } from '../../services/api';
 import { Link } from 'react-router-dom';
 import { slugify } from '../../utils/slugify';
+import { getOptimizedImageUrl } from '../../utils/imageUtils';
 
 const HeadlinesPage = () => {
     const [activeTab, setActiveTab] = useState(1); // 1: Main Headline, 2: Manşet 2
@@ -343,7 +344,7 @@ const HeadlinesPage = () => {
                                     </div>
 
                                     <img
-                                        src={headline.image_url}
+                                        src={getOptimizedImageUrl(headline.image_url)}
                                         alt={headline.title}
                                         className="w-32 h-20 object-cover rounded"
                                     />

@@ -4,6 +4,7 @@ import { Save, ArrowLeft, AlertTriangle, Eye, Users, Play, MousePointer, BarChar
 import { adminService } from '../../services/adminService';
 import { slugify } from '../../utils/slugify';
 import RichTextEditor from '../../components/RichTextEditor';
+import { getOptimizedImageUrl } from '../../utils/imageUtils';
 
 // SVG constants for HTML generation
 const ICONS = {
@@ -279,7 +280,7 @@ const PageEditPage = () => {
         const modelsHtml = adModels.map(model => `
             <div class="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group bg-white">
                 <div class="h-48 w-full bg-gray-50 relative overflow-hidden group-hover:opacity-90 transition-opacity">
-                    ${model.image ? `<img src="${model.image}" alt="${model.title}" class="w-full h-full object-cover" />` : `
+                    ${model.image ? `<img src="${getOptimizedImageUrl(model.image)}" alt="${model.title}" class="w-full h-full object-cover" />` : `
                     <div class="h-full w-full flex items-center justify-center text-gray-400 group-hover:text-blue-600 transition-colors">
                         ${ICONS[model.icon] || ICONS.Monitor}
                     </div>
@@ -814,7 +815,7 @@ const PageEditPage = () => {
                                                     )}
                                                     {model.image && (
                                                         <div className="mt-2 relative h-20 w-full rounded-lg overflow-hidden border border-gray-200 group">
-                                                            <img src={model.image} alt="Preview" className="w-full h-full object-cover" />
+                                                            <img src={getOptimizedImageUrl(model.image)} alt="Preview" className="w-full h-full object-cover" />
                                                             <button
                                                                 type="button"
                                                                 onClick={() => {
