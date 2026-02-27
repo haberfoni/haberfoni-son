@@ -12,9 +12,10 @@ import { ContactMessagesModule } from './contact-messages/contact-messages.modul
 import { CommentsModule } from './comments/comments.module';
 import { HeadlinesModule } from './headlines/headlines.module';
 import { RedirectsModule } from './redirects/redirects.module';
+import { StatsModule } from './stats/stats.module';
 
 @Module({
-  imports: [PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule],
+  imports: [PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule, StatsModule],
   controllers: [AppController],
   providers: [AppService],
 })
