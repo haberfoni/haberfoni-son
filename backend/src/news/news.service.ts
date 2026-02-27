@@ -131,7 +131,7 @@ export class NewsService {
     return newsTags.map(nt => nt.Tag);
   }
 
-  async updateTags(newsId: number, tagIds: number[]) {
+  async updateTags(newsId: number, tagIds: any[]) {
     // 1. Delete all existing tags for this news
     await this.prisma.newsTag.deleteMany({
       where: { news_id: newsId },
@@ -139,10 +139,14 @@ export class NewsService {
 
     // 2. Insert new tags
     if (tagIds && tagIds.length > 0) {
-      const newsTagsData = tagIds.map(tagId => ({
-        news_id: newsId,
-        tag_id: tagId,
-      }));
+      const newsTagsData = tagIds.map(tagInput => {
+        // Handle both simple arrays of IDs and arrays of {id: ...} objects
+        const tagId = typeof tagInput === 'object' && tagInput.id ? tagInput.id : tagInput;
+        return {
+          news_id: newsId,
+          tag_id: Number(tagId),
+        };
+      });
 
       await this.prisma.newsTag.createMany({
         data: newsTagsData,

@@ -63,7 +63,7 @@ export class NewsController {
   }
 
   @Patch(':id/tags')
-  updateTags(@Param('id') id: string, @Body() body: { tag_ids: number[] }) {
+  updateTags(@Param('id') id: string, @Body() body: { tag_ids: any[] }) {
     return this.newsService.updateTags(+id, body.tag_ids);
   }
 }
