@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -16,9 +19,23 @@ import { StatsModule } from './stats/stats.module';
 import { TagsModule } from './tags/tags.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 
+const UPLOAD_DIR = join(process.cwd(), '..', 'public', 'uploads');
+
 @Module({
-  imports: [PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule, StatsModule, TagsModule, ActivityLogsModule],
+  imports: [
+    ServeStaticModule.forRoot({
+      rootPath: UPLOAD_DIR,
+      serveRoot: '/uploads',
+    }),
+    PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule, StatsModule, TagsModule, ActivityLogsModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {
+  constructor() {
+    if (!existsSync(UPLOAD_DIR)) {
+      mkdirSync(UPLOAD_DIR, { recursive: true });
+    }
+  }
+}
