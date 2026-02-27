@@ -1,7 +1,7 @@
 import { slugify } from '../utils/slugify.js';
 import apiClient from './apiClient';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://142.132.229.92:3000';
 
 export const adminService = {
     // ... (rest of the file)
