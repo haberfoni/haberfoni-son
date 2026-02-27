@@ -24,6 +24,9 @@ model News {
   is_active       Boolean   @default(true)
   views           Int       @default(0)
   is_slider       Boolean   @default(false)
+  media_type      String?   @default("image") @db.VarChar(50)
+  video_url       String?   @db.Text
+  updater_id      String?   @db.VarChar(100)
   seo_title       String?   @db.VarChar(255)
   seo_description String?   @db.VarChar(512)
   seo_keywords    String?   @db.VarChar(255)
@@ -237,4 +240,15 @@ model ContactMessage {
   created_at DateTime @default(now())
 
   @@map("contact_messages")
+}
+
+model ActivityLog {
+  id         Int      @id @default(autoincrement())
+  user_id    String   @db.VarChar(100)
+  action     String   @db.VarChar(255)
+  details    String?  @db.Text
+  ip_address String?  @db.VarChar(45)
+  created_at DateTime @default(now())
+
+  @@map("activity_logs")
 }
