@@ -8,9 +8,13 @@ import { BotModule } from './bot/bot.module';
 import { CategoriesModule } from './categories/categories.module';
 import { SettingsModule } from './settings/settings.module';
 import { UploadModule } from './upload/upload.module';
+import { ContactMessagesModule } from './contact-messages/contact-messages.module';
+import { CommentsModule } from './comments/comments.module';
+import { HeadlinesModule } from './headlines/headlines.module';
+import { RedirectsModule } from './redirects/redirects.module';
 
 @Module({
-  imports: [PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule],
+  imports: [PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule],
   controllers: [AppController],
   providers: [AppService],
 })

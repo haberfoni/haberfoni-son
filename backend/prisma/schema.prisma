@@ -34,6 +34,7 @@ model News {
   AuthorRelation  Author?   @relation(fields: [author_id], references: [id])
   Comments        Comment[]
   TargetedAds     Ad[]
+  Headlines       Headline[]
 
   @@map("news")
   @@index([category])
@@ -213,4 +214,27 @@ model Subscriber {
   created_at DateTime @default(now())
 
   @@map("subscribers")
+}
+
+model Headline {
+  id          Int      @id @default(autoincrement())
+  news_id     Int
+  type        Int      @default(1) // 1 for slider, 2 for surmanset etc.
+  order_index Int      @default(0)
+  created_at  DateTime @default(now())
+
+  News        News     @relation(fields: [news_id], references: [id], onDelete: Cascade)
+  @@map("headlines")
+}
+
+model ContactMessage {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(100)
+  email      String   @db.VarChar(255)
+  subject    String?  @db.VarChar(255)
+  message    String   @db.Text
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  @@map("contact_messages")
 }
