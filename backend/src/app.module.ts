@@ -18,6 +18,7 @@ import { RedirectsModule } from './redirects/redirects.module';
 import { StatsModule } from './stats/stats.module';
 import { TagsModule } from './tags/tags.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
+import { PagesModule } from './pages/pages.module';
 
 const UPLOAD_DIR = join(process.cwd(), '..', 'public', 'uploads');
 
@@ -27,7 +28,7 @@ const UPLOAD_DIR = join(process.cwd(), '..', 'public', 'uploads');
       rootPath: UPLOAD_DIR,
       serveRoot: '/uploads',
     }),
-    PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule, StatsModule, TagsModule, ActivityLogsModule
+    PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule, StatsModule, TagsModule, ActivityLogsModule, PagesModule
   ],
   controllers: [AppController],
   providers: [AppService],
