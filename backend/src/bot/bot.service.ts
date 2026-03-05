@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogsService } from '../activity-logs/activity-logs.service';
+import { AiService } from '../ai/ai.service';
 import { scrapeAA } from './scrapers/aa.scraper';
 import { scrapeIHA } from './scrapers/iha.scraper';
 import { scrapeDHA } from './scrapers/dha.scraper';
@@ -10,7 +11,11 @@ import { scrapeDHA } from './scrapers/dha.scraper';
 export class BotService implements OnModuleInit {
     private readonly logger = new Logger(BotService.name);
 
-    constructor(private prisma: PrismaService, private activityLogsService: ActivityLogsService) { }
+    constructor(
+        private prisma: PrismaService, 
+        private activityLogsService: ActivityLogsService,
+        private aiService: AiService
+    ) { }
 
     async onModuleInit() {
         this.logger.log('BotService initialized');
@@ -52,7 +57,7 @@ export class BotService implements OnModuleInit {
         });
     }
 
-    @Cron('*/5 * * * *')
+    @Cron('*/2 * * * *')
     async handleCron() {
         this.logger.log('Starting scheduled scrape cycle (5 min frequency)...');
         await this.scrapeAll();
@@ -401,6 +406,20 @@ export class BotService implements OnModuleInit {
                 where: { slug: newsItem.category },
             });
             const categoryId = category ? category.id : null;
+
+            // 3.5 AI Rewrite if enabled
+            if (settings && settings.use_ai_rewrite) {
+                this.logger.log(`AI Rewrite is active for ${newsItem.source}. Attempting rewrite...`);
+                const rewritten = await this.aiService.rewriteNews(newsItem.title, newsItem.summary, newsItem.content);
+                if (rewritten) {
+                    newsItem.title = rewritten.title;
+                    newsItem.summary = rewritten.summary;
+                    newsItem.content = rewritten.content;
+                    this.logger.log(`AI Rewrite SUCCESS for: ${newsItem.title}`);
+                } else {
+                    this.logger.warn(`AI Rewrite FAILED or SKIPPED for: ${newsItem.title}`);
+                }
+            }
 
             // 4. Slug
             const slug = this.slugify(newsItem.title);

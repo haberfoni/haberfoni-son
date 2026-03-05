@@ -100,16 +100,20 @@ async function scrapeAAHTML(url: string, targetCategory: string, bot: BotService
         const $ = cheerio.load(response.data);
         const articleLinks = new Set<string>();
 
-        $('a[href*="/tr/"]').each((i, elem) => {
-            const href = $(elem).attr('href');
-            if (href && href.match(/\/tr\/[^\/]+\/[^\/]+\/\d+$/)) {
-                const isGallery = href.includes('/fotoraf-galerisi/') || /\/(fotoraf|info)\//.test(href);
-                const isVideo = href.includes('/video-galerisi/') || /\/(vgc|video)\//.test(href);
-                const isInfographic = href.includes('/infografik/');
+        // Target the main category news lists specifically
+        let selector = '.category-news-list a, .list-news-item a, .news-list-item a, main a, article a';
+        if ($(selector).length === 0) {
+            selector = 'a[href*="/tr/"]';
+        }
 
-                // We want to scrape these specifically
-                const fullUrl = href.startsWith('http') ? href : `https://www.aa.com.tr${href}`;
-                articleLinks.add(fullUrl);
+        $(selector).each((i, elem) => {
+            const href = $(elem).attr('href');
+            if (href) {
+                // Match standard news, gallery or video patterns
+                if (href.match(/\/tr\/[^\/]+\/[^\/]+\/\d+$/)) {
+                    const fullUrl = href.startsWith('http') ? href : `https://www.aa.com.tr${href}`;
+                    articleLinks.add(fullUrl);
+                }
             }
         });
 

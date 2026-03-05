@@ -28,6 +28,7 @@ import { RedirectMiddleware } from './redirects/redirect.middleware';
 import { SeoModule } from './seo/seo.module';
 import { NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AiModule } from './ai/ai.module';
 
 const UPLOAD_DIR = join(process.cwd(), '..', 'public', 'uploads');
 
@@ -38,7 +39,7 @@ const UPLOAD_DIR = join(process.cwd(), '..', 'public', 'uploads');
       serveRoot: '/uploads',
     }),
     ScheduleModule.forRoot(),
-    PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule, StatsModule, TagsModule, ActivityLogsModule, PagesModule, GalleriesModule, VideosModule, SubscribersModule, UsersModule, AuthModule, SeoModule
+    PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule, StatsModule, TagsModule, ActivityLogsModule, PagesModule, GalleriesModule, VideosModule, SubscribersModule, UsersModule, AuthModule, SeoModule, AiModule
   ],
   controllers: [AppController],
   providers: [AppService],

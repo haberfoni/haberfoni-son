@@ -148,14 +148,15 @@ model SiteSetting {
 }
 
 model BotSetting {
-  id          Int      @id @default(autoincrement())
-  source_name String   @unique @db.VarChar(50) // 'AA', 'IHA', 'DHA'
-  is_active   Boolean  @default(true)
-  auto_publish Boolean @default(false)
-  daily_limit Int      @default(100)
-  config      String?  @db.Text // JSON config if needed
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  source_name  String   @unique @db.VarChar(50) // 'AA', 'IHA', 'DHA'
+  is_active    Boolean  @default(true)
+  auto_publish Boolean  @default(false)
+  use_ai_rewrite Boolean @default(false)
+  daily_limit  Int      @default(100)
+  config       String?  @db.Text // JSON config if needed
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 
   @@map("bot_settings")
 }

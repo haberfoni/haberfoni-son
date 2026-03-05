@@ -43,7 +43,11 @@ export async function scrapeDHA(bot: BotService) {
                 const $ = cheerio.load(response.data);
                 const articles: any[] = [];
 
-                $('a').each((i, el) => {
+                // Targeted selectors for DHA main content areas
+                let selector = '.nd-content-column a, .category-news-list a, .nd-news-list a, main a';
+                if ($(selector).length === 0) selector = 'a'; // Extremely loose fallback if nothing found
+
+                $(selector).each((i, el) => {
                     const link = $(el).attr('href');
                     let title = $(el).attr('title') || $(el).text().trim();
                     const img = $(el).find('img').attr('src') || $(el).find('img').attr('data-src');
@@ -53,11 +57,16 @@ export async function scrapeDHA(bot: BotService) {
 
                     if (link && title) {
                         const fullLink = link.startsWith('http') ? link : `https://www.dha.com.tr${link}`;
+                        
+                        // Check if link is a valid news/video/gallery subpage
                         const isVideo = fullLink.includes('/video/') || fullLink.includes('-video-');
                         const isGallery = fullLink.includes('/foto-galeri/') || fullLink.includes('-galeri-');
                         const hasId = /\d+(\/)?$/.test(fullLink);
 
-                        if (title.length > 10 && (isVideo || isGallery || hasId)) {
+                        // Avoid scraping links that clearly belong to other segments in the footer/header
+                        const isNav = fullLink.includes('/etiket/') || fullLink.includes('/yazarlar/') || fullLink.includes('/kunye/');
+
+                        if (title.length > 10 && (isVideo || isGallery || hasId) && !isNav) {
                             articles.push({
                                 title: title,
                                 original_url: fullLink,
