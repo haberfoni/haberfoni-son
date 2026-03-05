@@ -32,6 +32,10 @@ export async function scrapeAA(bot: BotService) {
         let totalSaved = 0;
 
         for (const mapping of mappings) {
+            if (mapping.is_active === false) {
+                console.log(`Skipping AA: ${mapping.source_url} (Mapping is inactive)`);
+                continue;
+            }
             console.log(`Fetching AA: ${mapping.source_url} -> ${mapping.target_category}`);
             try {
                 let count = 0;
@@ -99,11 +103,13 @@ async function scrapeAAHTML(url: string, targetCategory: string, bot: BotService
         $('a[href*="/tr/"]').each((i, elem) => {
             const href = $(elem).attr('href');
             if (href && href.match(/\/tr\/[^\/]+\/[^\/]+\/\d+$/)) {
-                const isMediaContent = /\/(pgc|vgc|info\/infographic)\//.test(href) || /\/(fotoraf|video|infografik)-\d+$/.test(href);
-                if (!isMediaContent) {
-                    const fullUrl = href.startsWith('http') ? href : `https://www.aa.com.tr${href}`;
-                    articleLinks.add(fullUrl);
-                }
+                const isGallery = href.includes('/fotoraf-galerisi/') || /\/(fotoraf|info)\//.test(href);
+                const isVideo = href.includes('/video-galerisi/') || /\/(vgc|video)\//.test(href);
+                const isInfographic = href.includes('/infografik/');
+
+                // We want to scrape these specifically
+                const fullUrl = href.startsWith('http') ? href : `https://www.aa.com.tr${href}`;
+                articleLinks.add(fullUrl);
             }
         });
 
@@ -111,9 +117,20 @@ async function scrapeAAHTML(url: string, targetCategory: string, bot: BotService
         const linksArray = Array.from(articleLinks).slice(0, 10);
         for (const articleUrl of linksArray) {
             try {
-                const article = await scrapeAAArticle(articleUrl, targetCategory);
-                if (article) {
-                    if (await bot.saveNews(article)) count++;
+                const isGallery = articleUrl.includes('/fotoraf-galerisi/') || /\/(fotoraf|info)\//.test(articleUrl);
+                const isVideo = articleUrl.includes('/video-galerisi/') || /\/(vgc|video)\//.test(articleUrl);
+
+                if (isVideo) {
+                    const video = await scrapeAAVideo(articleUrl, targetCategory);
+                    if (video && !bot.isGenericTitle(video.title) && await bot.saveVideo(video)) count++;
+                } else if (isGallery) {
+                    const gallery = await scrapeAAGallery(articleUrl, targetCategory);
+                    if (gallery && !bot.isGenericTitle(gallery.title) && await bot.saveGallery(gallery)) count++;
+                } else {
+                    const article = await scrapeAAArticle(articleUrl, targetCategory);
+                    if (article && !bot.isGenericTitle(article.title)) {
+                        if (await bot.saveNews(article)) count++;
+                    }
                 }
                 await new Promise(resolve => setTimeout(resolve, 500));
             } catch (err) {
@@ -124,6 +141,108 @@ async function scrapeAAHTML(url: string, targetCategory: string, bot: BotService
     } catch (err) {
         console.error(`Error fetching HTML ${url}:`, err.message);
         return 0;
+    }
+}
+
+async function scrapeAAVideo(url: string, targetCategory: string) {
+    try {
+        const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 30000 });
+        const $ = cheerio.load(response.data);
+
+        const title = $('h1').first().text().trim();
+        let description = $('.videoAciklama').first().text().trim() ||
+            $('meta[property="og:description"]').attr('content') ||
+            $('meta[name="description"]').attr('content') || '';
+
+        // Clean up " - Anadolu Ajansı" suffix
+        if (description) {
+            description = description.replace(/-?\s*Anadolu Ajansı\s*$/i, '').trim();
+        }
+
+        if (!description || description.length < 50 || description.toLowerCase() === 'anadolu ajansı') {
+            let firstPara = $('.detay-icerik p').first().text().trim() ||
+                $('article p').first().text().trim();
+            if (firstPara && firstPara.toLowerCase() !== 'anadolu ajansı') {
+                description = firstPara.replace(/-?\s*Anadolu Ajansı\s*$/i, '').trim();
+            }
+        }
+
+        const thumbnail = $('meta[property="og:image"]').attr('content') || '';
+
+        // AA specific video source structure
+        let videoUrl = $('video source').attr('src') || $('video').attr('src') ||
+            $('meta[property="og:video:url"]').attr('content') ||
+            $('meta[property="og:video:secure_url"]').attr('content') ||
+            $('meta[property="og:video"]').attr('content') ||
+            $('meta[name="twitter:player"]').attr('content') ||
+            $('iframe[src*="aa.com.tr/video"]').attr('src') ||
+            $('iframe[src*="youtube"]').attr('src') || '';
+
+        // Fallback title if h1 is empty
+        const finalTitle = title || $('meta[property="og:title"]').attr('content') || $('title').text().trim();
+
+        if (!videoUrl || !finalTitle) return null;
+
+        return {
+            title: finalTitle,
+            video_url: videoUrl.startsWith('//') ? 'https:' + videoUrl : (videoUrl.startsWith('/') ? 'https://www.aa.com.tr' + videoUrl : videoUrl),
+            thumbnail_url: thumbnail,
+            description,
+            source: 'AA',
+            original_url: url
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
+async function scrapeAAGallery(url: string, targetCategory: string) {
+    try {
+        const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 30000 });
+        const $ = cheerio.load(response.data);
+
+        const title = $('h1').first().text().trim();
+        let description = $('meta[property="og:description"]').attr('content') ||
+            $('meta[name="description"]').attr('content') || '';
+
+        // Clean up " - Anadolu Ajansı" suffix
+        if (description) {
+            description = description.replace(/-?\s*Anadolu Ajansı\s*$/i, '').trim();
+        }
+
+        if (!description || description.length < 50 || description.toLowerCase() === 'anadolu ajansı') {
+            let firstPara = $('.detay-icerik p').first().text().trim() ||
+                $('article p').first().text().trim();
+            if (firstPara && firstPara.toLowerCase() !== 'anadolu ajansı') {
+                description = firstPara.replace(/-?\s*Anadolu Ajansı\s*$/i, '').trim();
+            }
+        }
+
+        const thumbnail = $('meta[property="og:image"]').attr('content') || '';
+
+        const images: any[] = [];
+        $('.detay-gallery img, .detay-icerik img, article img').each((i, el) => {
+            const src = $(el).attr('data-src') || $(el).attr('src');
+            if (src && !isBlockedImage(src)) {
+                images.push({
+                    url: src.startsWith('http') ? src : (src.startsWith('/') ? 'https://www.aa.com.tr' + src : src),
+                    caption: $(el).attr('alt') || ''
+                });
+            }
+        });
+
+        if (images.length === 0 || !title) return null;
+
+        return {
+            title,
+            thumbnail_url: thumbnail || images[0].url,
+            description,
+            source: 'AA',
+            original_url: url,
+            images
+        };
+    } catch (e) {
+        return null;
     }
 }
 

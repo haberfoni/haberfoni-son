@@ -11,8 +11,8 @@ export class HeadlinesController {
     }
 
     @Get()
-    findAll(@Query('type') type?: string) {
-        return this.headlinesService.findAll(type ? +type : undefined);
+    findAll(@Query('type') type?: string, @Query('news_id') news_id?: string) {
+        return this.headlinesService.findAll(type ? +type : undefined, news_id);
     }
 
     @Delete()

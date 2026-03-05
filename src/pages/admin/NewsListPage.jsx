@@ -53,7 +53,7 @@ const NewsListPage = () => {
 
             // Load headlines
             const headlines = await adminService.getHeadlines();
-            const headlineIds = new Set(headlines.map(h => h.news?.id).filter(Boolean));
+            const headlineIds = new Set(headlines.map(h => h.News?.id).filter(Boolean));
             setHeadlineNewsIds(headlineIds);
 
             const sortedData = [...data].sort((a, b) => {
@@ -150,20 +150,20 @@ const NewsListPage = () => {
         try {
             if (isInHeadline) {
                 const headlines = await adminService.getHeadlines();
-                const headline = headlines.find(h => h.news?.id === newsId);
+                const headline = headlines.find(h => h.News?.id === newsId);
                 if (headline) {
                     await adminService.removeFromHeadline(headline.slot_number);
                     await adminService.updateNews(newsId, { is_slider: false });
                     alert('Haber manşetten kaldırıldı.');
                 }
             } else {
-                const nextSlot = await adminService.getNextAvailableSlot();
-                if (nextSlot) {
+                const nextSlot = await adminService.getNextAvailableHeadlineSlot();
+                if (nextSlot <= 20) {
                     await adminService.addToHeadline(newsId, nextSlot);
                     await adminService.updateNews(newsId, { is_slider: true });
                     alert('Haber manşete eklendi.');
                 } else {
-                    alert('Tüm manşet slotları dolu (maksimum 10).');
+                    alert('Tüm manşet slotları dolu (maksimum 20).');
                     return;
                 }
             }
@@ -377,8 +377,8 @@ const NewsListPage = () => {
                                                     type="button"
                                                     onClick={(e) => { e.stopPropagation(); handleToggleHeadline(item.id, headlineNewsIds.has(item.id)); }}
                                                     className={`inline - flex items - center px - 2 py - 1 rounded text - xs font - bold cursor - pointer transition - colors ${headlineNewsIds.has(item.id)
-                                                            ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                                            : 'bg-red-100 text-red-600 hover:bg-red-200'
+                                                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                                        : 'bg-red-100 text-red-600 hover:bg-red-200'
                                                         } `}
                                                     title={headlineNewsIds.has(item.id) ? 'Manşetten Kaldır' : 'Manşete Sabitle'}
                                                 >
@@ -404,9 +404,9 @@ const NewsListPage = () => {
                                             >
                                                 <span className="text-xs font-bold">Tekrarla</span>
                                             </button>
-                                            <Link to={`/ kategori / ${item.category}/${item.slug || slugify(item.title)}`} target="_blank" className="inline-block p-2 text-gray-400 hover:text-primary transition-colors" title="Görüntüle" >
+                                            <Link to={`/kategori/${item.category}/${item.slug || slugify(item.title)}`} target="_blank" className="inline-block p-2 text-gray-400 hover:text-primary transition-colors" title="Görüntüle" >
                                                 <Eye size={18} />
-                                            </Link >
+                                            </Link>
                                             <Link to={`/admin/news/edit/${item.id}`} className="inline-block p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Düzenle">
                                                 <Edit2 size={18} />
                                             </Link>

@@ -46,7 +46,7 @@ const Hero = ({ items = [] }) => {
         items.forEach(item => {
             const isAd = item.type === 'ad' || item.type === 'slider-ad';
             if (isAd) {
-                const adId = item.adPlacementId || item.adId;
+                const adId = item.adPlacementId || item.adId || item.id;
                 if (adId) {
                     trackView(adId);
                 }
@@ -56,7 +56,7 @@ const Hero = ({ items = [] }) => {
 
     // Handle ad click tracking
     const handleAdClick = async (ad) => {
-        const adId = ad.adPlacementId || ad.adId;
+        const adId = ad.adPlacementId || ad.adId || ad.id;
         if (adId) {
             try {
                 await adminService.incrementAdClick(adId);

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clock, Eye, Share2 } from 'lucide-react';
 import AdBanner from './AdBanner';
 import CommentSection from './CommentSection';
-import { getEmbedUrl } from '../utils/videoUtils';
+import { getEmbedUrl, isDirectVideo } from '../utils/videoUtils';
 import ImageWithFallback from './ImageWithFallback';
 
 import SourceBadge from './SourceBadge';
@@ -119,16 +119,30 @@ const NewsArticle = ({ news, onVisible }) => {
                     The image remains available for list/card views (thumbnail).
                 */}
                 {news.video_url ? (
-                    <div className="relative pt-[56.25%] bg-black">
-                        <iframe
-                            className="absolute inset-0 w-full h-full"
-                            src={getEmbedUrl(news.video_url)}
-                            title={news.title}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                        ></iframe>
-                    </div>
+                    <>
+                        {isDirectVideo(news.video_url) ? (
+                            <div className="w-full bg-black flex justify-center items-center overflow-hidden" style={{ maxHeight: '70vh' }}>
+                                <video
+                                    controls
+                                    className="w-full max-h-[70vh] object-contain"
+                                    src={news.video_url}
+                                >
+                                    Tarayıcınız video etiketini desteklemiyor.
+                                </video>
+                            </div>
+                        ) : (
+                            <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-sm bg-black">
+                                <iframe
+                                    className="absolute top-0 left-0 w-full h-full"
+                                    src={getEmbedUrl(news.video_url)}
+                                    title={news.title}
+                                    frameBorder="0"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                ></iframe>
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <ImageWithFallback
                         src={news.image}

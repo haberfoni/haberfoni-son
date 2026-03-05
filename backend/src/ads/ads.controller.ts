@@ -1,11 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { AdsService } from './ads.service';
 import { CreateAdDto } from './dto/create-ad.dto';
 import { UpdateAdDto } from './dto/update-ad.dto';
 
 @Controller('ads')
 export class AdsController {
-  constructor(private readonly adsService: AdsService) {}
+  constructor(private readonly adsService: AdsService) { }
 
   @Post()
   create(@Body() createAdDto: CreateAdDto) {
@@ -13,8 +13,8 @@ export class AdsController {
   }
 
   @Get()
-  findAll() {
-    return this.adsService.findAll();
+  findAll(@Query() query: { all?: string }) {
+    return this.adsService.findAll(query);
   }
 
   @Get(':id')

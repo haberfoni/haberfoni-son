@@ -37,17 +37,85 @@ export const fetchSliderNews = async () => {
 };
 
 export const fetchHeadlines = async () => {
-    // Simplified for migration: Just return latest news
-    // TODO: Implement proper HeadlineService in backend
     try {
-        const response = await apiClient.get('/news', { params: { limit: 30, isSlider: 'true' } });
-        const itemsWithImages = response.data.data.filter(item => item.image_url && item.image_url.trim() !== '');
-
-        return itemsWithImages.slice(0, 15).map((item, index) => ({
-            ...item,
-            order_index: index + 1,
+        // 1. Fetch manually pinned headlines (type 1 = slider)
+        const headlineRes = await apiClient.get('/headlines', { params: { type: 1 } });
+        const manualHeadlines = (headlineRes.data || []).map(h => ({
+            ...h.News,
+            order_index: h.order_index,
+            isManual: true,
             type: 'news'
         }));
+
+        // 2. Fetch ads for headlines
+        // Consolidate into a single fetch and merge by unique ID
+        const adsRes = await apiClient.get('/ads');
+        const allAds = Array.isArray(adsRes.data) ? adsRes.data : [];
+
+        // Filter ads for headlines and map them
+        const combinedAds = allAds
+            .filter(ad => ad.is_active && (ad.is_headline || ad.placement_code === 'headline_slider'))
+            .map(ad => ({
+                ...ad,
+                order_index: ad.headline_slot,
+                isManual: true,
+                type: 'ad',
+                image: ad.image_url // Ensure compatibility with Hero
+            }));
+
+        // 3. Fetch latest news for filling empty slots
+        const newsResponse = await apiClient.get('/news', { params: { limit: 30 } });
+        const allLatestNews = (newsResponse.data.data || []).filter(item => item.image_url && item.image_url.trim() !== '');
+
+        // 4. Create a 15-slot result array
+        const result = new Array(15).fill(null);
+        const usedNewsIds = new Set();
+        const usedAdIds = new Set();
+
+        // 5. Place ads into their slots (ADS TAKE PRIORITY OVER NEWS)
+        combinedAds.forEach(ad => {
+            const slot = ad.order_index - 1;
+            if (slot >= 0 && slot < 15 && result[slot] === null) {
+                result[slot] = ad;
+                usedAdIds.add(ad.id);
+            }
+        });
+
+        // 6. Place manual headlines into their remaining slots
+        manualHeadlines.forEach(h => {
+            const slot = h.order_index - 1;
+            if (slot >= 0 && slot < 15 && result[slot] === null) {
+                result[slot] = h;
+                usedNewsIds.add(h.id);
+            }
+        });
+
+        // 7. Fill remaining slots with latest news
+        let newsIdx = 0;
+        for (let i = 0; i < 15; i++) {
+            if (result[i] === null) {
+                while (newsIdx < allLatestNews.length && usedNewsIds.has(allLatestNews[newsIdx].id)) {
+                    newsIdx++;
+                }
+
+                if (newsIdx < allLatestNews.length) {
+                    const item = allLatestNews[newsIdx];
+                    result[i] = {
+                        ...item,
+                        order_index: i + 1,
+                        isManual: false,
+                        type: 'news'
+                    };
+                    usedNewsIds.add(item.id);
+                    newsIdx++;
+                }
+            } else {
+                // Ensure order_index is correct for pinned items too
+                result[i].order_index = i + 1;
+            }
+        }
+
+        return result.filter(item => item !== null);
     } catch (error) {
         console.error('Error fetching headlines:', error);
         return [];
@@ -56,16 +124,83 @@ export const fetchHeadlines = async () => {
 
 export const fetchSurmanset = async () => {
     try {
-        const response = await apiClient.get('/news', { params: { limit: 30, page: 2 } }); // Fetch more since we'll filter
-        // Filter out news without an image
-        const itemsWithImages = response.data.data.filter(item => item.image_url && item.image_url.trim() !== '');
-
-        return itemsWithImages.slice(0, 15).map((item, index) => ({
-            ...item,
-            order_index: index + 1,
+        // 1. Fetch manually pinned surmanset headlines (type 2)
+        const headlineRes = await apiClient.get('/headlines', { params: { type: 2 } });
+        const manualHeadlines = (headlineRes.data || []).map(h => ({
+            ...h.News,
+            order_index: h.order_index,
+            isManual: true,
             type: 'news'
         }));
+
+        // 2. Fetch ads for surmanset
+        const adsRes = await apiClient.get('/ads');
+        const allAds = Array.isArray(adsRes.data) ? adsRes.data : [];
+
+        const combinedAds = allAds
+            .filter(ad => ad.is_active && (ad.is_manset_2 || ad.placement_code === 'manset_2_slider'))
+            .map(ad => ({
+                ...ad,
+                order_index: ad.manset_2_slot,
+                isManual: true,
+                type: 'ad',
+                image: ad.image_url
+            }));
+
+        // 3. Fetch latest news
+        const newsResponse = await apiClient.get('/news', { params: { limit: 30 } });
+        const allLatestNews = (newsResponse.data.data || []).filter(item => item.image_url && item.image_url.trim() !== '');
+
+        // 4. Create a 15-slot result array
+        const result = new Array(15).fill(null);
+        const usedNewsIds = new Set();
+        const usedAdIds = new Set();
+
+        // 5. Place ads into their slots (ADS TAKE PRIORITY)
+        combinedAds.forEach(ad => {
+            const slot = ad.order_index - 1;
+            if (slot >= 0 && slot < 15 && result[slot] === null) {
+                result[slot] = ad;
+                usedAdIds.add(ad.id);
+            }
+        });
+
+        // 6. Place manual headlines Surmanşet
+        manualHeadlines.forEach(h => {
+            const slot = h.order_index - 1;
+            if (slot >= 0 && slot < 15 && result[slot] === null) {
+                result[slot] = h;
+                usedNewsIds.add(h.id);
+            }
+        });
+
+        // 7. Fill remaining slots with latest news
+        let newsIdx = 0;
+        for (let i = 0; i < 15; i++) {
+            if (result[i] === null) {
+                while (newsIdx < allLatestNews.length && usedNewsIds.has(allLatestNews[newsIdx].id)) {
+                    newsIdx++;
+                }
+
+                if (newsIdx < allLatestNews.length) {
+                    const item = allLatestNews[newsIdx];
+                    result[i] = {
+                        ...item,
+                        order_index: i + 1,
+                        isManual: false,
+                        type: 'news'
+                    };
+                    usedNewsIds.add(item.id);
+                    newsIdx++;
+                }
+            } else {
+                result[i].order_index = i + 1;
+            }
+        }
+
+        return result.filter(item => item !== null);
     } catch (error) {
+        console.error('Error fetching surmanset:', error);
         return [];
     }
 };

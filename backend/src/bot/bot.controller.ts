@@ -22,6 +22,12 @@ export class BotController {
         return latest || null;
     }
 
+    @Post('reset')
+    async resetBot() {
+        const result = await this.botService.resetBotCommands();
+        return { message: 'Bot status reset.', count: result.count };
+    }
+
     @Get('settings')
     async getSettings() {
         return this.botService.getSettings();
@@ -50,5 +56,10 @@ export class BotController {
     @Delete('mappings/:id')
     async deleteMapping(@Param('id') id: string) {
         return this.botService.deleteMapping(+id);
+    }
+
+    @Post('mappings/:id/toggle')
+    async toggleMapping(@Param('id') id: string, @Body('is_active') isActive: boolean) {
+        return this.botService.toggleMapping(+id, isActive);
     }
 }

@@ -27,6 +27,7 @@ import { AuthModule } from './auth/auth.module';
 import { RedirectMiddleware } from './redirects/redirect.middleware';
 import { SeoModule } from './seo/seo.module';
 import { NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 
 const UPLOAD_DIR = join(process.cwd(), '..', 'public', 'uploads');
 
@@ -36,6 +37,7 @@ const UPLOAD_DIR = join(process.cwd(), '..', 'public', 'uploads');
       rootPath: UPLOAD_DIR,
       serveRoot: '/uploads',
     }),
+    ScheduleModule.forRoot(),
     PrismaModule, NewsModule, AdsModule, BotModule, CategoriesModule, SettingsModule, UploadModule, ContactMessagesModule, CommentsModule, HeadlinesModule, RedirectsModule, StatsModule, TagsModule, ActivityLogsModule, PagesModule, GalleriesModule, VideosModule, SubscribersModule, UsersModule, AuthModule, SeoModule
   ],
   controllers: [AppController],

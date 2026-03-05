@@ -74,20 +74,38 @@ model Author {
 }
 
 model Ad {
-  id             Int      @id @default(autoincrement())
-  name           String   @db.VarChar(255)
-  type           String   @db.VarChar(50) // e.g. 'banner', 'popup'
-  placement_code String?  @db.VarChar(50) // e.g. 'home_top'
-  image_url      String?  @db.Text
-  target_url     String?  @db.Text
-  views          Int      @default(0)
-  clicks         Int      @default(0)
-  is_active      Boolean  @default(true)
-  target_news_id Int?     // Linked to specific news
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  id              Int       @id @default(autoincrement())
+  name            String    @db.VarChar(255)
+  type            String    @db.VarChar(50) // e.g. 'banner', 'popup'
+  placement_code  String?   @db.VarChar(50) // e.g. 'home_top'
+  image_url       String?   @db.Text
+  link_url        String?   @db.Text
+  code            String?   @db.Text       // HTML/JS code for ads
+  width           Int?      @default(300)
+  height          Int?      @default(250)
+  device_type     String?   @default("all") // 'all', 'desktop', 'mobile'
+  target_page     String?   @default("all") // 'all', 'home', 'category', 'detail'
+  target_category String?   @db.VarChar(100)
+  target_news_id  Int?      // Linked to specific news
+  is_active       Boolean   @default(true)
+  is_sticky       Boolean   @default(false)
+  
+  // Placement specific slots (for sliders)
+  is_headline     Boolean   @default(false)
+  headline_slot   Int?
+  is_manset_2     Boolean   @default(false)
+  manset_2_slot   Int?
 
-  TargetNews     News?    @relation(fields: [target_news_id], references: [id])
+  views           Int       @default(0)
+  clicks          Int       @default(0)
+  
+  start_date      DateTime?
+  end_date        DateTime?
+  
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  TargetNews      News?     @relation(fields: [target_news_id], references: [id])
 
   @@map("ads")
 }
@@ -275,12 +293,16 @@ model ActivityLog {
 model Video {
   id              Int       @id @default(autoincrement())
   title           String    @db.VarChar(255)
+  slug            String?   @unique @db.VarChar(255)
   video_url       String    @db.Text
   thumbnail_url   String?   @db.Text
   duration        String?   @db.VarChar(50)
   description     String?   @db.Text
   views           Int       @default(0)
   published_at    DateTime?
+  source          String?   @db.VarChar(50)
+  author          String?   @db.VarChar(100)
+  original_url    String?   @db.Text
   seo_title       String?   @db.VarChar(255)
   seo_description String?   @db.VarChar(512)
   seo_keywords    String?   @db.VarChar(255)
@@ -298,6 +320,9 @@ model PhotoGallery {
   thumbnail_url   String?   @db.Text
   views           Int       @default(0)
   published_at    DateTime?
+  source          String?   @db.VarChar(50)
+  author          String?   @db.VarChar(100)
+  original_url    String?   @db.Text
   seo_title       String?   @db.VarChar(255)
   seo_description String?   @db.VarChar(512)
   seo_keywords    String?   @db.VarChar(255)
@@ -314,6 +339,8 @@ model PhotoGalleryImage {
   gallery_id      Int
   image_url       String    @db.Text
   caption         String?   @db.Text
+  media_type      String?   @default("image") @db.VarChar(50)
+  video_url       String?   @db.Text
   order_index     Int       @default(0)
   created_at      DateTime  @default(now())
 

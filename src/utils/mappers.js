@@ -52,7 +52,8 @@ export const mapVideoItem = (item) => {
         date: item.published_at ? formatDistanceToNow(new Date(item.published_at), { addSuffix: true, locale: tr }) : '',
         seo_title: item.seo_title,
         seo_description: item.seo_description,
-        seo_keywords: item.seo_keywords
+        seo_keywords: item.seo_keywords,
+        source: item.source
     };
 };
 
@@ -68,6 +69,7 @@ export const mapPhotoGalleryItem = (item) => {
         description: item.description,
         seo_title: item.seo_title,
         seo_description: item.seo_description,
-        seo_keywords: item.seo_keywords
+        seo_keywords: item.seo_keywords,
+        source: item.source
     };
 };

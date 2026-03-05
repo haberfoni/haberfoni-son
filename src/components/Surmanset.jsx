@@ -26,7 +26,7 @@ const Surmanset = ({ items = [] }) => {
 
         const currentItem = displayItems[currentIndex];
         if (currentItem && (currentItem.type === 'ad' || currentItem.type === 'slider-ad')) {
-            const adId = currentItem.adPlacementId || currentItem.adId || currentItem.id.replace('ad-', '').replace('slider-ad-', '');
+            const adId = currentItem.adPlacementId || currentItem.adId || String(currentItem.id || '').replace('ad-', '').replace('slider-ad-', '');
 
             // Check session to avoid spamming views in same session if desired, 
             // OR just count every impression. AdBanner uses session check.
@@ -45,7 +45,7 @@ const Surmanset = ({ items = [] }) => {
     const prevSlide = () => setCurrentIndex((prev) => (prev - 1 + displayItems.length) % displayItems.length);
 
     const handleAdClick = (item) => {
-        const adId = item.adPlacementId || item.adId || item.id.replace('ad-', '').replace('slider-ad-', '');
+        const adId = item.adPlacementId || item.adId || String(item.id || '').replace('ad-', '').replace('slider-ad-', '');
         adminService.incrementAdClick(adId).catch(console.error);
     };
 

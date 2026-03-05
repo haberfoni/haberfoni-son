@@ -1113,6 +1113,38 @@ export const adminService = {
             .replace(/-+$/, '');
     },
 
+    async getAdPlacements() {
+        try {
+            const res = await apiClient.get('/ads', { params: { all: 'true' } });
+            return res.data || [];
+        } catch (e) {
+            console.error('getAdPlacements error:', e);
+            return [];
+        }
+    },
+
+    async createAdPlacement(payload) {
+        try {
+            const res = await apiClient.post('/ads', payload);
+            await this.logActivity('CREATE', 'ADS', `Yeni reklam oluşturuldu: ${payload.name || 'Ads'}`, res.data.id);
+            return res.data;
+        } catch (error) {
+            console.error('Error creating ad placement:', error);
+            throw error;
+        }
+    },
+
+    async updateAdPlacement(id, payload) {
+        try {
+            const res = await apiClient.patch(`/ads/${id}`, payload);
+            await this.logActivity('UPDATE', 'ADS', `Reklam güncellendi: ${payload.name || id}`, id);
+            return res.data;
+        } catch (error) {
+            console.error('Error updating ad placement:', error);
+            throw error;
+        }
+    },
+
     async deleteAdPlacement(id) {
         try {
             await apiClient.delete(`/ads/${id}`);
@@ -1268,6 +1300,17 @@ export const adminService = {
         }
     },
 
+    async toggleBotMapping(id, isActive) {
+        try {
+            const response = await apiClient.post(`/bot/mappings/${id}/toggle`, { is_active: isActive });
+            await this.logActivity('UPDATE', 'SETTINGS', `Bot eşleşmesi durumu güncellendi (ID: ${id}, Durum: ${isActive ? 'Aktif' : 'Pasif'})`);
+            return response.data;
+        } catch (error) {
+            console.error('Toggle bot mapping failed:', error);
+            throw error;
+        }
+    },
+
     async getBotSettings() {
         try {
             const res = await apiClient.get('/bot/settings');
@@ -1321,6 +1364,17 @@ export const adminService = {
         } catch (error) {
             console.error('Error fetching bot status:', error);
             return null;
+        }
+    },
+
+    async resetBotStatus() {
+        try {
+            const response = await apiClient.post('/bot/reset');
+            await this.logActivity('UPDATE', 'SETTINGS', 'Bot durumu manuel olarak sıfırlandı');
+            return response.data;
+        } catch (error) {
+            console.error('Reset bot status failed:', error);
+            throw error;
         }
     },
 

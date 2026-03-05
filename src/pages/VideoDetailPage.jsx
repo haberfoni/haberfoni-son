@@ -1,86 +1,168 @@
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Clock, Eye, Share2, Play, Calendar } from 'lucide-react';
-import { fetchVideos, incrementVideoView } from '../services/api';
+import { Play } from 'lucide-react';
+import { fetchVideos, fetchVideoDetail, incrementVideoView } from '../services/api';
 import { mapVideoItem } from '../utils/mappers';
 import SEO from '../components/SEO';
 import { slugify } from '../utils/slugify';
+import VideoArticle from '../components/VideoArticle';
+import AdBanner from '../components/AdBanner';
 
 const VideoDetailPage = () => {
     const { slug, id } = useParams();
 
-    const [video, setVideo] = React.useState(null);
-    const [relatedVideos, setRelatedVideos] = React.useState([]);
-    const [loading, setLoading] = React.useState(true);
+    const [displayedVideos, setDisplayedVideos] = useState([]);
+    const [allVideos, setAllVideos] = useState([]);
+    const [relatedVideos, setRelatedVideos] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-    const countedSlugRef = React.useRef(null);
+    const observerTarget = useRef(null);
+    const viewedIds = useRef(new Set());
 
-    React.useEffect(() => {
-        const loadVideo = async () => {
+    // Refs for stable callbacks
+    const displayedVideosRef = useRef(displayedVideos);
+    const allVideosRef = useRef(allVideos);
+    const isLoadingMoreRef = useRef(isLoadingMore);
+
+    useEffect(() => {
+        displayedVideosRef.current = displayedVideos;
+        allVideosRef.current = allVideos;
+        isLoadingMoreRef.current = isLoadingMore;
+    }, [displayedVideos, allVideos, isLoadingMore]);
+
+    // Initial load
+    useEffect(() => {
+        // Prevent reloading if we are already showing this video as the first item
+        if (displayedVideos.length > 0 && String(displayedVideos[0].id) === String(id)) {
+            return;
+        }
+
+        setDisplayedVideos([]);
+        setIsLoadingMore(false);
+
+        const loadContent = async () => {
             setLoading(true);
             try {
-                let currentVideo = null;
+                let initialVideo = null;
 
-                // 1. Try to fetch by ID (Efficient & Reliable)
                 if (id) {
-                    const detail = await import('../services/api').then(m => m.fetchVideoDetail(id));
-                    if (detail) {
-                        currentVideo = mapVideoItem(detail);
-                    }
+                    const detail = await fetchVideoDetail(id);
+                    if (detail) initialVideo = mapVideoItem(detail);
                 }
 
-                // 2. Fallback: Fetch all if ID missing or failed
-                if (!currentVideo) {
-                    const videos = await fetchVideos();
-                    const mappedVideos = videos.map(mapVideoItem);
-                    currentVideo = mappedVideos.find(item => slugify(item.title) === slug);
+                const videosList = await fetchVideos();
+                const mappedList = videosList.map(mapVideoItem);
+                setAllVideos(mappedList);
+
+                if (!initialVideo) {
+                    initialVideo = mappedList.find(item => slugify(item.title) === slug);
                 }
 
-                setVideo(currentVideo);
+                if (initialVideo) {
+                    setDisplayedVideos([initialVideo]);
 
-                if (currentVideo) {
-                    // Increment view count
-                    if (countedSlugRef.current !== (id || slug)) {
-                        countedSlugRef.current = (id || slug);
-                        incrementVideoView(currentVideo.id).catch(console.error);
-                    }
-
-                    // Load related (Fetch fresh list for recommendations)
-                    const allVideos = await fetchVideos();
-                    setRelatedVideos(allVideos.map(mapVideoItem)
-                        .filter(item => item.id !== currentVideo.id)
+                    // Set related sidebar
+                    setRelatedVideos(mappedList
+                        .filter(item => item.id !== initialVideo.id)
                         .sort(() => 0.5 - Math.random())
                         .slice(0, 5));
                 }
             } catch (err) {
-                console.error("Error loading video:", err);
+                console.error("Error loading videos:", err);
             } finally {
                 setLoading(false);
             }
         };
-        loadVideo();
+
+        loadContent();
     }, [slug, id]);
 
-    const handleShare = async () => {
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: video.title,
-                    text: video.title,
-                    url: window.location.href,
-                });
-            } catch (err) {
-                console.log('Error sharing:', err);
-            }
-        } else {
-            navigator.clipboard.writeText(window.location.href);
-            alert('Link kopyalandı!');
+    // Scroll to top only on initial Mount/Slug change if it is the FIRST article
+    useEffect(() => {
+        if (displayedVideos.length === 1) {
+            window.scrollTo(0, 0);
         }
-    };
+    }, [displayedVideos.length]);
 
-    if (loading) return <div className="text-center py-20">Yükleniyor...</div>;
+    // Load next video logic
+    const loadNextVideo = useCallback(() => {
+        if (isLoadingMoreRef.current || displayedVideosRef.current.length === 0 || allVideosRef.current.length === 0) {
+            return;
+        }
 
-    if (!video) {
+        const lastVideo = displayedVideosRef.current[displayedVideosRef.current.length - 1];
+        const currentIndex = allVideosRef.current.findIndex(item => item.id === lastVideo.id);
+
+        let nextIndex;
+        if (currentIndex === -1) {
+            nextIndex = 0;
+        } else {
+            nextIndex = currentIndex + 1;
+            if (nextIndex >= allVideosRef.current.length) {
+                nextIndex = 0; // Loop back
+            }
+        }
+
+        const nextVideo = allVideosRef.current[nextIndex];
+
+        if (!displayedVideosRef.current.find(d => d.id === nextVideo.id)) {
+            setIsLoadingMore(true);
+            setDisplayedVideos(prev => [...prev, nextVideo]);
+            setTimeout(() => setIsLoadingMore(false), 100);
+        }
+    }, []);
+
+    // Setup intersection observer
+    useEffect(() => {
+        if (loading || displayedVideos.length === 0) return;
+
+        let observer = null;
+        const timer = setTimeout(() => {
+            observer = new IntersectionObserver(
+                (entries) => {
+                    if (entries[0].isIntersecting) {
+                        loadNextVideo();
+                    }
+                },
+                { threshold: 0.1, rootMargin: '200px' }
+            );
+
+            if (observerTarget.current) {
+                observer.observe(observerTarget.current);
+            }
+        }, 0);
+
+        return () => {
+            clearTimeout(timer);
+            if (observer && observerTarget.current) {
+                observer.unobserve(observerTarget.current);
+            }
+        };
+    }, [loadNextVideo, loading, displayedVideos.length]);
+
+    // URL Update Handler & View Counter
+    const handleVideoVisible = useCallback((v) => {
+        const itemSlug = slugify(v.title);
+        const newUrl = `/video-galeri/${itemSlug}`;
+
+        if (window.location.pathname !== newUrl) {
+            window.history.replaceState(null, '', newUrl);
+            document.title = `${v.title} | Haberfoni`;
+        }
+
+        if (!viewedIds.current.has(v.id)) {
+            incrementVideoView(v.id).catch(console.error);
+            viewedIds.current.add(v.id);
+            setDisplayedVideos(prev => prev.map(item =>
+                item.id === v.id ? { ...item, views: (item.views || 0) + 1 } : item
+            ));
+        }
+    }, []);
+
+    if (loading) return <div className="text-center py-20 flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div></div>;
+
+    if (displayedVideos.length === 0) {
         return (
             <div className="container mx-auto px-4 py-20 text-center">
                 <h1 className="text-2xl font-bold text-gray-800 mb-4">Video Bulunamadı</h1>
@@ -91,156 +173,96 @@ const VideoDetailPage = () => {
         );
     }
 
+    const currentVideo = displayedVideos[0];
+
     return (
         <div className="bg-gray-100 min-h-screen pb-12">
             <SEO
-                title={video.seo_title || video.title}
-                description={video.seo_description || `${video.title} videosunu izle.`}
+                title={currentVideo.seo_title || currentVideo.title}
+                description={currentVideo.seo_description || `${currentVideo.title} videosunu izle.`}
                 url={`/video-galeri/${slug}`}
-                image={video.thumbnail}
+                image={currentVideo.thumbnail}
                 type="video.other"
-                publishedTime={video.published_at}
-                modifiedTime={video.created_at} // or updated_at if available
-                tags={video.seo_keywords ? video.seo_keywords.split(',') : ['Video', 'Haber', 'Galeri']}
+                publishedTime={currentVideo.published_at}
+                modifiedTime={currentVideo.created_at}
+                tags={currentVideo.seo_keywords ? currentVideo.seo_keywords.split(',') : ['Video', 'Haber', 'Galeri']}
             />
 
             <div className="container mx-auto px-4 py-8">
-                {/* Breadcrumb */}
+                {/* Breadcrumb based on the first video loaded context */}
                 <div className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
                     <Link to="/" className="hover:text-primary">Ana Sayfa</Link>
                     <span>/</span>
                     <Link to="/video-galeri" className="hover:text-primary">Video Galeri</Link>
                     <span>/</span>
-                    <span className="text-gray-900 truncate max-w-md">{video.title}</span>
+                    <span className="text-gray-900 truncate max-w-md">{currentVideo.title}</span>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Content */}
+                    {/* Main Content (Infinite Scroll List) */}
                     <div className="lg:col-span-2">
-                        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
-                            {/* Video Player Placeholder */}
-                            {/* Video Player */}
-                            {/* Video Player */}
-                            <div className="aspect-video bg-black relative">
-                                {(() => {
-                                    // Helper function from utils/videoUtils would be better, but importing directly here mainly
-                                    // Check if it's a YouTube video
-                                    const youtubeId = (video.videoUrl && (video.videoUrl.includes('youtube.com') || video.videoUrl.includes('youtu.be')))
-                                        ? (() => {
-                                            const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-                                            const match = video.videoUrl.match(regExp);
-                                            return (match && match[7].length === 11) ? match[7] : null;
-                                        })()
-                                        : null;
+                        {displayedVideos.map((v, index) => (
+                            <VideoArticle
+                                key={`${v.id}-${index}`}
+                                video={v}
+                                relatedVideos={index % 2 === 0 ? [] : relatedVideos} // Optional inline related display
+                                onVisible={handleVideoVisible}
+                            />
+                        ))}
 
-                                    if (youtubeId) {
-                                        return (
-                                            <iframe
-                                                width="100%"
-                                                height="100%"
-                                                src={`https://www.youtube.com/embed/${youtubeId}`}
-                                                title={video.title}
-                                                frameBorder="0"
-                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                allowFullScreen
-                                            ></iframe>
-                                        );
-                                    } else {
-                                        return (
-                                            <video
-                                                controls
-                                                width="100%"
-                                                height="100%"
-                                                className="w-full h-full"
-                                                src={video.videoUrl}
-                                            >
-                                                Tarayıcınız video etiketini desteklemiyor.
-                                            </video>
-                                        );
-                                    }
-                                })()}
-                            </div>
-
-                            <div className="p-6">
-                                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
-                                    {video.title}
-                                </h1>
-
-                                <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
-                                    <div className="flex items-center space-x-4 text-gray-500 text-sm">
-                                        <div className="flex items-center space-x-1">
-                                            <Calendar size={16} />
-                                            <span>{video.date}</span>
-                                        </div>
-                                        {video.duration && (
-                                            <div className="flex items-center space-x-1">
-                                                <Clock size={16} />
-                                                <span>{video.duration}</span>
-                                            </div>
-                                        )}
-                                        <div className="flex items-center space-x-1">
-                                            <Eye size={16} />
-                                            <span>{video.views} izlenme</span>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={handleShare}
-                                        className="flex items-center space-x-1 text-gray-500 hover:text-primary transition-colors"
-                                    >
-                                        <Share2 size={18} />
-                                        <span className="hidden sm:inline">Paylaş</span>
-                                    </button>
-                                </div>
-
-                                <div className="prose max-w-none text-gray-700">
-                                    {video.description ? (
-                                        <div dangerouslySetInnerHTML={{ __html: video.description }} />
-                                    ) : (
-                                        <p align="justify">Bu video için henüz bir açıklama girilmemiştir.</p>
-                                    )}
-                                </div>
-                            </div>
+                        {/* Observer Sentinel */}
+                        <div ref={observerTarget} className="h-20 flex items-center justify-center p-4">
+                            {displayedVideos.length < allVideos.length ? (
+                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+                            ) : (
+                                <span className="text-gray-400 text-sm">Tüm videolar görüntülendi.</span>
+                            )}
                         </div>
                     </div>
 
-                    {/* Sidebar: Related Videos */}
+                    {/* Sidebar: Sticky Related Videos and Ads */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-lg shadow-sm p-4 sticky top-24">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-red-600 pb-2 uppercase">
-                                İlgili Videolar
-                            </h3>
-                            <div className="space-y-4">
-                                {relatedVideos.map((item) => (
-                                    <Link
-                                        key={item.id}
-                                        to={`/video-galeri/${slugify(item.title)}`}
-                                        className="flex space-x-3 group"
-                                    >
-                                        <div className="relative w-24 h-16 flex-shrink-0 overflow-hidden rounded">
-                                            <img
-                                                src={item.thumbnail}
-                                                alt={item.title}
-                                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                            />
-                                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/10">
-                                                <Play size={16} className="text-white" fill="currentColor" />
-                                            </div>
-                                        </div>
-                                        <div className="flex-1">
-                                            <h4 className="text-sm font-bold text-gray-800 group-hover:text-red-600 transition-colors line-clamp-2 mb-1">
-                                                {item.title}
-                                            </h4>
-                                            <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                                <span>{item.date}</span>
-                                                <span>•</span>
-                                                <div className="flex items-center space-x-1">
-                                                    <Eye size={12} />
-                                                    <span>{item.views}</span>
+                        <div className="sticky top-[180px] max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-2">
+                            <div className="mb-6">
+                                <AdBanner
+                                    placementCode="news_sidebar_sticky" // Reusing sidebar ad placement
+                                    vertical={true}
+                                    customDimensions="300x600"
+                                />
+                            </div>
+
+                            <div className="bg-white rounded-lg shadow-sm p-4">
+                                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-red-600 pb-2 uppercase">
+                                    Önerilen Videolar
+                                </h3>
+                                <div className="space-y-4">
+                                    {relatedVideos.map((item) => (
+                                        <Link
+                                            key={item.id}
+                                            to={`/video-galeri/${slugify(item.title)}`}
+                                            className="flex space-x-3 group"
+                                        >
+                                            <div className="relative w-24 h-16 flex-shrink-0 overflow-hidden rounded">
+                                                <img
+                                                    src={item.thumbnail}
+                                                    alt={item.title}
+                                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                />
+                                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center group-hover:bg-black/10">
+                                                    <Play size={16} className="text-white" fill="currentColor" />
                                                 </div>
                                             </div>
-                                        </div>
-                                    </Link>
-                                ))}
+                                            <div className="flex-1">
+                                                <h4 className="text-sm font-bold text-gray-800 group-hover:text-red-600 transition-colors line-clamp-2 mb-1">
+                                                    {item.title}
+                                                </h4>
+                                                <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                                    <span>{item.date}</span>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>

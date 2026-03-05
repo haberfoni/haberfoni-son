@@ -3,6 +3,9 @@ import { BotService } from '../bot.service';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 import * as Parser from 'rss-parser';
+import * as https from 'https';
+
+const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
 const parser = new Parser.default();
 
@@ -33,6 +36,10 @@ export async function scrapeIHA(bot: BotService) {
         let totalSaved = 0;
 
         for (const mapping of mappings) {
+            if (mapping.is_active === false) {
+                console.log(`Skipping IHA: ${mapping.source_url} (Mapping is inactive)`);
+                continue;
+            }
             console.log(`Fetching IHA: ${mapping.source_url} -> ${mapping.target_category}`);
 
             try {
@@ -95,46 +102,169 @@ async function scrapeIHAHTML(url: string, targetCategory: string, bot: BotServic
         console.log(`  Scraping HTML page: ${url}`);
         const response = await axios.get(url, {
             headers: { 'User-Agent': 'Mozilla/5.0' },
-            timeout: 30000 // 30s timeout
+            timeout: 30000,
+            httpsAgent // Bypass SSL cert errors
         });
         const $ = cheerio.load(response.data);
         const articleLinks = new Set<string>();
 
         // Target specific category widgets to avoid scraping sidebar/breaking news
-        // .widget_General_Category_Dashboard: Main feature
-        // .widget_General_Category_TopFive: Top 5 list
-        // .widget_General_Category_All: All news list
-        const selector = '.widget_General_Category_Dashboard a, .widget_General_Category_TopFive a, .widget_General_Category_All a';
+        // If no specific widgets are found (like on the video page), fall back to a broader set of links
+        let selector = '.widget_General_Category_Dashboard a, .widget_General_Category_TopFive a, .widget_General_Category_All a, .widget_VideoNews_Dashboard a, .widget_VideoNews_TopFive a, .widget_VideoNews_All a';
+        if ($(selector).length === 0) {
+            selector = '.video-category-list a, .gallery-category-list a, main a, article a';
+        }
 
         $(selector).each((i, elem) => {
             const href = $(elem).attr('href');
-            // IHA specific pattern or generic news pattern
-            if (href && (href.includes('/haber-') || href.match(/-[\d]+\/?$/))) {
-                const fullUrl = href.startsWith('http') ? href : `https://www.iha.com.tr${href}`;
-                articleLinks.add(fullUrl);
+            if (href) {
+                const isMatch = (href.includes('/video-') || href.includes('/foto-galeri-') || href.includes('/haber-') || href.match(/-[\d]+\/?$/));
+                if (isMatch) {
+                    const fullUrl = href.startsWith('http') ? href : `https://www.iha.com.tr${href}`;
+                    articleLinks.add(fullUrl);
+                }
             }
         });
 
-        console.log(`  Found ${articleLinks.size} article links`);
+        console.log(`  Found ${articleLinks.size} candidate links for IHA. Sample:`, Array.from(articleLinks).slice(0, 3));
         let count = 0;
         const linksArray = Array.from(articleLinks).slice(0, 10);
 
         for (const articleUrl of linksArray) {
             try {
-                const article = await scrapeIHAArticle(articleUrl, targetCategory);
-                if (article) {
-                    const success = await bot.saveNews(article);
-                    if (success) count++;
+                const isVideoLink = articleUrl.includes('/video-');
+                const isGalleryLink = articleUrl.includes('/foto-galeri-');
+
+                // If it's explicitly a video link OR we are on a video-only landing page
+                if (isVideoLink || (targetCategory === 'video' && articleUrl.includes('/haber-'))) {
+                    const video = await scrapeIHAVideo(articleUrl, targetCategory);
+                    if (video) {
+                        const success = await bot.saveVideo(video);
+                        if (success) count++;
+                    }
+                } else if (isGalleryLink || (targetCategory === 'galeri' && articleUrl.includes('/haber-'))) {
+                    const gallery = await scrapeIHAGallery(articleUrl, targetCategory);
+                    if (gallery) {
+                        const success = await bot.saveGallery(gallery);
+                        if (success) count++;
+                    }
+                } else {
+                    // Standard article
+                    const article = await scrapeIHAArticle(articleUrl, targetCategory);
+                    if (article) {
+                        const success = await bot.saveNews(article);
+                        if (success) count++;
+                    }
                 }
                 await new Promise(resolve => setTimeout(resolve, 500));
-            } catch (err) {
+            } catch (err: any) {
                 console.error(`  Error scraping article ${articleUrl}:`, err.message);
             }
         }
         return count;
-    } catch (error) {
+    } catch (error: any) {
         console.error(`  Error fetching HTML page ${url}:`, error.message);
         return 0;
+    }
+}
+
+async function scrapeIHAVideo(url: string, targetCategory: string) {
+    try {
+        const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 30000, httpsAgent });
+        const $ = cheerio.load(response.data);
+
+        const title = $('h1').first().text().trim();
+        let description = $('meta[name="description"]').attr('content') ||
+            $('meta[property="og:description"]').attr('content') || '';
+
+        if (!description || description.length < 50) {
+            const firstPara = $('.video-detail-text p').first().text().trim() ||
+                $('article p').first().text().trim();
+            if (firstPara) description = firstPara;
+        }
+
+        const thumbnail = $('meta[property="og:image"]').attr('content') || '';
+
+        let videoUrl = $('video source').attr('src') || $('video').attr('src') ||
+            $('meta[property="og:video:url"]').attr('content') ||
+            $('meta[property="og:video:secure_url"]').attr('content') ||
+            $('meta[property="og:video"]').attr('content') ||
+            $('meta[name="twitter:player"]').attr('content') ||
+            $('iframe[src*="iha.com.tr/video"]').attr('src') ||
+            $('iframe[src*="youtube"]').attr('src') || '';
+
+        if (!videoUrl) {
+            const html = response.data;
+            const mp4Match = html.match(/mp4HD:\s*"([^"]+)"/);
+            if (mp4Match) {
+                videoUrl = mp4Match[1];
+            } else {
+                const mp4sdMatch = html.match(/mp4SD:\s*"([^"]+)"/);
+                if (mp4sdMatch) {
+                    videoUrl = mp4sdMatch[1];
+                }
+            }
+        }
+
+        // Fallback title if h1 is empty
+        const finalTitle = title || $('meta[property="og:title"]').attr('content') || $('title').text().trim();
+
+        if (!videoUrl || !finalTitle) return null;
+
+        return {
+            title: finalTitle,
+            video_url: videoUrl.startsWith('//') ? 'https:' + videoUrl : videoUrl,
+            thumbnail_url: thumbnail,
+            description,
+            source: 'IHA',
+            original_url: url
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
+async function scrapeIHAGallery(url: string, targetCategory: string) {
+    try {
+        const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 30000, httpsAgent });
+        const $ = cheerio.load(response.data);
+
+        const title = $('h1').first().text().trim();
+        let description = $('meta[name="description"]').attr('content') ||
+            $('meta[property="og:description"]').attr('content') || '';
+
+        if (!description || description.length < 50) {
+            const firstPara = $('.gallery-detail-text p').first().text().trim() ||
+                $('.news-detail-text p').first().text().trim() ||
+                $('article p').first().text().trim();
+            if (firstPara) description = firstPara;
+        }
+
+        const thumbnail = $('meta[property="og:image"]').attr('content') || '';
+
+        const images: any[] = [];
+        $('.gallery-img img, .photo-gallery img, article img').each((i, el) => {
+            const src = $(el).attr('data-src') || $(el).attr('src');
+            if (src && !isBlockedImage(src)) {
+                images.push({
+                    url: src.startsWith('http') ? src : 'https://www.iha.com.tr' + src,
+                    caption: $(el).attr('alt') || ''
+                });
+            }
+        });
+
+        if (images.length === 0 || !title) return null;
+
+        return {
+            title,
+            thumbnail_url: thumbnail || images[0].url,
+            description,
+            source: 'IHA',
+            original_url: url,
+            images
+        };
+    } catch (e) {
+        return null;
     }
 }
 
@@ -145,7 +275,8 @@ async function scrapeIHAArticle(url: string, targetCategory: string) {
     try {
         const response = await axios.get(url, {
             headers: { 'User-Agent': 'Mozilla/5.0' },
-            timeout: 30000 // 30s timeout
+            timeout: 30000,
+            httpsAgent
         });
         const $ = cheerio.load(response.data);
 

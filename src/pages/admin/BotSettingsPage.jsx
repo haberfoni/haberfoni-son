@@ -44,6 +44,17 @@ const BotSettingsPage = () => {
         }
     };
 
+    const handleResetBot = async () => {
+        if (!window.confirm('Bot durumunu sıfırlamak istiyor musunuz? Bu işlem devam eden tüm süreçleri "İptal Edildi" olarak işaretleyecektir.')) return;
+        try {
+            await adminService.resetBotStatus();
+            setMessage({ type: 'success', text: 'Bot durumu başarıyla sıfırlandı. Artık yeni komut gönderebilirsiniz.' });
+            checkBotStatus();
+        } catch (error) {
+            setMessage({ type: 'error', text: 'Sıfırlama işlemi başarısız oldu.' });
+        }
+    };
+
     const loadData = async (silent = false) => {
         if (!silent) setLoading(true);
         try {
@@ -53,7 +64,12 @@ const BotSettingsPage = () => {
             if (!settingsData) {
                 setMessage({ type: 'warning', text: 'Bot ayarları alınamadı.' });
             } else {
-                setSettings(settingsData || []);
+                setSettings(prev => {
+                    if (!silent || prev.length === 0) {
+                        return settingsData || [];
+                    }
+                    return prev;
+                });
 
                 // Set initial active tab if it's currently empty, using functional update to avoid stale closures
                 setActiveTab(prev => {
@@ -141,6 +157,26 @@ const BotSettingsPage = () => {
         }
     };
 
+    const handleToggleMapping = async (id, currentStatus) => {
+        try {
+            await adminService.toggleBotMapping(id, !currentStatus);
+            // Update local state
+            setMappings(prev => {
+                const newState = { ...prev };
+                Object.keys(newState).forEach(source => {
+                    newState[source] = newState[source].map(m =>
+                        m.id === id ? { ...m, is_active: !currentStatus } : m
+                    );
+                });
+                return newState;
+            });
+            setMessage({ type: 'success', text: 'Eşleştirme durumu güncellendi.' });
+            setTimeout(() => setMessage(null), 2000);
+        } catch (error) {
+            setMessage({ type: 'error', text: 'Durum güncellenemedi.' });
+        }
+    };
+
     const handleDeleteMapping = async (sourceName, id) => {
         if (!window.confirm('Bu eşleştirmeyi silmek istediğinize emin misiniz?')) return;
 
@@ -199,14 +235,26 @@ const BotSettingsPage = () => {
                             )}
                         </div>
                     </div>
-                    <button
-                        onClick={handleTriggerBot}
-                        disabled={botStatus?.status === 'PENDING' || botStatus?.status === 'PROCESSING'}
-                        className="mt-4 md:mt-0 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm flex items-center"
-                    >
-                        <RefreshCw size={18} className={`mr-2 ${botStatus?.status === 'PENDING' ? 'animate-spin' : ''}`} />
-                        Botu Şimdi Tetikle
-                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 mt-4 md:mt-0">
+                        {(botStatus?.status === 'PENDING' || botStatus?.status === 'PROCESSING') && (
+                            <button
+                                onClick={handleResetBot}
+                                className="bg-red-50 hover:bg-red-100 text-red-600 px-6 py-2 rounded-lg font-medium transition-colors border border-red-200 flex items-center"
+                                title="Takılan süreci temizle"
+                            >
+                                <Trash2 size={18} className="mr-2" />
+                                Sıfırla
+                            </button>
+                        )}
+                        <button
+                            onClick={handleTriggerBot}
+                            disabled={botStatus?.status === 'PENDING' || botStatus?.status === 'PROCESSING'}
+                            className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm flex items-center"
+                        >
+                            <RefreshCw size={18} className={`mr-2 ${(botStatus?.status === 'PENDING' || botStatus?.status === 'PROCESSING') ? 'animate-spin' : ''}`} />
+                            Botu Şimdi Tetikle
+                        </button>
+                    </div>
                 </div>
 
                 {/* Bot Tabs */}
@@ -216,11 +264,10 @@ const BotSettingsPage = () => {
                             <button
                                 key={`tab-${item.id}`}
                                 onClick={() => setActiveTab(item.source_name)}
-                                className={`px-4 py-2 font-semibold text-sm rounded-t-lg transition-colors whitespace-nowrap ${
-                                    activeTab === item.source_name
-                                        ? 'bg-white border text-primary border-gray-200 border-b-white -mb-[9px]'
-                                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                                }`}
+                                className={`px-4 py-2 font-semibold text-sm rounded-t-lg transition-colors whitespace-nowrap ${activeTab === item.source_name
+                                    ? 'bg-white border text-primary border-gray-200 border-b-white -mb-[9px]'
+                                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                                    }`}
                             >
                                 {item.source_name} Botu
                             </button>
@@ -232,129 +279,153 @@ const BotSettingsPage = () => {
                 {settings
                     .filter((item) => item.source_name === activeTab)
                     .map((item) => (
-                    <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        {/* Header */}
-                        <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-wrap gap-4">
-                            <div className="flex items-center space-x-4">
-                                <h2 className="text-lg font-bold text-gray-800">{item.source_name} Botu Ayarları</h2>
-                                <button
-                                    onClick={() => handleToggle(item.id, 'is_active')}
-                                    className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold transition-colors ${item.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}
-                                >
-                                    <Power size={14} className="mr-1" />
-                                    {item.is_active ? 'Aktif' : 'Pasif'}
-                                </button>
-                            </div>
-                            <div className="flex items-center space-x-4">
-                                <label className="inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only peer"
-                                        checked={item.auto_publish}
-                                        onChange={() => handleToggle(item.id, 'auto_publish')}
-                                    />
-                                    <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                                    <span className="ms-2 text-xs font-medium text-gray-600">
-                                        Otomatik Yayınla (Kapalıysa Taslak Olur)
-                                    </span>
-                                </label>
-                                <button
-                                    onClick={() => handleSave(item.id)}
-                                    disabled={saving}
-                                    className="bg-primary hover:bg-primary-dark text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center disabled:opacity-50 transition-colors"
-                                >
-                                    <Save size={16} className="mr-1" /> Kaydet
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Mappings Config */}
-                        <div className="p-6">
-                            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                                <LinkIcon size={16} className="mr-2" /> Kategori Eşleştirmeleri
-                            </h3>
-                            <p className="text-xs text-gray-500 mb-4 bg-gray-50 p-3 rounded border border-gray-100">
-                                Hangi kaynak sayfasından (Örn: https://www.iha.com.tr/gundem) veya RSS linkinden gelen haberlerin sizin sitenizde hangi kategoriye kaydedileceğini ayarlayın.
-                            </p>
-
-                            {/* Existing Mappings */}
-                            <div className="space-y-2 mb-4">
-                                {mappings[item.source_name]?.length > 0 ? (
-                                    mappings[item.source_name].map(map => (
-                                        <div key={map.id} className="flex items-center justify-between bg-gray-50 p-3 rounded border border-gray-100 text-sm hover:shadow-sm transition-shadow">
-                                            <div className="flex-1 mr-4">
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-                                                    <div className="text-gray-600 truncate font-mono text-xs" title={map.source_url}>{map.source_url}</div>
-                                                    <div className="font-semibold text-primary flex items-center">
-                                                        <span className="text-gray-400 mr-2 text-xs font-normal">→ HEDEF KATEGORİ:</span> {map.target_category}
-                                                    </div>
-                                                </div>
-                                                <div className="text-xs text-gray-500 flex items-center">
-                                                    {map.last_scraped_at ? (
-                                                        <span title={new Date(map.last_scraped_at).toLocaleString()} className={map.last_status === 'Success' ? 'text-green-600 flex items-center' : 'text-red-500 flex items-center'}>
-                                                            <CheckCircle size={12} className="mr-1" /> Son tarama: {new Date(map.last_scraped_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                                                            <span className="mx-2 text-gray-300">|</span>
-                                                            {map.last_item_count} Haber çekildi
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-gray-400 flex items-center"><Clock size={12} className="mr-1" /> Henüz çalışmadı</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => handleDeleteMapping(item.source_name, map.id)}
-                                                className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
-                                                title="Bu eşleşmeyi sil"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="text-sm text-gray-400 italic p-4 text-center bg-gray-50 border border-dashed border-gray-200 rounded">
-                                        Henüz bu bota ait kategori link ayarlaması yapılmamış. Sistem bu bota özel haber indiremeyecektir.
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Add New Mapping */}
-                            <div className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-indigo-50/50 p-4 rounded-lg border border-indigo-100 mt-6">
-                                <div className="flex-1 w-full">
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Kaynak Sayfa / RSS Linki</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Örn: https://www.aa.com.tr/tr/gundem"
-                                        className="w-full text-sm border-gray-300 rounded focus:border-primary focus:ring-primary shadow-sm"
-                                        value={newMapping.source === item.source_name ? newMapping.url : ''}
-                                        onChange={(e) => setNewMapping({ ...newMapping, source: item.source_name, url: e.target.value })}
-                                    />
-                                </div>
-                                <div className="w-full md:w-64">
-                                    <label className="block text-xs font-semibold text-gray-600 mb-1">Eklenecek Sitenizdeki Kategori</label>
-                                    <select
-                                        className="w-full text-sm border-gray-300 rounded focus:border-primary focus:ring-primary shadow-sm"
-                                        value={newMapping.source === item.source_name ? newMapping.category : ''}
-                                        onChange={(e) => setNewMapping({ ...newMapping, source: item.source_name, category: e.target.value })}
-                                    >
-                                        <option value="">-- Kategori Seçin --</option>
-                                        {categories.map(cat => (
-                                            <option key={`cat-${cat.id}`} value={cat.slug}>{cat.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="self-end pb-[2px]">
+                        <div key={item.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            {/* Header */}
+                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-wrap gap-4">
+                                <div className="flex items-center space-x-4">
+                                    <h2 className="text-lg font-bold text-gray-800">{item.source_name} Botu Ayarları</h2>
                                     <button
-                                        onClick={() => handleAddMapping(item.source_name)}
-                                        disabled={!newMapping.url || !newMapping.category || newMapping.source !== item.source_name}
-                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded text-sm font-medium flex items-center whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                                        onClick={() => handleToggle(item.id, 'is_active')}
+                                        className={`flex items-center px-3 py-1 rounded-full text-xs font-semibold transition-colors ${item.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'}`}
                                     >
-                                        <Plus size={16} className="mr-1" /> Eşleştir
+                                        <Power size={14} className="mr-1" />
+                                        {item.is_active ? 'Aktif' : 'Pasif'}
+                                    </button>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <label className="inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only peer"
+                                            checked={item.auto_publish}
+                                            onChange={() => handleToggle(item.id, 'auto_publish')}
+                                        />
+                                        <div className="relative w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                        <span className="ms-2 text-xs font-medium text-gray-600">
+                                            Otomatik Yayınla (Kapalıysa Taslak Olur)
+                                        </span>
+                                    </label>
+                                    <button
+                                        onClick={() => handleSave(item.id)}
+                                        disabled={saving}
+                                        className="bg-primary hover:bg-primary-dark text-white px-3 py-1.5 rounded-md text-sm font-medium flex items-center disabled:opacity-50 transition-colors"
+                                    >
+                                        <Save size={16} className="mr-1" /> Kaydet
                                     </button>
                                 </div>
                             </div>
+
+                            {/* Mappings Config */}
+                            <div className="p-6">
+                                <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                                    <LinkIcon size={16} className="mr-2" /> Kategori Eşleştirmeleri
+                                </h3>
+                                <p className="text-xs text-gray-500 mb-4 bg-gray-50 p-3 rounded border border-gray-100">
+                                    Hangi kaynak sayfasından (Örn: https://www.iha.com.tr/gundem) veya RSS linkinden gelen haberlerin sizin sitenizde hangi kategoriye kaydedileceğini ayarlayın.
+                                </p>
+
+                                {/* Existing Mappings */}
+                                <div className="space-y-2 mb-4">
+                                    {mappings[item.source_name]?.length > 0 ? (
+                                        mappings[item.source_name].map(map => (
+                                            <div key={map.id} className="flex items-center justify-between bg-gray-50 p-3 rounded border border-gray-100 text-sm hover:shadow-sm transition-shadow">
+                                                <div className="flex-1 mr-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+                                                        <div className="text-gray-600 truncate font-mono text-xs" title={map.source_url}>{map.source_url}</div>
+                                                        <div className="font-semibold text-primary flex items-center">
+                                                            <span className="text-gray-400 mr-2 text-xs font-normal">→ HEDEF KATEGORİ:</span> {map.target_category}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 flex items-center space-x-4">
+                                                        <label className="inline-flex items-center cursor-pointer group">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="sr-only peer"
+                                                                checked={map.is_active !== false}
+                                                                onChange={() => handleToggleMapping(map.id, map.is_active !== false)}
+                                                            />
+                                                            <div className="relative w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-green-500"></div>
+                                                            <span className="ms-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 group-hover:text-gray-600 transition-colors">
+                                                                {map.is_active !== false ? 'AKTİF' : 'PASİF'}
+                                                            </span>
+                                                        </label>
+
+                                                        {map.last_scraped_at ? (
+                                                            <span title={new Date(map.last_scraped_at).toLocaleString()} className={map.last_status === 'Success' ? 'text-green-600 flex items-center' : 'text-red-500 flex items-center'}>
+                                                                <CheckCircle size={12} className="mr-1" /> Son: {new Date(map.last_scraped_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                                                                <span className="mx-2 text-gray-300">|</span>
+                                                                {map.last_item_count} Haber
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-gray-400 flex items-center"><Clock size={12} className="mr-1" /> Bekliyor</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Lock news/gallery/video logic: Only allow delete for normal news links */}
+                                                {(map.target_category !== 'video' && 
+                                                  map.target_category !== 'galeri' && 
+                                                  !map.source_url.includes('video') && 
+                                                  !map.source_url.includes('galeri')) ? (
+                                                    <button
+                                                        onClick={() => handleDeleteMapping(item.source_name, map.id)}
+                                                        className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-50 transition-colors border border-transparent hover:border-red-100"
+                                                        title="Bu eşleşmeyi sil"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                ) : (
+                                                    <div className="p-2 text-gray-300" title="Bu temel eşleştirme silinemez, sadece pasif yapabilirsiniz.">
+                                                        <LinkIcon size={18} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="text-sm text-gray-400 italic p-4 text-center bg-gray-50 border border-dashed border-gray-200 rounded">
+                                            Henüz bu bota ait kategori link ayarlaması yapılmamış. Sistem bu bota özel haber indiremeyecektir.
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Add New Mapping */}
+                                <div className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-indigo-50/50 p-4 rounded-lg border border-indigo-100 mt-6">
+                                    <div className="flex-1 w-full">
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Kaynak Sayfa / RSS Linki</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Örn: https://www.aa.com.tr/tr/gundem"
+                                            className="w-full text-sm border-gray-300 rounded focus:border-primary focus:ring-primary shadow-sm"
+                                            value={newMapping.source === item.source_name ? newMapping.url : ''}
+                                            onChange={(e) => setNewMapping({ ...newMapping, source: item.source_name, url: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="w-full md:w-64">
+                                        <label className="block text-xs font-semibold text-gray-600 mb-1">Eklenecek Sitenizdeki Kategori</label>
+                                        <select
+                                            className="w-full text-sm border-gray-300 rounded focus:border-primary focus:ring-primary shadow-sm"
+                                            value={newMapping.source === item.source_name ? newMapping.category : ''}
+                                            onChange={(e) => setNewMapping({ ...newMapping, source: item.source_name, category: e.target.value })}
+                                        >
+                                            <option value="">-- Kategori Seçin --</option>
+                                            {categories.map(cat => (
+                                                <option key={`cat-${cat.id}`} value={cat.slug}>{cat.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="self-end pb-[2px]">
+                                        <button
+                                            onClick={() => handleAddMapping(item.source_name)}
+                                            disabled={!newMapping.url || !newMapping.category || newMapping.source !== item.source_name}
+                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded text-sm font-medium flex items-center whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+                                        >
+                                            <Plus size={16} className="mr-1" /> Eşleştir
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
             </div>
 
             <div className="mt-8 bg-yellow-50 p-6 rounded-xl border border-yellow-100 text-sm text-yellow-800">

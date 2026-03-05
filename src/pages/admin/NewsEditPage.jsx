@@ -279,12 +279,12 @@ const NewsEditPage = () => {
             if (formData.is_sticky) {
                 // Add to headlines
                 if (!headlineSlot) {
-                    const nextSlot = await adminService.getNextAvailableSlot();
-                    if (nextSlot) {
+                    const nextSlot = await adminService.getNextAvailableHeadlineSlot();
+                    if (nextSlot <= 20) {
                         await adminService.addToHeadline(newsId, nextSlot);
                         console.log(`Added to headline slot ${nextSlot}`);
                     } else {
-                        setMessage({ type: 'warning', text: 'Haber kaydedildi ancak tüm manşet slotları dolu.' });
+                        setMessage({ type: 'warning', text: 'Haber kaydedildi ancak tüm manşet slotları dolu (maksimum 20).' });
                     }
                 }
             } else {

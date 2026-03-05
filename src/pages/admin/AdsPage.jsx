@@ -282,18 +282,23 @@ const AdsPage = () => {
                 placement_code: editingAd.placement_code,
                 type: editingAd.type,
                 device_type: editingAd.device_type,
-                is_active: true,
+                is_active: editingAd.is_active,
                 width: editingAd.width,
                 height: editingAd.height,
                 image_url: editingAd.image_url,
-                link_url: editingAd.link_url,
+                link_url: formattedLinkUrl,
                 code: editingAd.code,
-                target_news_id: editingAd.target_news_id ? String(editingAd.target_news_id) : null,
+                target_news_id: editingAd.target_news_id ? parseInt(editingAd.target_news_id) : null,
                 target_page: editingAd.target_page || 'all',
                 target_category: editingAd.target_category || null,
                 start_date: editingAd.start_date || null,
                 end_date: editingAd.end_date || null,
-                is_sticky: editingAd.is_sticky || false
+                is_sticky: editingAd.is_sticky || false,
+                // Include explicit slots if they exist in editing state
+                is_headline: editingAd.is_headline || false,
+                headline_slot: editingAd.headline_slot || null,
+                is_manset_2: editingAd.is_manset_2 || false,
+                manset_2_slot: editingAd.manset_2_slot || null
             };
 
             if (isCreating) {
@@ -335,6 +340,8 @@ const AdsPage = () => {
                     }
                 }
                 await adminService.updateAdPlacement(editingAd.id, payload);
+
+                // If it's a slider ad and slot changed, we might need more sync, but usually loadData is enough
                 const tabName = STANDARD_PLACEMENTS[payload.placement_code] ? STANDARD_PLACEMENTS[payload.placement_code].name.split(' ')[0] : 'Özel Alanlar';
                 setMessage({ type: 'success', text: `Reklam güncellendi! (${tabName} sekmesine bakınız)` });
             }
@@ -493,6 +500,13 @@ const AdsPage = () => {
 
     const startCreate = (prefillPlacementCode = '') => {
         const standard = STANDARD_PLACEMENTS[prefillPlacementCode];
+
+        // Auto-detect target page based on placement code
+        let targetPage = 'all';
+        if (prefillPlacementCode.startsWith('category_')) targetPage = 'category';
+        else if (prefillPlacementCode.startsWith('news_')) targetPage = 'detail';
+        else if (prefillPlacementCode.startsWith('home_') || prefillPlacementCode.startsWith('headline') || prefillPlacementCode.startsWith('manset_2')) targetPage = 'home';
+
         setEditingAd({
             name: '',
             placement_code: prefillPlacementCode,
@@ -505,7 +519,7 @@ const AdsPage = () => {
             link_url: '',
             code: '',
             target_news_id: '',
-            target_page: 'all',
+            target_page: targetPage,
             target_category: '',
             start_date: '',
             end_date: ''
@@ -532,7 +546,7 @@ const AdsPage = () => {
             ? placements.filter(p => selectedReportIds.includes(p.id))
             : placements;
 
-        let csvContent = "Reklam Adi,Yerlesim,Genislik,Yukseklik,Cihaz,Goruntuleme,Tiklama,CTR (%),Durum\n";
+        let csvContent = "Reklam Adi,Yerlesim,Genislik,Yukseklik,Cihaz,Goruntuleme,Tiklama,CTR (%),Durum,Baslangic Tarihi,Bitis Tarihi\n";
 
         adsToExport.forEach(ad => {
             const standard = STANDARD_PLACEMENTS[ad.placement_code];
@@ -560,8 +574,10 @@ const AdsPage = () => {
 
             const safeName = (ad.name || 'İsimsiz').replace(/,/g, ' ');
             const safePlacement = placementName.replace(/,/g, ' ');
+            const startStr = ad.start_date ? new Date(ad.start_date).toLocaleString('tr-TR') : '-';
+            const endStr = ad.end_date ? new Date(ad.end_date).toLocaleString('tr-TR') : '-';
 
-            csvContent += `${safeName},${safePlacement},${w},${h},${ad.device_type},${views},${clicks},${ctr},${status}\n`;
+            csvContent += `${safeName},${safePlacement},${w},${h},${ad.device_type},${views},${clicks},${ctr},${status},${startStr},${endStr}\n`;
         });
 
         const BOM = "\uFEFF";
@@ -779,8 +795,10 @@ const AdsPage = () => {
                                                             <GripVertical size={14} />
                                                         </div>
                                                         <div className={`w-2.5 h-2.5 rounded-full ${ad.is_active ? 'bg-green-500' : 'bg-red-500'} flex-shrink-0 shadow-sm`}></div>
-                                                        <span className="text-xs font-medium truncate flex-1 text-left">
+                                                        <span className="text-xs font-medium truncate flex-1 text-left flex items-center gap-2">
                                                             {ad.name || 'İsimsiz'}
+                                                            {isExpired && <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded font-bold">BİTTİ</span>}
+                                                            {isScheduled && <span className="text-[10px] bg-yellow-100 text-yellow-600 px-1 rounded font-bold">GELECEK</span>}
                                                         </span>
                                                         <div className="text-[9px] text-gray-400 font-mono bg-gray-50 px-1 rounded border mr-1">{ad.type === 'image' ? 'IMG' : 'CODE'}</div>
                                                         <button
@@ -1272,6 +1290,8 @@ const AdsPage = () => {
                                                     <SortableHeader label="Görüntüleme" columnKey="views" center />
                                                     <SortableHeader label="Tıklama" columnKey="clicks" center />
                                                     <SortableHeader label="CTR (%)" columnKey="ctr" center />
+                                                    <th className="px-6 py-3 text-xs font-bold text-gray-700 uppercase tracking-wider text-center">Başlangıç</th>
+                                                    <th className="px-6 py-3 text-xs font-bold text-gray-700 uppercase tracking-wider text-center">Bitiş</th>
                                                     <SortableHeader label="Durum" columnKey="status" center className="min-w-[120px]" />
                                                 </tr>
                                             </thead>
@@ -1366,6 +1386,12 @@ const AdsPage = () => {
                                                             <td className="px-6 py-4 text-center font-mono">{views.toLocaleString()}</td>
                                                             <td className="px-6 py-4 text-center font-mono">{clicks.toLocaleString()}</td>
                                                             <td className="px-6 py-4 text-center font-bold text-blue-600">{ctr}%</td>
+                                                            <td className="px-6 py-4 text-center text-xs whitespace-nowrap">
+                                                                {ad.start_date ? new Date(ad.start_date).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                                                            </td>
+                                                            <td className="px-6 py-4 text-center text-xs whitespace-nowrap">
+                                                                {ad.end_date ? new Date(ad.end_date).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                                                            </td>
                                                             <td className="px-6 py-4 text-center">
                                                                 {statusBadge}
                                                             </td>
@@ -1465,6 +1491,34 @@ const AdsPage = () => {
                                             Daha küçük boyutta görseller de yükleyebilirsiniz; sistem görseli otomatik olarak hizalayacaktır.
                                         </span>
                                     </div>
+
+                                    {/* Explicit Slot Selection for Slider Ads */}
+                                    {(editingAd.placement_code === 'headline_slider' || editingAd.placement_code === 'manset_2_slider') && (
+                                        <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                                            <label className="block text-xs font-bold text-blue-600 uppercase mb-2">Manşet Sıralaması (Slider Slotu)</label>
+                                            <div className="flex items-center gap-3">
+                                                <input
+                                                    type="number"
+                                                    min="1"
+                                                    max="15"
+                                                    className="w-20 px-3 py-1.5 border border-blue-200 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+                                                    value={editingAd.placement_code === 'headline_slider' ? (editingAd.headline_slot || '') : (editingAd.manset_2_slot || '')}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value ? parseInt(e.target.value) : null;
+                                                        if (editingAd.placement_code === 'headline_slider') {
+                                                            setEditingAd({ ...editingAd, headline_slot: val, is_headline: !!val });
+                                                        } else {
+                                                            setEditingAd({ ...editingAd, manset_2_slot: val, is_manset_2: !!val });
+                                                        }
+                                                    }}
+                                                    placeholder="1-15"
+                                                />
+                                                <p className="text-[11px] text-blue-500">
+                                                    Hangi sırada çıkmasını istiyorsanız yazın (1-15). Boş bırakırsanız son sıraya eklenir.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
 
@@ -1681,9 +1735,10 @@ const AdsPage = () => {
 
 
                                     {/* Page Targeting */}
-                                    <div className="grid grid-cols-2 gap-4 mb-4">
-                                        {/* Page Targeting - Hidden for News Detail Placements */}
-                                        {!editingAd.placement_code?.startsWith('news_') && (
+                                    {(!editingAd.placement_code?.startsWith('home_') &&
+                                        !editingAd.placement_code?.startsWith('headline') &&
+                                        !editingAd.placement_code?.startsWith('manset_2') &&
+                                        !editingAd.placement_code?.startsWith('news_')) && (
                                             <div className="grid grid-cols-2 gap-4 mb-4">
                                                 <div>
                                                     <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase">Hedef Sayfa Tipi</label>
@@ -1692,27 +1747,14 @@ const AdsPage = () => {
                                                         value={editingAd.target_page || 'all'}
                                                         onChange={(e) => setEditingAd({ ...editingAd, target_page: e.target.value })}
                                                     >
-                                                        {/* Logic to filter options based on placement type */}
-                                                        {(!editingAd.placement_code || (!editingAd.placement_code.startsWith('category_') && !editingAd.placement_code.startsWith('news_') && !editingAd.placement_code.startsWith('home_'))) && (
-                                                            <option value="all">Tüm Sayfalar</option>
-                                                        )}
-
-                                                        {(!editingAd.placement_code || editingAd.placement_code.startsWith('home_')) && (
-                                                            <option value="home">Sadece Ana Sayfa</option>
-                                                        )}
-
-                                                        {(!editingAd.placement_code || editingAd.placement_code.startsWith('category_')) && (
-                                                            <option value="category">Kategori Sayfaları</option>
-                                                        )}
-
-                                                        {(!editingAd.placement_code || editingAd.placement_code.startsWith('news_')) && (
-                                                            <option value="detail">Haber Detay Sayfaları</option>
-                                                        )}
+                                                        <option value="all">Tüm Sayfalar</option>
+                                                        <option value="home">Sadece Ana Sayfa</option>
+                                                        <option value="category">Kategori Sayfaları</option>
+                                                        <option value="detail">Haber Detay Sayfaları</option>
                                                     </select>
                                                 </div>
 
-                                                {/* Show category selector unless it is strictly Home Page */}
-                                                {(editingAd.target_page !== 'home') && (
+                                                {editingAd.target_page !== 'home' && (
                                                     <div>
                                                         <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase">Hedef Kategori</label>
                                                         <select
@@ -1730,7 +1772,28 @@ const AdsPage = () => {
                                                 )}
                                             </div>
                                         )}
-                                    </div>
+
+                                    {/* Category selector for Category/News placements (where page type is fixed but category is optional) */}
+                                    {(editingAd.placement_code?.startsWith('category_') || editingAd.placement_code?.startsWith('news_')) && (
+                                        <div className="mb-4">
+                                            <label className="block text-xs font-medium text-gray-500 mb-1.5 uppercase">Hedef Kategori (Opsiyonel)</label>
+                                            <select
+                                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:ring-black focus:border-black"
+                                                value={editingAd.target_category || ''}
+                                                onChange={(e) => setEditingAd({ ...editingAd, target_category: e.target.value })}
+                                            >
+                                                <option value="">Tüm Kategoriler</option>
+                                                {categories.map((cat) => (
+                                                    <option key={cat.id} value={cat.slug}>{cat.name}</option>
+                                                ))}
+                                            </select>
+                                            <p className="text-[10px] text-gray-400 mt-1">
+                                                {editingAd.placement_code.startsWith('news_')
+                                                    ? "Boş bırakılırsa tüm haber detaylarında görünür."
+                                                    : "Boş bırakılırsa tüm kategori sayfalarında görünür."}
+                                            </p>
+                                        </div>
+                                    )}
 
                                     <div className="grid grid-cols-2 gap-4 mb-4">
                                         <div>

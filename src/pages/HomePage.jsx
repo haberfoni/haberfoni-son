@@ -123,49 +123,11 @@ const HomePage = () => {
                 setCategoryMap(map);
 
                 // Update state and cache with fresh data
-                let finalHeroItems = [];
                 if (headlinesData && headlinesData.length > 0) {
                     const mappedHeadlines = headlinesData.map(mapNewsItem);
-                    finalHeroItems = [...mappedHeadlines];
-
-                    // Merge Ads into Slider
-                    if (adsData && adsData.length > 0) {
-                        const sliderAds = adsData.filter(ad =>
-                            ad.is_active &&
-                            ad.placement_code === 'headline_slider'
-                            // Removed date checks for debugging visibility
-                        );
-
-                        if (sliderAds.length > 0) {
-                            // Sort ads by headline_slot to ensure correct insertion order
-                            sliderAds.sort((a, b) => (a.headline_slot || 99) - (b.headline_slot || 99));
-
-                            sliderAds.forEach((ad, i) => {
-                                // Map ad to slider item structure
-                                const adItem = {
-                                    id: `ad-${ad.id}`,
-                                    title: ad.name || 'Sponsorlu İçerik',
-                                    image: getOptimizedImageUrl(ad.image_url),
-                                    type: 'ad',
-                                    link_url: ad.link_url,
-                                    category: 'REKLAM',
-                                    adPlacementId: ad.id
-                                };
-
-                                // Insert every 3 items? Or just put them in?
-                                // Let's insert the first ad at index 0 (first slide), second at index 3 etc.
-                                const insertPos = (ad.headline_slot && ad.headline_slot > 0) ? ad.headline_slot - 1 : (i * 3);
-                                if (insertPos < finalHeroItems.length) {
-                                    finalHeroItems.splice(insertPos, 0, adItem);
-                                } else {
-                                    finalHeroItems.push(adItem);
-                                }
-                            });
-                        }
-                    }
-
-                    localStorage.setItem('headlines_cache', JSON.stringify(headlinesData)); // Cache raw news only
-                    setHeroItems(finalHeroItems);
+                    setHeroItems(mappedHeadlines);
+                    // Cache the results
+                    localStorage.setItem('headlines_cache', JSON.stringify(mappedHeadlines));
                 }
                 setSurmansetItems(surmansetData.map(mapNewsItem));
                 setGridItems(allNews.map(mapNewsItem));
@@ -247,6 +209,18 @@ const HomePage = () => {
                 );
 
             case 'breaking_news':
+                // Randomize latest news for "karışık" requirement
+                const breakingNewsItems = React.useMemo(() => {
+                    if (gridItems.length === 0) return [];
+                    // Take first 30 items (latest) and shuffle them
+                    const pool = [...gridItems.slice(0, 30)];
+                    for (let i = pool.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [pool[i], pool[j]] = [pool[j], pool[i]];
+                    }
+                    return pool.slice(0, 8);
+                }, [gridItems]);
+
                 return (
                     <div className="container mx-auto px-4 py-8">
                         <div className="flex flex-col lg:flex-row gap-6">
@@ -265,7 +239,7 @@ const HomePage = () => {
                                         </Link>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {gridItems.slice(0, 8).map((news) => (
+                                        {breakingNewsItems.map((news) => (
                                             <Link
                                                 key={news.id}
                                                 to={`/${news.category || 'haber'}/${slugify(news.title)}/${news.id}`}

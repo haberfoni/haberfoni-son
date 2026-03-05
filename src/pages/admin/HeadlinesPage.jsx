@@ -9,9 +9,6 @@ import { getOptimizedImageUrl } from '../../utils/imageUtils';
 const HeadlinesPage = () => {
     const [activeTab, setActiveTab] = useState(1); // 1: Main Headline, 2: Manşet 2
     const [headlines, setHeadlines] = useState([]);
-    const [manualHeadlineIds, setManualHeadlineIds] = useState(new Set());
-    const [adIds, setAdIds] = useState(new Set());
-    const [sliderAdIds, setSliderAdIds] = useState(new Set());
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState({ type: '', text: '' });
     const [draggedIndex, setDraggedIndex] = useState(null);
@@ -27,36 +24,15 @@ const HeadlinesPage = () => {
             setHeadlines([]); // Clear prev data immediately
 
             const manualData = await adminService.getHeadlines(activeTab);
-            const manualIds = new Set(manualData.map(h => h.news?.id).filter(Boolean));
-            setManualHeadlineIds(manualIds);
-
-            let headlineAds = [];
-            let sliderAds = [];
-
             if (activeTab === 1) {
                 // Manşet 1 Data
-                headlineAds = await adminService.getHeadlineAds();
                 try {
-                    sliderAds = await adminService.getHeadlineSliderAds();
-                } catch (sliderError) {
-                    console.warn('Slider ads not available:', sliderError);
-                }
-            } else {
-                // Manşet 2 Data
-                headlineAds = await adminService.getManset2Ads();
-                try {
-                    sliderAds = await adminService.getManset2SliderAds();
-                } catch (sliderError) {
-                    console.warn('Slider ads not available for Manset 2:', sliderError);
+                    await adminService.getHeadlineAds();
+                    await adminService.getHeadlineSliderAds();
+                } catch (e) {
+                    console.warn('Ads check failed:', e);
                 }
             }
-
-            const adIdsSet = new Set(headlineAds.map(ad => `ad-${ad.id}`));
-            setAdIds(adIdsSet);
-
-            const sliderAdIdsSet = new Set(sliderAds.map(ad => `slider-ad-${ad.id}`));
-            setSliderAdIds(sliderAdIdsSet);
-            setAllSliderAds(sliderAds);
 
             // Fetch Preview Data
             let allHeadlines = [];
@@ -107,10 +83,10 @@ const HeadlinesPage = () => {
             } else {
                 // Manual News
                 const manualData = await adminService.getHeadlines(activeTab);
-                const headline = manualData.find(h => h.news?.id === item.id);
+                const headline = manualData.find(h => h.News?.id === item.id);
 
                 if (headline) {
-                    await adminService.removeFromHeadline(headline.slot_number, activeTab);
+                    await adminService.removeFromHeadline(headline.order_index, activeTab);
 
                     // Toggle boolean in news table
                     const updatePayload = activeTab === 1 ? { is_slider: false } : { is_manset_2: false };
@@ -136,8 +112,7 @@ const HeadlinesPage = () => {
         if (draggedIndex === null || draggedIndex === index) return;
 
         const draggedItem = headlines[draggedIndex];
-        // Only allow dragging manual headlines, ads, and slider ads
-        if (!manualHeadlineIds.has(draggedItem.id) && !adIds.has(draggedItem.id) && !sliderAdIds.has(draggedItem.id)) return;
+        // Allow dragging EVERYTHING to support pinning automatic items
 
         const items = [...headlines];
         const item = items[draggedIndex];
@@ -147,6 +122,24 @@ const HeadlinesPage = () => {
 
         setHeadlines(items);
         setDraggedIndex(index);
+    };
+
+    const handlePin = async (item, slotIndex) => {
+        try {
+            const slotNumber = slotIndex + 1;
+            // Pin as manual headline
+            await adminService.addToHeadline(item.id, slotNumber, activeTab);
+
+            // Also update the news item itself to have is_headline true 
+            const updatePayload = activeTab === 1 ? { is_slider: true } : { is_manset_2: true };
+            await adminService.updateNews(item.id, updatePayload);
+
+            setMessage({ type: 'success', text: `${slotNumber}. sıraya sabitlendi.` });
+            loadHeadlines();
+        } catch (error) {
+            console.error('Error pinning:', error);
+            setMessage({ type: 'error', text: 'Sabitleme hatası.' });
+        }
     };
 
     const handleDragEnd = async () => {
@@ -175,37 +168,47 @@ const HeadlinesPage = () => {
                 const targetSlot = i + 1;
 
                 // Determine Item Type
-                const isSliderAd = sliderAdIds.has(item.id);
-                const isAd = adIds.has(item.id);
-                const isManual = manualHeadlineIds.has(item.id);
+                const isSliderAd = item.type === 'slider-ad';
+                const isAd = item.type === 'ad';
+                const isManual = item.isManual && item.type === 'news';
 
                 if (isSliderAd) {
-                    const existing = sliderAdData.find(ad => ad.id === item.adPlacementId);
+                    const adPlacementId = item.adPlacementId || item.id;
+                    const existing = sliderAdData.find(ad => ad.id === adPlacementId);
                     const currentSlot = activeTab === 1 ? existing?.headline_slot : existing?.manset_2_slot;
 
                     if (existing && currentSlot !== targetSlot) {
                         if (activeTab === 1) {
-                            await adminService.setAdPlacementHeadlineSlot(item.adPlacementId, targetSlot);
+                            await adminService.setAdPlacementHeadlineSlot(adPlacementId, targetSlot);
                         } else {
-                            await adminService.setAdManset2Slot(item.adPlacementId, targetSlot);
+                            await adminService.setAdManset2Slot(adPlacementId, targetSlot);
                         }
                     }
                 } else if (isAd) {
-                    const existing = adData.find(ad => ad.id === item.adId);
+                    const adId = item.adId || item.id;
+                    const existing = adData.find(ad => ad.id === adId);
                     const currentSlot = activeTab === 1 ? existing?.headline_slot : existing?.manset_2_slot;
 
                     if (existing && currentSlot !== targetSlot) {
                         if (activeTab === 1) {
-                            await adminService.setAdHeadlineSlot(item.adId, targetSlot);
+                            await adminService.setAdHeadlineSlot(adId, targetSlot);
                         } else {
-                            await adminService.setAdManset2Slot(item.adId, targetSlot);
+                            await adminService.setAdManset2Slot(adId, targetSlot);
                         }
                     }
-                } else if (isManual) {
-                    const existing = manualData.find(h => h.news?.id === item.id);
-                    if (existing && existing.slot_number !== targetSlot) {
-                        await adminService.removeFromHeadline(existing.slot_number, activeTab);
+                } else if (isManual || item.type === 'news') {
+                    const existing = manualData.find(h => h.News?.id === item.id);
+                    if (!existing || existing.order_index !== targetSlot) {
+                        // If it was pinned elsewhere, remove that pin first
+                        if (existing) {
+                            await adminService.removeFromHeadline(existing.order_index, activeTab);
+                        }
+                        // Pin to the new slot
                         await adminService.addToHeadline(item.id, targetSlot, activeTab);
+
+                        // Also ensure the news record is marked as slider/manset2
+                        const updatePayload = activeTab === 1 ? { is_slider: true } : { is_manset_2: true };
+                        await adminService.updateNews(item.id, updatePayload);
                     }
                 }
             }
@@ -257,22 +260,7 @@ const HeadlinesPage = () => {
                 </button>
             </div>
 
-            {/* Active Tab Info */}
-            <div className="mb-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
-                <div className="flex items-start">
-                    <Info className="h-5 w-5 text-blue-400 mt-0.5" />
-                    <div className="ml-3">
-                        <p className="text-sm text-blue-700 font-medium">
-                            Şu an düzenleniyor: {activeTab === 1 ? 'Ana Manşet Slider' : 'Manşet 2 (Sağ Liste + Büyük Görsel)'}
-                        </p>
-                        <p className="text-xs text-blue-600 mt-1">
-                            {activeTab === 1
-                                ? 'Ana sayfadaki en büyük slider alanı.'
-                                : 'Haber listesinin üstündeki (MedyaRadar tarzı) alan.'}
-                        </p>
-                    </div>
-                </div>
-            </div>
+
 
             {/* Ads Warning */}
             <div className={`mb-6 p-4 rounded border-l-4 ${activeTab === 1 ? 'bg-orange-50 border-orange-400' : 'bg-purple-50 border-purple-400'}`}>
@@ -315,10 +303,10 @@ const HeadlinesPage = () => {
                 ) : (
                     <div className="space-y-2">
                         {headlines.map((headline, index) => {
-                            const isManual = manualHeadlineIds.has(headline.id);
-                            const isSliderAd = sliderAdIds.has(headline.id);
-                            const isAd = adIds.has(headline.id);
-                            const isDraggable = isManual || isSliderAd || isAd;
+                            const isManual = headline.isManual && headline.type === 'news';
+                            const isSliderAd = headline.type === 'slider-ad';
+                            const isAd = headline.type === 'ad';
+                            const isDraggable = !!headline.id; // Allow dragging any valid item
                             const isDragging = draggedIndex === index;
 
                             return (
@@ -392,22 +380,30 @@ const HeadlinesPage = () => {
                                                     Sabit
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                                                    Otomatik
-                                                </span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="inline-flex items-center px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                                        Otomatik
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handlePin(headline, index)}
+                                                        className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-2 py-0.5 rounded border border-blue-200"
+                                                        title="Bu sıraya sabitle"
+                                                    >
+                                                        <Lock size={12} />
+                                                        Sabitle
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
 
-                                    {isDraggable && (
-                                        <button
-                                            onClick={() => handleRemove(headline)}
-                                            className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Manşetten Kaldır"
-                                        >
-                                            <X size={20} />
-                                        </button>
-                                    )}
+                                    <button
+                                        onClick={() => handleRemove(headline)}
+                                        className="flex-shrink-0 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title={isManual || isAd || isSliderAd ? "Sabit Kaldır" : "Görünümden Kaldır"}
+                                    >
+                                        <X size={20} />
+                                    </button>
                                 </div>
                             );
                         })}
