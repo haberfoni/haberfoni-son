@@ -7,44 +7,45 @@ import { fetchVideos } from '../services/api';
 import { mapVideoItem } from '../utils/mappers';
 import { slugify } from '../utils/slugify';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
+import Pagination from '../components/Pagination';
 
 const VideoGalleryPage = () => {
     const [featuredVideo, setFeaturedVideo] = React.useState(null);
     const [mostWatched, setMostWatched] = React.useState([]);
     const [latestVideos, setLatestVideos] = React.useState([]);
-    const [visibleCount, setVisibleCount] = React.useState(20);
-    const [prevCount, setPrevCount] = React.useState(20);
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const PAGE_SIZE = 20;
     const scrollRef = React.useRef(null);
-
-    // Handle scroll after loading more
-    React.useEffect(() => {
-        if (visibleCount > prevCount && scrollRef.current) {
-            scrollRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        setPrevCount(visibleCount);
-    }, [visibleCount]);
 
     React.useEffect(() => {
         const loadVideos = async () => {
             const data = await fetchVideos();
-            // Backend returns { data: [...], meta: {...} } or [...]
             const videoList = Array.isArray(data) ? data : (data.data || []);
             const mappedData = videoList.map(mapVideoItem);
 
             if (mappedData.length > 0) {
                 setFeaturedVideo(mappedData[0]);
-
-                // Sort by views for "Most Watched" sidebar
                 const sortedByViews = [...mappedData].sort((a, b) => (b.views || 0) - (a.views || 0));
                 setMostWatched(sortedByViews.slice(0, 5));
-
                 setLatestVideos(mappedData);
             }
         };
         loadVideos();
     }, []);
 
-    if (!featuredVideo) return null; // Or loading spinner
+    // Handle scroll to top on page change
+    React.useEffect(() => {
+        if (currentPage > 1 && scrollRef.current) {
+            scrollRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (currentPage === 1) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [currentPage]);
+
+    if (!featuredVideo) return null;
+
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    const paginatedItems = latestVideos.slice(startIndex, startIndex + PAGE_SIZE);
 
     return (
         <div className="bg-gray-100 min-h-screen pb-12">
@@ -54,7 +55,7 @@ const VideoGalleryPage = () => {
                 url="/video-galeri"
             />
             {/* Page Header */}
-            <div className="bg-black text-white py-4 mb-6">
+            <div className="bg-black text-white py-4 mb-6" ref={scrollRef}>
                 <div className="container mx-auto px-4 flex items-center space-x-2">
                     <div className="w-2 h-8 bg-red-600"></div>
                     <h1 className="text-2xl font-bold tracking-wider">VİDEO GALERİ</h1>
@@ -68,117 +69,90 @@ const VideoGalleryPage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
                     {/* Left Column: Featured Video & Latest Grid */}
                     <div className="lg:col-span-2 space-y-8">
-
                         {/* Featured Video */}
-                        <Link to={`/video-galeri/${slugify(featuredVideo.title)}`} className="block bg-white rounded-lg shadow-sm overflow-hidden group cursor-pointer">
-                            <div className="relative aspect-video">
-                                <img
-                                    src={getOptimizedImageUrl(featuredVideo.thumbnail)}
-                                    alt={featuredVideo.title}
-                                    className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                                    <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                                        <Play size={32} className="text-white ml-1" fill="currentColor" />
+                        {currentPage === 1 && (
+                            <Link to={`/video-galeri/${slugify(featuredVideo.title)}`} className="block bg-white rounded-lg shadow-sm overflow-hidden group cursor-pointer">
+                                <div className="relative aspect-video">
+                                    <img
+                                        src={getOptimizedImageUrl(featuredVideo.thumbnail)}
+                                        alt={featuredVideo.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                                        <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                            <Play size={32} className="text-white ml-1" fill="currentColor" />
+                                        </div>
+                                    </div>
+                                    <div className="absolute bottom-4 right-4 bg-black/80 text-white text-sm px-3 py-1 rounded font-medium">
+                                        {featuredVideo.duration}
                                     </div>
                                 </div>
-                                <div className="absolute bottom-4 right-4 bg-black/80 text-white text-sm px-3 py-1 rounded font-medium">
-                                    {featuredVideo.duration}
-                                </div>
-                            </div>
-                            <div className="p-6">
-                                <h2 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
-                                    {featuredVideo.title}
-                                </h2>
-                                <div className="flex items-center space-x-4 text-gray-500 text-sm">
-                                    <div className="flex items-center space-x-1">
-                                        <Clock size={14} />
-                                        <span>{featuredVideo.date}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                        <Eye size={14} />
-                                        <span>{featuredVideo.views} izlenme</span>
+                                <div className="p-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
+                                        {featuredVideo.title}
+                                    </h2>
+                                    <div className="flex items-center space-x-4 text-gray-500 text-sm">
+                                        <div className="flex items-center space-x-1">
+                                            <Clock size={14} />
+                                            <span>{featuredVideo.date}</span>
+                                        </div>
+                                        <div className="flex items-center space-x-1">
+                                            <Eye size={14} />
+                                            <span>{featuredVideo.views} izlenme</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </Link>
+                            </Link>
+                        )}
 
-                        {/* Latest Videos Grid with Chunking & Ads */}
+                        {/* Latest Videos Grid */}
                         <div>
                             <div className="flex items-center space-x-2 mb-4 border-b-2 border-gray-200 pb-2">
                                 <span className="text-lg font-bold text-gray-800 uppercase">Son Eklenenler</span>
                             </div>
 
-                            {/* Display items in chunks of 20 */}
-                            {Array.from({ length: Math.ceil(Math.min(visibleCount, latestVideos.length) / 20) }).map((_, chunkIndex) => {
-                                const chunkStart = chunkIndex * 20;
-                                const chunkEnd = Math.min(chunkStart + 20, visibleCount);
-                                const chunkItems = latestVideos.slice(chunkStart, chunkEnd);
-
-                                // Check if this is a new chunk loaded by "Load More" to set ref
-                                const newChunkIndex = Math.ceil(prevCount / 20);
-                                const isNewChunk = chunkIndex === newChunkIndex;
-                                const showHorizontalAd = chunkEnd < visibleCount; // Show ad between loaded chunks if more exist
-
-                                return (
-                                    <React.Fragment key={chunkIndex}>
-                                        <div
-                                            className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 scroll-mt-24"
-                                            ref={isNewChunk && chunkIndex > 0 ? scrollRef : null}
-                                        >
-                                            {chunkItems.map((video) => (
-                                                <Link key={video.id} to={`/video-galeri/${slugify(video.title)}`} className="bg-white rounded-lg shadow-sm overflow-hidden group cursor-pointer hover:shadow-md transition-shadow">
-                                                    <div className="relative aspect-video">
-                                                        <img
-                                                            src={getOptimizedImageUrl(video.thumbnail)}
-                                                            alt={video.title}
-                                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                        />
-                                                        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                                                            <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                                                                <Play size={20} className="text-red-600 ml-1" fill="currentColor" />
-                                                            </div>
-                                                        </div>
-                                                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                                                            {video.duration}
-                                                        </div>
-                                                    </div>
-                                                    <div className="p-4">
-                                                        <h3 className="font-bold text-gray-800 group-hover:text-red-600 transition-colors line-clamp-2 h-12 mb-2">
-                                                            {video.title}
-                                                        </h3>
-                                                        <div className="flex items-center justify-between text-gray-500 text-xs">
-                                                            <span>{video.date}</span>
-                                                        </div>
-                                                    </div>
-                                                </Link>
-                                            ))}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                                {paginatedItems.map((video, index) => (
+                                    <Link key={video.id} to={`/video-galeri/${slugify(video.title)}`} className="bg-white rounded-lg shadow-sm overflow-hidden group cursor-pointer hover:shadow-md transition-shadow relative">
+                                        <div className="absolute top-2 left-2 w-8 h-8 bg-black/70 text-white font-bold flex items-center justify-center rounded-full z-10 text-sm">
+                                            {startIndex + index + 1}
                                         </div>
-
-                                        {/* Horizontal Ad between chunks */}
-                                        {showHorizontalAd && (
-                                            <div className="mb-8">
-                                                <AdBanner customDimensions="728x90" customMobileDimensions="300x250" customHeight="h-[250px] md:h-[90px]" text="Reklam Alani 728x90" />
+                                        <div className="relative aspect-video">
+                                            <img
+                                                src={getOptimizedImageUrl(video.thumbnail)}
+                                                alt={video.title}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                            />
+                                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                                                <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    <Play size={20} className="text-red-600 ml-1" fill="currentColor" />
+                                                </div>
                                             </div>
-                                        )}
-                                    </React.Fragment>
-                                );
-                            })}
+                                            <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                                {video.duration}
+                                            </div>
+                                        </div>
+                                        <div className="p-4">
+                                            <h3 className="font-bold text-gray-800 group-hover:text-red-600 transition-colors line-clamp-2 h-12 mb-2">
+                                                {video.title}
+                                            </h3>
+                                            <div className="flex items-center justify-between text-gray-500 text-xs">
+                                                <span>{video.date}</span>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
 
-                            {/* Load More Button */}
-                            {visibleCount < latestVideos.length && (
-                                <div className="mt-8 text-center">
-                                    <button
-                                        onClick={() => setVisibleCount(prev => prev + 20)}
-                                        className="px-8 py-3 bg-white border border-gray-200 text-gray-600 font-medium rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-                                    >
-                                        Daha Fazla Gör
-                                    </button>
-                                </div>
-                            )}
+                            {/* Pagination */}
+                            <Pagination
+                                currentPage={currentPage}
+                                totalCount={latestVideos.length}
+                                pageSize={PAGE_SIZE}
+                                onPageChange={setCurrentPage}
+                            />
                         </div>
                     </div>
 

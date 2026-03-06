@@ -190,7 +190,9 @@ model BotCategoryMapping {
 model FooterSection {
   id          Int      @id @default(autoincrement())
   title       String   @db.VarChar(100)
+  type        String   @default("custom_links") @db.VarChar(50) // 'custom_links', 'dynamic_categories', 'dynamic_pages'
   order_index Int      @default(0)
+  is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
 
   Links       FooterLink[]
@@ -205,6 +207,7 @@ model FooterLink {
   url         String   @db.VarChar(512)
   order_index Int      @default(0)
   target      String?  @default("_self")
+  is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
 
   Section     FooterSection @relation(fields: [section_id], references: [id], onDelete: Cascade)

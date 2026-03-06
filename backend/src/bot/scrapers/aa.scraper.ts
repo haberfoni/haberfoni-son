@@ -36,7 +36,7 @@ export async function scrapeAA(bot: BotService) {
                 console.log(`Skipping AA: ${mapping.source_url} (Mapping is inactive)`);
                 continue;
             }
-            console.log(`Fetching AA: ${mapping.source_url} -> ${mapping.target_category}`);
+            console.log(`[AA-START] Fetching: ${mapping.source_url} -> ${mapping.target_category}`);
             try {
                 let count = 0;
                 if (mapping.source_url.includes('/rss/')) {
@@ -118,26 +118,41 @@ async function scrapeAAHTML(url: string, targetCategory: string, bot: BotService
         });
 
         let count = 0;
-        const linksArray = Array.from(articleLinks).slice(0, 10);
+        const linksArray = Array.from(articleLinks).slice(0, 30);
+        const BATCH_SIZE = 5;
+
         for (const articleUrl of linksArray) {
             try {
                 const isGallery = articleUrl.includes('/fotoraf-galerisi/') || /\/(fotoraf|info)\//.test(articleUrl);
                 const isVideo = articleUrl.includes('/video-galerisi/') || /\/(vgc|video)\//.test(articleUrl);
 
+                let success = false;
                 if (isVideo) {
                     const video = await scrapeAAVideo(articleUrl, targetCategory);
-                    if (video && !bot.isGenericTitle(video.title) && await bot.saveVideo(video)) count++;
+                    if (video && !bot.isGenericTitle(video.title)) {
+                        success = await bot.saveVideo(video);
+                    }
                 } else if (isGallery) {
                     const gallery = await scrapeAAGallery(articleUrl, targetCategory);
-                    if (gallery && !bot.isGenericTitle(gallery.title) && await bot.saveGallery(gallery)) count++;
+                    if (gallery && !bot.isGenericTitle(gallery.title)) {
+                        success = await bot.saveGallery(gallery);
+                    }
                 } else {
                     const article = await scrapeAAArticle(articleUrl, targetCategory);
                     if (article && !bot.isGenericTitle(article.title)) {
-                        if (await bot.saveNews(article)) count++;
+                        success = await bot.saveNews(article);
                     }
                 }
+                
+                if (success) {
+                    count++;
+                    console.log(`    [AA-SAVE-OK] (${count}/${linksArray.length}): ${articleUrl}`);
+                } else {
+                    console.log(`    [AA-SAVE-SKIP/FAIL]: ${articleUrl}`);
+                }
+                // Small delay between each article
                 await new Promise(resolve => setTimeout(resolve, 500));
-            } catch (err) {
+            } catch (err: any) {
                 console.error(`  Error scraping article ${articleUrl}:`, err.message);
             }
         }

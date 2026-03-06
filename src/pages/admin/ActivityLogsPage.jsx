@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from '../../services/adminService';
 import { Activity, Clock, User, FileText, Settings, Shield, AlertCircle, Trash2 } from 'lucide-react';
+import Pagination from '../../components/Pagination';
 
 const ActivityLogsPage = () => {
     const [logs, setLogs] = useState([]);
@@ -152,27 +153,13 @@ const ActivityLogsPage = () => {
             </div>
 
             {/* Pagination */}
-            {total > LIMIT && (
-                <div className="mt-6 flex justify-center gap-2">
-                    <button
-                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                        disabled={page === 1}
-                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                    >
-                        Önceki
-                    </button>
-                    <span className="px-4 py-2 text-gray-600 self-center">
-                        Sayfa {page}
-                    </span>
-                    <button
-                        onClick={() => setPage(p => p + 1)}
-                        disabled={page * LIMIT >= total}
-                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                    >
-                        Sonraki
-                    </button>
-                </div>
-            )}
+            <Pagination 
+                currentPage={page}
+                totalCount={total}
+                pageSize={LIMIT}
+                onPageChange={(p) => setPage(p)}
+                className="mt-8"
+            />
         </div>
     );
 };

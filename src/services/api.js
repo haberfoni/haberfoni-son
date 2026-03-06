@@ -322,16 +322,19 @@ export const fetchVideoGalleries = async (page = 1, limit = 20) => {
         const response = await apiClient.get('/videos', {
             params: { page, limit, status: 'published' }
         });
-        return response.data.data || [];
+        return {
+            data: response.data.data || [],
+            total: response.data.meta?.total || 0
+        };
     } catch (error) {
         console.error('Error fetching video galleries:', error);
-        return [];
+        return { data: [], total: 0 };
     }
 };
 
 export const fetchHomeVideos = async () => {
-    const videos = await fetchVideoGalleries(1, 4);
-    return videos;
+    const res = await fetchVideoGalleries(1, 4);
+    return res.data || [];
 };
 
 export const fetchVideoDetail = async (id) => {
@@ -350,16 +353,19 @@ export const fetchPhotoGalleries = async (page = 1, limit = 20) => {
         const response = await apiClient.get('/galleries', {
             params: { page, limit, status: 'published' }
         });
-        return response.data.data || [];
+        return {
+            data: response.data.data || [],
+            total: response.data.meta?.total || 0
+        };
     } catch (error) {
         console.error('Error fetching photo galleries:', error);
-        return [];
+        return { data: [], total: 0 };
     }
 };
 
 export const fetchHomePhotoGalleries = async () => {
-    const galleries = await fetchPhotoGalleries(1, 4);
-    return galleries;
+    const res = await fetchPhotoGalleries(1, 4);
+    return res.data || [];
 };
 
 export const fetchPhotoGalleryDetail = async (id) => {

@@ -33,10 +33,10 @@ export async function scrapeDHA(bot: BotService) {
                 console.log(`Skipping DHA: ${mapping.source_url} (Mapping is inactive)`);
                 continue;
             }
-            console.log(`Fetching DHA: ${mapping.source_url} -> ${mapping.target_category}`);
+            console.log(`[DHA-START] Fetching: ${mapping.source_url} -> ${mapping.target_category}`);
             try {
                 const response = await axios.get(mapping.source_url, {
-                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' },
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' },
                     timeout: 30000
                 });
 
@@ -44,7 +44,7 @@ export async function scrapeDHA(bot: BotService) {
                 const articles: any[] = [];
 
                 // Targeted selectors for DHA main content areas
-                let selector = '.nd-content-column a, .category-news-list a, .nd-news-list a, main a';
+                let selector = '.nd-content-column a, .category-news-list a, .nd-news-list a, main a, article a, .news-card a';
                 if ($(selector).length === 0) selector = 'a'; // Extremely loose fallback if nothing found
 
                 $(selector).each((i, el) => {
@@ -57,7 +57,7 @@ export async function scrapeDHA(bot: BotService) {
 
                     if (link && title) {
                         const fullLink = link.startsWith('http') ? link : `https://www.dha.com.tr${link}`;
-                        
+
                         // Check if link is a valid news/video/gallery subpage
                         const isVideo = fullLink.includes('/video/') || fullLink.includes('-video-');
                         const isGallery = fullLink.includes('/foto-galeri/') || fullLink.includes('-galeri-');
@@ -83,40 +83,40 @@ export async function scrapeDHA(bot: BotService) {
 
                 // Unique articles by URL
                 console.log(`  Found ${articles.length} total candidate links for DHA.`);
-                const uniqueArticles = [...new Map(articles.map(item => [item.original_url, item])).values()].slice(0, 10);
+                const uniqueArticles = [...new Map(articles.map(item => [item.original_url, item])).values()].slice(0, 30);
                 let count = 0;
 
                 for (const item of uniqueArticles) {
                     try {
                         const targetCat = mapping.target_category;
-                        
-                        // We decide the scraping path based on the DETECTED type from URL markers
-                        // BUT we use the mapping target category for database field values
+                        let success = false;
                         if (item.detectedType === 'video') {
                             const video = await scrapeDHAVideo(item.original_url, targetCat);
                             if (video) {
-                                const success = await bot.saveVideo(video);
-                                if (success) count++;
+                                success = await bot.saveVideo(video);
                             }
                         } else if (item.detectedType === 'galeri') {
                             const gallery = await scrapeDHAGallery(item.original_url, targetCat);
                             if (gallery) {
-                                const success = await bot.saveGallery(gallery);
-                                if (success) count++;
+                                success = await bot.saveGallery(gallery);
                             }
                         } else {
-                            // Default to news if mapping is neither specifically video nor gallery
-                            // Or if detectedType is 'news'
                             const article = await scrapeDHAArticle(item, targetCat);
                             if (article) {
-                                const success = await bot.saveNews(article);
-                                if (success) count++;
+                                success = await bot.saveNews(article);
                             }
                         }
+
+                        if (success) {
+                            count++;
+                            console.log(`    [DHA-SAVE-OK] (${count}/${linksArray.length}): ${item.original_url}`);
+                        } else {
+                            console.log(`    [DHA-SAVE-SKIP/FAIL]: ${item.original_url}`);
+                        }
+                        // Small delay between each article
                         await new Promise(resolve => setTimeout(resolve, 500));
-                    } catch (detailErr) {
+                    } catch (detailErr: any) {
                         console.error(`Status check: Failed to scrape detail for ${item.original_url}: ${detailErr.message}`);
-                        continue;
                     }
                 }
 
@@ -163,16 +163,16 @@ async function scrapeDHAVideo(url: string, targetCategory: string) {
 
         if (!description || description.length < 50) {
             const contentEl = $('.news-detail-text').length > 0 ? $('.news-detail-text') :
-                             ($('.nd-article-content').length > 0 ? $('.nd-article-content') : $('.nd-content-column'));
-            
+                ($('.nd-article-content').length > 0 ? $('.nd-article-content') : $('.nd-content-column'));
+
             if (contentEl.length > 0) {
                 const paras = contentEl.find('p').map((i, el) => `<p>${$(el).text().trim()}</p>`).get().join('');
                 if (paras) description = paras;
             } else {
                 const videoDesc = $('.video-description').first().text().trim() ||
-                                $('.description').first().text().trim() ||
-                                $('.nd-article-spot').first().text().trim() ||
-                                $('article p').first().text().trim();
+                    $('.description').first().text().trim() ||
+                    $('.nd-article-spot').first().text().trim() ||
+                    $('article p').first().text().trim();
                 if (videoDesc) description = videoDesc;
             }
         }
@@ -269,8 +269,8 @@ async function scrapeDHAGallery(url: string, targetCategory: string) {
         }
 
         if (!description || description.length < 50) {
-            const contentEl = $('.news-detail-text').length > 0 ? $('.news-detail-text') : 
-                             ($('.nd-article-content').length > 0 ? $('.nd-article-content') : $('.nd-content-column'));
+            const contentEl = $('.news-detail-text').length > 0 ? $('.news-detail-text') :
+                ($('.nd-article-content').length > 0 ? $('.nd-article-content') : $('.nd-content-column'));
             if (contentEl.length > 0) {
                 const paraText = contentEl.find('p, div.description').map((i, el) => `<p>${$(el).text().trim()}</p>`).get().join('');
                 if (paraText) description = paraText;
@@ -316,13 +316,13 @@ async function scrapeDHAGallery(url: string, targetCategory: string) {
 
         const images: any[] = [];
         let imgIndex = 0;
-        
+
         // 2. Map slides and check for videos
         $('img').each((i, el) => {
             const src = $(el).attr('data-src') || $(el).attr('src');
             if (src && src.includes('image.dha.com.tr') && !isBlockedImage(src)) {
                 const caption = captions[imgIndex] || $(el).attr('alt') || '';
-                
+
                 // Check if this slide has a video (often DHA has a video button or specific class)
                 // We'll also look at the script data for this specific index if possible
                 let mediaType = 'image';
@@ -352,7 +352,7 @@ async function scrapeDHAGallery(url: string, targetCategory: string) {
                         images[0].media_type = 'video';
                         images[0].video_url = json.contentUrl;
                     }
-                } catch (e) {}
+                } catch (e) { }
             });
         }
 
@@ -364,7 +364,7 @@ async function scrapeDHAGallery(url: string, targetCategory: string) {
                 if (json['@type'] === 'VideoObject' && json.thumbnailUrl) {
                     prioritizedThumb = json.thumbnailUrl;
                 }
-            } catch (e) {}
+            } catch (e) { }
         });
 
         if (!prioritizedThumb) {

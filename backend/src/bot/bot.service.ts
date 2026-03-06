@@ -12,7 +12,7 @@ export class BotService implements OnModuleInit {
     private readonly logger = new Logger(BotService.name);
 
     constructor(
-        private prisma: PrismaService, 
+        private prisma: PrismaService,
         private activityLogsService: ActivityLogsService,
         private aiService: AiService
     ) { }
@@ -57,9 +57,9 @@ export class BotService implements OnModuleInit {
         });
     }
 
-    @Cron('*/2 * * * *')
+    @Cron('*/10 * * * *')
     async handleCron() {
-        this.logger.log('Starting scheduled scrape cycle (5 min frequency)...');
+        this.logger.log('Starting scheduled scrape cycle (10 min frequency)...');
         await this.scrapeAll();
     }
 
@@ -76,7 +76,7 @@ export class BotService implements OnModuleInit {
                 await this.prisma.botCommand.update({
                     where: { id: commandId },
                     data: { status: 'FAILED', payload: 'Another process is already running.' }
-                }).catch(() => {});
+                }).catch(() => { });
             }
             return;
         }
@@ -112,9 +112,45 @@ export class BotService implements OnModuleInit {
 
         try {
             this.logger.log('Starting full scrape for all agencies...');
-            await scrapeAA(this);
-            await scrapeIHA(this);
-            await scrapeDHA(this);
+            this.logger.log('Starting full scrape for all agencies sequentially...');
+            const mappingsCount = await this.prisma.botCategoryMapping.count({ where: { is_active: true } });
+            this.logger.log(`Active mappings found: ${mappingsCount}`);
+
+            const results = [];
+            
+            this.logger.log('Running AA Scraper...');
+            try {
+                const res = await scrapeAA(this);
+                results.push({ status: 'fulfilled', value: res });
+            } catch (err) {
+                results.push({ status: 'rejected', reason: err });
+            }
+
+            this.logger.log('Running IHA Scraper...');
+            try {
+                const res = await scrapeIHA(this);
+                results.push({ status: 'fulfilled', value: res });
+            } catch (err) {
+                results.push({ status: 'rejected', reason: err });
+            }
+
+            this.logger.log('Running DHA Scraper...');
+            try {
+                const res = await scrapeDHA(this);
+                results.push({ status: 'fulfilled', value: res });
+            } catch (err) {
+                results.push({ status: 'rejected', reason: err });
+            }
+
+            this.logger.log(`Scraper execution summaries:`);
+            results.forEach((res, i) => {
+                const agency = ['AA', 'IHA', 'DHA'][i];
+                if (res.status === 'fulfilled') {
+                    this.logger.log(`${agency}: Scraper finished (fulfilled). Result: ${JSON.stringify(res.value)}`);
+                } else {
+                    this.logger.error(`${agency}: Scraper FAILED (rejected). Reason: ${res.reason}`);
+                }
+            });
 
             if (cmdId) {
                 await this.prisma.botCommand.update({
@@ -167,9 +203,14 @@ export class BotService implements OnModuleInit {
     }
 
     async addMapping(data: any) {
-        return this.prisma.botCategoryMapping.create({
-            data
-        });
+        try {
+            return await this.prisma.botCategoryMapping.create({
+                data
+            });
+        } catch (error) {
+            this.logger.error(`Error adding mapping: ${error.message}`);
+            throw error;
+        }
     }
 
     async deleteMapping(id: number) {
@@ -377,6 +418,8 @@ export class BotService implements OnModuleInit {
             });
 
             if (existing) {
+                this.logger.debug(`News already exists (Original URL: ${newsItem.original_url})`);
+                // ... update logic ...
                 // Update missing content AND missing image_url
                 const needsContentUpdate = (!existing.content || existing.content.length < 400) && (newsItem.content && newsItem.content.length > 400);
                 const needsImageUpdate = !existing.image_url && newsItem.image_url;
@@ -421,12 +464,18 @@ export class BotService implements OnModuleInit {
                 }
             }
 
+            // 3.6 Add Source Attribution Footer
+            const sourceFooter = this.getSourceFooterHtml(newsItem.source);
+            if (sourceFooter) {
+                newsItem.content = (newsItem.content || '') + sourceFooter;
+            }
+
             // 4. Slug
             const slug = this.slugify(newsItem.title);
 
             // 5. SEO Pre-processing
-            const seoDescription = newsItem.summary 
-                ? newsItem.summary.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 160) 
+            const seoDescription = newsItem.summary
+                ? newsItem.summary.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 160)
                 : '';
             const seoKeywords = this.generateKeywords(newsItem.title);
 
@@ -467,6 +516,25 @@ export class BotService implements OnModuleInit {
         }
     }
 
+    private getSourceFooterHtml(source: string): string {
+        const agencies = {
+            'AA': 'Anadolu Ajansı',
+            'IHA': 'İhlas Haber Ajansı',
+            'DHA': 'Demirören Haber Ajansı'
+        };
+
+        const agencyName = agencies[source.toUpperCase()];
+        if (!agencyName) return '';
+
+        return `
+            <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #f0f0f0; clear: both;">
+                <p style="font-size: 0.7rem; font-style: italic; color: #888;">
+                    Bu haber ${agencyName}'dan alınmıştır.
+                </p>
+            </div>
+        `;
+    }
+
     private generateKeywords(title: string): string {
         if (!title) return '';
         const cleanTitle = title.replace(/[^\w\s-çğıöşüÇĞİÖŞÜ]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -494,8 +562,8 @@ export class BotService implements OnModuleInit {
     public isGenericTitle(title: string): boolean {
         if (!title) return true;
         const genericTitles = [
-            'Video', 'VIDEO', 'video', 
-            'Video Galeri', 'VIDEO GALERİ', 'video galeri', 
+            'Video', 'VIDEO', 'video',
+            'Video Galeri', 'VIDEO GALERİ', 'video galeri',
             'Haber', 'HABER', 'haber',
             'Foto Galeri Haberleri', 'FOTO GALERİ HABERLERİ', 'foto galeri haberleri',
             'Foto Galeri', 'FOTO GALERİ', 'foto galeri'

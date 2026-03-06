@@ -40,7 +40,7 @@ export async function scrapeIHA(bot: BotService) {
                 console.log(`Skipping IHA: ${mapping.source_url} (Mapping is inactive)`);
                 continue;
             }
-            console.log(`Fetching IHA: ${mapping.source_url} -> ${mapping.target_category}`);
+            console.log(`[IHA-START] Fetching: ${mapping.source_url} -> ${mapping.target_category}`);
 
             try {
                 let count = 0;
@@ -101,7 +101,7 @@ async function scrapeIHAHTML(url: string, targetCategory: string, bot: BotServic
     try {
         console.log(`  Scraping HTML page: ${url}`);
         const response = await axios.get(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' },
             timeout: 30000,
             httpsAgent // Bypass SSL cert errors
         });
@@ -112,7 +112,7 @@ async function scrapeIHAHTML(url: string, targetCategory: string, bot: BotServic
         // If no specific widgets are found (like on the video page), fall back to a broader set of links
         let selector = '.widget_General_Category_Dashboard a, .widget_General_Category_TopFive a, .widget_General_Category_All a, .widget_VideoNews_Dashboard a, .widget_VideoNews_TopFive a, .widget_VideoNews_All a';
         if ($(selector).length === 0) {
-            selector = '.video-category-list a, .gallery-category-list a, main a, article a';
+            selector = '.video-category-list a, .gallery-category-list a, main a, article a, .news-card a, .news-detail a';
         }
 
         $(selector).each((i, elem) => {
@@ -128,34 +128,38 @@ async function scrapeIHAHTML(url: string, targetCategory: string, bot: BotServic
 
         console.log(`  Found ${articleLinks.size} candidate links for IHA. Sample:`, Array.from(articleLinks).slice(0, 3));
         let count = 0;
-        const linksArray = Array.from(articleLinks).slice(0, 10);
+        const linksArray = Array.from(articleLinks).slice(0, 30);
+        const BATCH_SIZE = 5;
 
         for (const articleUrl of linksArray) {
             try {
                 const isVideoLink = articleUrl.includes('/video-');
                 const isGalleryLink = articleUrl.includes('/foto-galeri-');
 
-                // If it's explicitly a video link OR we are on a video-only landing page
+                let success = false;
                 if (isVideoLink || (targetCategory === 'video' && articleUrl.includes('/haber-'))) {
                     const video = await scrapeIHAVideo(articleUrl, targetCategory);
                     if (video) {
-                        const success = await bot.saveVideo(video);
-                        if (success) count++;
+                        success = await bot.saveVideo(video);
                     }
                 } else if (isGalleryLink || (targetCategory === 'galeri' && articleUrl.includes('/haber-'))) {
                     const gallery = await scrapeIHAGallery(articleUrl, targetCategory);
                     if (gallery) {
-                        const success = await bot.saveGallery(gallery);
-                        if (success) count++;
+                        success = await bot.saveGallery(gallery);
                     }
                 } else {
-                    // Standard article
                     const article = await scrapeIHAArticle(articleUrl, targetCategory);
                     if (article) {
-                        const success = await bot.saveNews(article);
-                        if (success) count++;
+                        success = await bot.saveNews(article);
                     }
                 }
+                if (success) {
+                    count++;
+                    console.log(`    [IHA-SAVE-OK] (${count}/${linksArray.length}): ${articleUrl}`);
+                } else {
+                    console.log(`    [IHA-SAVE-SKIP/FAIL]: ${articleUrl}`);
+                }
+                // Small delay between each article to prevent slamming the AI/Server
                 await new Promise(resolve => setTimeout(resolve, 500));
             } catch (err: any) {
                 console.error(`  Error scraping article ${articleUrl}:`, err.message);

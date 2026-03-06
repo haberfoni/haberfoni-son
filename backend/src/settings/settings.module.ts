@@ -5,6 +5,7 @@ import { EmailSettingsController } from './email-settings.controller';
 
 @Module({
   providers: [SettingsService],
-  controllers: [SettingsController, EmailSettingsController]
+  controllers: [SettingsController, EmailSettingsController],
+  exports: [SettingsService]
 })
 export class SettingsModule { }

@@ -69,7 +69,7 @@ const NewsArticle = ({ news, onVisible }) => {
                     {/* Source Logo */}
                     {news.source && (
                         <div className="mr-2">
-                            <SourceBadge source={news.source} className="h-8" />
+                            <SourceBadge source={news.source} />
                         </div>
                     )}
 

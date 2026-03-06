@@ -30,6 +30,8 @@ const SettingsPage = () => {
         google_search_console_id: '',
         google_recaptcha_site_key: '',
         google_youtube_api_key: '',
+        ai_api_key: '',
+        ai_api_url: '',
         copy_protection: 'false',
     });
 

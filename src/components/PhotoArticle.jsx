@@ -1,11 +1,17 @@
 import React, { useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Eye, Share2, Camera } from 'lucide-react';
+import { Clock, Eye, Share2, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import { slugify } from '../utils/slugify';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
 
 const PhotoArticle = ({ album, images, relatedAlbums, onVisible }) => {
     const articleRef = useRef(null);
+    const [currentIndex, setCurrentIndex] = React.useState(0);
+
+    // Reset index when album changes (important for infinite scroll reuse)
+    useEffect(() => {
+        setCurrentIndex(0);
+    }, [album.id]);
 
     // Visibility Observer for View Tracking and URL Update
     useEffect(() => {
@@ -17,8 +23,8 @@ const PhotoArticle = ({ album, images, relatedAlbums, onVisible }) => {
                 }
             },
             {
-                threshold: 0.2, // Trigger when 20% of gallery header is visible
-                rootMargin: '-5% 0px -5% 0px'
+                threshold: 0.5,
+                rootMargin: '-10% 0px -10% 0px'
             }
         );
 
@@ -34,33 +40,33 @@ const PhotoArticle = ({ album, images, relatedAlbums, onVisible }) => {
     }, [album, onVisible]);
 
     const handleShare = async () => {
-        const albumUrl = `${window.location.origin}/foto-galeri/${slugify(album.title)}`;
+        const photoUrl = `${window.location.origin}/foto-galeri/${slugify(album.title)}`;
         if (navigator.share) {
             try {
                 await navigator.share({
                     title: album.title,
                     text: album.title,
-                    url: albumUrl,
+                    url: photoUrl,
                 });
             } catch (err) {
                 console.log('Error sharing:', err);
             }
         } else {
-            navigator.clipboard.writeText(albumUrl);
+            navigator.clipboard.writeText(photoUrl);
             alert('Link kopyalandı!');
         }
     };
 
     return (
         <article ref={articleRef} className="bg-white rounded-lg shadow-sm overflow-hidden mb-12">
-            <div className="p-6 border-b border-gray-100">
+            <div className="p-6 pb-0">
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4 leading-tight">
-                    <Link to={`/foto-galeri/${slugify(album.title)}`} className="hover:text-primary transition-colors">
+                    <Link to={`/foto-galeri/${slugify(album.title)}`} className="hover:text-yellow-600 transition-colors">
                         {album.title}
                     </Link>
                 </h1>
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <div className="flex items-center space-x-4 text-gray-500 text-sm flex-wrap gap-y-2">
                         {album.source && (
                             <div className="flex items-center space-x-1">
@@ -69,83 +75,144 @@ const PhotoArticle = ({ album, images, relatedAlbums, onVisible }) => {
                                 </span>
                             </div>
                         )}
+                        <div className="flex items-center space-x-1 text-primary">
+                            <Camera size={16} />
+                            <span className="font-bold">{images.length} Fotoğraf</span>
+                        </div>
                         <div className="flex items-center space-x-1">
                             <Clock size={16} />
                             <span>{album.date}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                             <Eye size={16} />
-                            <span>{album.views || 0} görüntülenme</span>
+                            <span>{album.views || 0} görüntüleme</span>
                         </div>
-                        <div className="flex items-center space-x-1">
-                            <Camera size={16} />
-                            <span>{album.count || images?.length || 0} Fotoğraf</span>
-                        </div>
-                        {album.author && (
-                            <div className="flex items-center space-x-1 text-primary font-medium">
-                                <span>Habere Katkıda Bulunan: {album.author}</span>
-                            </div>
-                        )}
                     </div>
                     <button
                         onClick={handleShare}
-                        className="flex items-center space-x-1 text-gray-500 hover:text-primary transition-colors ml-4"
+                        className="flex items-center space-x-1 text-gray-500 hover:text-yellow-600 transition-colors ml-4"
                     >
                         <Share2 size={18} />
                         <span className="hidden sm:inline">Paylaş</span>
                     </button>
                 </div>
-
-                {album.description && (
-                    <div className="mt-8 text-gray-800 leading-relaxed text-lg border-l-4 border-yellow-500 pl-4 bg-gray-50 py-4 rounded-r">
-                        <div dangerouslySetInnerHTML={{ __html: album.description }} />
-                    </div>
-                )}
             </div>
 
-            {/* Gallery Images */}
-            <div className="p-6 space-y-8">
-                {images && images.map((img, index) => (
-                    <div key={index} className="space-y-2">
-                        <div className="relative rounded-lg overflow-hidden shadow-sm bg-black min-h-[300px] flex items-center justify-center">
-                            {img.media_type === 'video' ? (
+            {/* Gallery Images - Paginated */}
+            <div className="p-6">
+                {images && images.length > 0 ? (
+                    <div className="space-y-6">
+                        <div className="relative rounded-lg overflow-hidden shadow-md bg-black min-h-[400px] md:min-h-[500px] flex items-center justify-center group/img">
+                            {images[currentIndex].media_type === 'video' ? (
                                 <div className="w-full aspect-video">
-                                    {img.video_url?.includes('m3u8') || img.video_url?.includes('.mp4') ? (
+                                    {images[currentIndex].video_url?.includes('m3u8') || images[currentIndex].video_url?.includes('.mp4') ? (
                                         <video 
-                                            src={img.video_url} 
+                                            src={images[currentIndex].video_url} 
                                             controls 
-                                            poster={getOptimizedImageUrl(img.image_url)}
+                                            poster={getOptimizedImageUrl(images[currentIndex].image_url)}
                                             className="w-full h-full"
                                         />
                                     ) : (
                                         <iframe 
-                                            src={img.video_url} 
+                                            src={images[currentIndex].video_url} 
                                             className="w-full h-full" 
                                             allowFullScreen
-                                            title={img.caption || album.title}
+                                            title={images[currentIndex].caption || album.title}
                                         />
                                     )}
                                 </div>
                             ) : (
                                 <img
-                                    src={getOptimizedImageUrl(img.image_url)}
-                                    alt={`${album.title} - ${index + 1}`}
-                                    className="w-full h-auto"
-                                    loading="lazy"
+                                    src={getOptimizedImageUrl(images[currentIndex].image_url)}
+                                    alt={`${album.title} - ${currentIndex + 1}`}
+                                    className="w-full h-auto max-h-[80vh] object-contain"
                                 />
                             )}
-                            <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm font-bold shadow">
-                                {index + 1} / {images.length}
-                                {img.media_type === 'video' && <span className="ml-2 text-yellow-400 font-extrabold">VIDEO</span>}
+                            
+                            {/* Navigation Overlays */}
+                            {currentIndex > 0 && (
+                                <button 
+                                    onClick={() => setCurrentIndex(prev => prev - 1)}
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity hover:bg-black/80"
+                                >
+                                    <ChevronLeft size={24} />
+                                </button>
+                            )}
+                            {currentIndex < images.length - 1 && (
+                                <button 
+                                    onClick={() => setCurrentIndex(prev => prev + 1)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity hover:bg-black/80"
+                                >
+                                    <ChevronRight size={24} />
+                                </button>
+                            )}
+
+                            <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-white/20">
+                                {currentIndex + 1} / {images.length}
+                                {images[currentIndex].media_type === 'video' && <span className="ml-2 text-yellow-400 font-extrabold">VIDEO</span>}
                             </div>
                         </div>
-                        {img.caption && img.caption.trim() && (
-                            <p className="text-gray-700 text-sm mt-2 px-1 italic border-l-2 border-yellow-400 pl-3 bg-gray-50 py-1 rounded-r">
-                                {img.caption}
-                            </p>
+
+                        {/* Caption */}
+                        {images[currentIndex].caption && images[currentIndex].caption.trim() && (
+                            <div className="bg-gray-50 border-l-4 border-yellow-500 p-4 rounded-r shadow-sm">
+                                <p className="text-gray-800 text-lg leading-relaxed">
+                                    {images[currentIndex].caption}
+                                </p>
+                            </div>
                         )}
+
+                        {/* Internal Navigation Buttons */}
+                        <div className="flex flex-col items-center space-y-4 pt-4 border-t border-gray-100">
+                            <div className="flex items-center space-x-2">
+                                <button
+                                    disabled={currentIndex === 0}
+                                    onClick={() => {
+                                        setCurrentIndex(prev => prev - 1);
+                                        articleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }}
+                                    className="px-6 py-2 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center space-x-2"
+                                >
+                                    <ChevronLeft size={20} />
+                                    <span>Önceki</span>
+                                </button>
+                                <button
+                                    disabled={currentIndex === images.length - 1}
+                                    onClick={() => {
+                                        setCurrentIndex(prev => prev + 1);
+                                        articleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }}
+                                    className="px-6 py-2 bg-yellow-500 text-white font-bold rounded-lg hover:bg-yellow-600 disabled:opacity-30 disabled:cursor-not-allowed shadow-md transition-all flex items-center space-x-2"
+                                >
+                                    <span>Sonraki</span>
+                                    <ChevronRight size={20} />
+                                </button>
+                            </div>
+                            
+                            {/* Mini Dot/Number indicator */}
+                            <div className="flex flex-wrap justify-center gap-1">
+                                {images.map((_, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => {
+                                            setCurrentIndex(idx);
+                                            articleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }}
+                                        className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold transition-all ${
+                                            currentIndex === idx 
+                                            ? 'bg-yellow-500 text-white ring-2 ring-yellow-200' 
+                                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        {idx + 1}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
-                ))}
+                ) : (
+                    <div className="py-20 text-center text-gray-400">Görsel bulunamadı.</div>
+                )}
             </div>
 
             {/* Inline Related Albums for Mobile if needed */}

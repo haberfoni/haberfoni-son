@@ -30,4 +30,8 @@ export class ActivityLogsService {
     async remove(id: number) {
         return this.prisma.activityLog.delete({ where: { id } });
     }
+
+    async removeAll() {
+        return this.prisma.activityLog.deleteMany();
+    }
 }
