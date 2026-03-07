@@ -42,6 +42,22 @@ async function main() {
     }
     console.log('Bot Settings seeded.');
 
+    // 2.5 Site Settings
+    const existingSettings = await prisma.setting.findFirst();
+    if (!existingSettings) {
+        await prisma.setting.create({
+            data: {
+                site_title: 'Haberfoni',
+                site_description: 'Haberfoni - En Güncel ve Tarafsız Haberler',
+                newsletter_title: 'Haber Bültenimize Abone Olun',
+                newsletter_description: 'En güncel haberlerden anında haberdar olmak için bültenimize abone olun.',
+                footer_text: '© 2026 Haberfoni. Tüm hakları saklıdır.',
+                contact_email: 'info@haberfoni.com'
+            }
+        });
+        console.log('Default Site Settings seeded.');
+    }
+
     // 3. Bot Category Mappings (AA RSS)
     // Ensure we map to existing category slugs
     const mappings = [
@@ -58,11 +74,43 @@ async function main() {
     for (const map of mappings) {
         await prisma.botCategoryMapping.upsert({
             where: { source_url: map.source_url },
-            update: {},
+            update: { is_active: map.is_active },
             create: map
         });
     }
+
+    // 3.1 IHA & DHA Mappings
+    const otherMappings = [
+        { source_name: 'IHA', source_url: 'https://www.iha.com.tr/haberler', target_category: 'gundem', is_active: true },
+        { source_name: 'DHA', source_url: 'https://www.dha.com.tr/son-dakika/', target_category: 'gundem', is_active: true },
+    ];
+    for (const map of otherMappings) {
+        await prisma.botCategoryMapping.upsert({
+            where: { source_url: map.source_url },
+            update: { is_active: map.is_active },
+            create: map
+        });
+    }
+
     console.log('Bot Mappings seeded.');
+
+    // 3.2 Site Settings (Key-Value)
+    const settings = [
+        { key: 'site_title', value: 'Haberfoni' },
+        { key: 'site_description', value: 'Haberfoni - En Güncel ve Tarafsız Haberler' },
+        { key: 'newsletter_title', value: 'Haber Bültenimize Abone Olun' },
+        { key: 'contact_email', value: 'info@haberfoni.com' },
+        { key: 'footer_text', value: '© 2026 Haberfoni. Tüm hakları saklıdır.' }
+    ];
+
+    for (const s of settings) {
+        await prisma.siteSetting.upsert({
+            where: { key: s.key },
+            update: {},
+            create: s
+        });
+    }
+    console.log('Site Settings seeded.');
 
     // 4. Dummy Galleries (Photos & Videos)
     const videos = [

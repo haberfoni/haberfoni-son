@@ -70,7 +70,9 @@ export async function scrapeAA(bot: BotService) {
                             category: mapping.target_category,
                             keywords: ''
                         };
-                        if (await bot.saveNews(newsItem)) count++;
+                        if (newsItem.title && !bot.isGenericTitle(newsItem.title)) {
+                            if (await bot.saveNews(newsItem)) count++;
+                        }
                     }
                 } else {
                     // HTML Logic

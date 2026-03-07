@@ -74,9 +74,9 @@ export class BotService implements OnModuleInit {
         });
     }
 
-    @Cron('*/10 * * * *')
+    @Cron('*/5 * * * *')
     async handleCron() {
-        this.logger.log('Starting scheduled scrape cycle (10 min frequency)...');
+        this.logger.log('Starting scheduled scrape cycle (5 min frequency)...');
         await this.scrapeAll();
     }
 
@@ -133,7 +133,7 @@ export class BotService implements OnModuleInit {
             const mappingsCount = await this.prisma.botCategoryMapping.count({ where: { is_active: true } });
             this.logger.log(`Active mappings found: ${mappingsCount}`);
 
-            const results = [];
+            const results: any[] = [];
             
             this.logger.log('Running AA Scraper...');
             try {

@@ -109,7 +109,7 @@ export async function scrapeDHA(bot: BotService) {
 
                         if (success) {
                             count++;
-                            console.log(`    [DHA-SAVE-OK] (${count}/${linksArray.length}): ${item.original_url}`);
+                            console.log(`    [DHA-SAVE-OK] (${count}/${uniqueArticles.length}): ${item.original_url}`);
                         } else {
                             console.log(`    [DHA-SAVE-SKIP/FAIL]: ${item.original_url}`);
                         }
