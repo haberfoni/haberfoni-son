@@ -43,9 +43,9 @@ async function main() {
     console.log('Bot Settings seeded.');
 
     // 2.5 Site Settings
-    const existingSettings = await prisma.setting.findFirst();
+    const existingSettings = await prisma.siteSetting.findFirst();
     if (!existingSettings) {
-        await prisma.setting.create({
+        await prisma.siteSetting.create({
             data: {
                 site_title: 'Haberfoni',
                 site_description: 'Haberfoni - En Güncel ve Tarafsız Haberler',
