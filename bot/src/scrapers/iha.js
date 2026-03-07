@@ -26,7 +26,8 @@ export async function scrapeIHAHTML(url, targetCategory) {
     try {
         console.log(`  Scraping HTML page: ${url}`);
         const response = await axios.get(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 15000
         });
         const $ = cheerio.load(response.data);
         const articleLinks = new Set();
@@ -74,7 +75,10 @@ export async function scrapeIHAHTML(url, targetCategory) {
  */
 export async function scrapeIHAArticle(url, targetCategory) {
     try {
-        const response = await axios.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        const response = await axios.get(url, { 
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 15000
+        });
         const $ = cheerio.load(response.data);
 
         const title = $('h1').first().text().trim() || $('title').text().trim();

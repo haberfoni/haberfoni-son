@@ -31,7 +31,8 @@ async function scrapeAAHTML(url, targetCategory) {
         const response = await axios.get(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
+            },
+            timeout: 15000
         });
 
         const $ = cheerio.load(response.data);
@@ -90,7 +91,8 @@ async function scrapeAAArticle(url, targetCategory) {
         const response = await axios.get(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
+            },
+            timeout: 15000
         });
 
         const $ = cheerio.load(response.data);
