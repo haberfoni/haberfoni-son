@@ -74,11 +74,13 @@ export class BotService implements OnModuleInit {
         });
     }
 
+    /*
     @Cron('*/5 * * * *')
     async handleCron() {
         this.logger.log('Starting scheduled scrape cycle (5 min frequency)...');
         await this.scrapeAll();
     }
+    */
 
     async scrapeAll(commandId?: number) {
         // PREVENT OVERLAPPING: Check if any command is currently PROCESSING
