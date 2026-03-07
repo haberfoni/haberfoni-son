@@ -110,10 +110,19 @@ export const adminService = {
     async getSettings() {
         try {
             const res = await apiClient.get('/settings');
+            const data = res.data;
+            const items = Array.isArray(data) ? data : (data?.data || []);
             const obj = {};
-            (res.data || []).forEach(item => { obj[item.key] = item.value; });
+            items.forEach(item => {
+                if (item && item.key) {
+                    obj[item.key] = item.value;
+                }
+            });
             return obj;
-        } catch (e) { return {}; }
+        } catch (e) {
+            console.error('getSettings error:', e);
+            return {};
+        }
     },
 
     async updateSetting(key, value) {
@@ -223,10 +232,11 @@ export const adminService = {
     async getAdPlacements() {
         try {
             const response = await apiClient.get('/ads');
-            return response.data;
+            const data = response.data;
+            return Array.isArray(data) ? data : (data?.data || []);
         } catch (error) {
             console.error('Error fetching ads:', error);
-            throw error;
+            return [];
         }
     },
 
@@ -295,8 +305,12 @@ export const adminService = {
     async getComments() {
         try {
             const res = await apiClient.get('/comments');
-            return res.data || [];
-        } catch (e) { return []; }
+            const data = res.data;
+            return Array.isArray(data) ? data : (data?.data || []);
+        } catch (e) {
+            console.error('getComments error:', e);
+            return [];
+        }
     },
 
     async approveComment(id) {
@@ -318,7 +332,14 @@ export const adminService = {
 
     // Service: Tags
     async getTags() {
-        try { const res = await apiClient.get('/tags'); return res.data || []; } catch (e) { return []; }
+        try {
+            const res = await apiClient.get('/tags');
+            const data = res.data;
+            return Array.isArray(data) ? data : (data?.data || []);
+        } catch (e) {
+            console.error('getTags error:', e);
+            return [];
+        }
     },
 
     async addTag(name) {
