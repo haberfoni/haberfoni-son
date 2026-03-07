@@ -42,21 +42,6 @@ async function main() {
     }
     console.log('Bot Settings seeded.');
 
-    // 2.5 Site Settings
-    const existingSettings = await prisma.siteSetting.findFirst();
-    if (!existingSettings) {
-        await prisma.siteSetting.create({
-            data: {
-                site_title: 'Haberfoni',
-                site_description: 'Haberfoni - En Güncel ve Tarafsız Haberler',
-                newsletter_title: 'Haber Bültenimize Abone Olun',
-                newsletter_description: 'En güncel haberlerden anında haberdar olmak için bültenimize abone olun.',
-                footer_text: '© 2026 Haberfoni. Tüm hakları saklıdır.',
-                contact_email: 'info@haberfoni.com'
-            }
-        });
-        console.log('Default Site Settings seeded.');
-    }
 
     // 3. Bot Category Mappings (AA RSS)
     // Ensure we map to existing category slugs
