@@ -30,7 +30,7 @@ if (process.env.DATABASE_URL) {
 } else {
     // Fallback if no DATABASE_URL
     dbConfig = {
-        host: process.env.MYSQL_HOST || 'localhost',
+        host: process.env.MYSQL_HOST || 'db',
         user: process.env.MYSQL_USER || 'root',
         password: process.env.MYSQL_PASSWORD || '',
         database: process.env.MYSQL_DATABASE || 'haberfoni',
