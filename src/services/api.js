@@ -9,7 +9,8 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 export const fetchCategories = async () => {
     try {
         const response = await apiClient.get('/categories');
-        return response.data;
+        const data = response.data;
+        return Array.isArray(data) ? data : (data?.data || []);
     } catch (error) {
         console.error('Error fetching categories:', error);
         return [];
@@ -21,9 +22,10 @@ export const fetchNews = async () => {
     try {
         // Fetch more initially to allow safe filtering
         const response = await apiClient.get('/news?limit=100');
-        const data = response.data.data || [];
+        const data = response.data;
+        const items = Array.isArray(data) ? data : (data?.data || []);
         // Strictly filter out any news without an image
-        const validNews = data.filter(item => item.image_url && item.image_url.trim() !== '');
+        const validNews = items.filter(item => item && item.image_url && item.image_url.trim() !== '');
         return validNews.slice(0, 30);
     } catch (error) {
         console.error('Error fetching news:', error);
@@ -40,7 +42,9 @@ export const fetchHeadlines = async () => {
     try {
         // 1. Fetch manually pinned headlines (type 1 = slider)
         const headlineRes = await apiClient.get('/headlines', { params: { type: 1 } });
-        const manualHeadlines = (headlineRes.data || []).map(h => ({
+        const headlineData = headlineRes.data;
+        const headlineItems = Array.isArray(headlineData) ? headlineData : (headlineData?.data || []);
+        const manualHeadlines = headlineItems.map(h => ({
             ...h.News,
             order_index: h.order_index,
             isManual: true,
@@ -48,13 +52,13 @@ export const fetchHeadlines = async () => {
         }));
 
         // 2. Fetch ads for headlines
-        // Consolidate into a single fetch and merge by unique ID
         const adsRes = await apiClient.get('/ads');
-        const allAds = Array.isArray(adsRes.data) ? adsRes.data : [];
+        const adsData = adsRes.data;
+        const allAds = Array.isArray(adsData) ? adsData : (adsData?.data || []);
 
         // Filter ads for headlines and map them
         const combinedAds = allAds
-            .filter(ad => ad.is_active && (ad.is_headline || ad.placement_code === 'headline_slider'))
+            .filter(ad => ad && ad.is_active && (ad.is_headline || ad.placement_code === 'headline_slider'))
             .map(ad => ({
                 ...ad,
                 order_index: ad.headline_slot,
@@ -65,7 +69,9 @@ export const fetchHeadlines = async () => {
 
         // 3. Fetch latest news for filling empty slots
         const newsResponse = await apiClient.get('/news', { params: { limit: 30 } });
-        const allLatestNews = (newsResponse.data.data || []).filter(item => item.image_url && item.image_url.trim() !== '');
+        const newsData = newsResponse.data;
+        const items = Array.isArray(newsData) ? newsData : (newsData?.data || []);
+        const allLatestNews = items.filter(item => item && item.image_url && item.image_url.trim() !== '');
 
         // 4. Create a 15-slot result array
         const result = new Array(15).fill(null);
@@ -126,7 +132,9 @@ export const fetchSurmanset = async () => {
     try {
         // 1. Fetch manually pinned surmanset headlines (type 2)
         const headlineRes = await apiClient.get('/headlines', { params: { type: 2 } });
-        const manualHeadlines = (headlineRes.data || []).map(h => ({
+        const headlineData = headlineRes.data;
+        const headlineItems = Array.isArray(headlineData) ? headlineData : (headlineData?.data || []);
+        const manualHeadlines = headlineItems.map(h => ({
             ...h.News,
             order_index: h.order_index,
             isManual: true,
@@ -135,10 +143,11 @@ export const fetchSurmanset = async () => {
 
         // 2. Fetch ads for surmanset
         const adsRes = await apiClient.get('/ads');
-        const allAds = Array.isArray(adsRes.data) ? adsRes.data : [];
+        const adsData = adsRes.data;
+        const allAds = Array.isArray(adsData) ? adsData : (adsData?.data || []);
 
         const combinedAds = allAds
-            .filter(ad => ad.is_active && (ad.is_manset_2 || ad.placement_code === 'manset_2_slider'))
+            .filter(ad => ad && ad.is_active && (ad.is_manset_2 || ad.placement_code === 'manset_2_slider'))
             .map(ad => ({
                 ...ad,
                 order_index: ad.manset_2_slot,
@@ -149,7 +158,9 @@ export const fetchSurmanset = async () => {
 
         // 3. Fetch latest news
         const newsResponse = await apiClient.get('/news', { params: { limit: 30 } });
-        const allLatestNews = (newsResponse.data.data || []).filter(item => item.image_url && item.image_url.trim() !== '');
+        const newsData = newsResponse.data;
+        const items = Array.isArray(newsData) ? newsData : (newsData?.data || []);
+        const allLatestNews = items.filter(item => item && item.image_url && item.image_url.trim() !== '');
 
         // 4. Create a 15-slot result array
         const result = new Array(15).fill(null);
@@ -227,8 +238,9 @@ export const fetchPopularNews = async (limit = 100) => {
         const response = await apiClient.get('/news', {
             params: { limit: limit * 2 } // Over-fetch to filter
         });
-        const data = response.data.data || [];
-        const validNews = data.filter(item => item.image_url && item.image_url.trim() !== '');
+        const data = response.data;
+        const items = Array.isArray(data) ? data : (data?.data || []);
+        const validNews = items.filter(item => item && item.image_url && item.image_url.trim() !== '');
         return validNews.slice(0, limit);
     } catch (error) {
         return [];
@@ -279,7 +291,8 @@ export const searchNews = async (query) => {
         const response = await apiClient.get('/news', {
             params: { search: query }
         });
-        return response.data.data;
+        const data = response.data;
+        return Array.isArray(data) ? data : (data?.data || []);
     } catch (error) {
         console.error('Error searching news:', error);
         return [];
@@ -301,9 +314,10 @@ export const fetchRelatedNews = async (excludeId) => {
         const response = await apiClient.get('/news', {
             params: { limit: 20 } // Fetch more to safely filter
         });
-        const data = response.data.data || [];
+        const data = response.data;
+        const items = Array.isArray(data) ? data : (data?.data || []);
         // Filter out the excluded ID AND items that don't have an image_url
-        const validNews = data.filter(n => n.id !== excludeId && n.image_url && n.image_url.trim() !== '');
+        const validNews = items.filter(n => n && n.id !== excludeId && n.image_url && n.image_url.trim() !== '');
         return validNews.slice(0, 4);
     } catch (error) {
         return [];
@@ -453,7 +467,8 @@ export const fetchComments = async (newsId) => {
         const response = await apiClient.get('/comments', {
             params: { news_id: newsId, is_approved: true }
         });
-        return response.data || [];
+        const data = response.data;
+        return Array.isArray(data) ? data : (data?.data || []);
     } catch (error) {
         console.error('Error fetching comments:', error);
         return [];

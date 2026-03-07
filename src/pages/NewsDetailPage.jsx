@@ -53,30 +53,32 @@ const NewsDetailPage = () => {
                     ? await fetchPopularNews(100)
                     : await fetchNewsByCategory(category);
 
-                const mappedList = listData.map(mapNewsItem);
-                setAllCategoryNews(mappedList);
+                if (Array.isArray(listData)) {
+                    const mappedList = listData.map(mapNewsItem);
+                    setAllCategoryNews(mappedList);
 
-                // 3. Fallback matching if ID didn't work or wasn't present
-                if (!initialNewsItem) {
-                    initialNewsItem = mappedList.find(item =>
-                        (item.slug && item.slug === slug) ||
-                        (!item.slug && slugify(item.title) === slug)
-                    );
+                    // 3. Fallback matching if ID didn't work or wasn't present
+                    if (!initialNewsItem) {
+                        initialNewsItem = mappedList.find(item =>
+                            (item.slug && item.slug === slug) ||
+                            (!item.slug && slugify(item.title) === slug)
+                        );
 
-                    // If still not found, try explicit fetch by slug
-                    if (!initialNewsItem && slug) {
-                        try {
-                            const bySlug = await fetchNewsBySlug(slug, category);
-                            if (bySlug) initialNewsItem = mapNewsItem(bySlug);
-                        } catch (e) {
-                            console.error("Fallback fetch by slug failed:", e);
+                        // If still not found, try explicit fetch by slug
+                        if (!initialNewsItem && slug) {
+                            try {
+                                const bySlug = await fetchNewsBySlug(slug, category);
+                                if (bySlug) initialNewsItem = mapNewsItem(bySlug);
+                            } catch (e) {
+                                console.error("Fallback fetch by slug failed:", e);
+                            }
                         }
-                    }
 
-                    // If found in list, we might want to fetch full details
-                    if (initialNewsItem) {
-                        const fullDetail = await fetchNewsDetail(initialNewsItem.id);
-                        if (fullDetail) initialNewsItem = mapNewsItem(fullDetail);
+                        // If found in list, we might want to fetch full details
+                        if (initialNewsItem) {
+                            const fullDetail = await fetchNewsDetail(initialNewsItem.id);
+                            if (fullDetail) initialNewsItem = mapNewsItem(fullDetail);
+                        }
                     }
                 }
 
@@ -85,8 +87,10 @@ const NewsDetailPage = () => {
 
                     // Load related news
                     const relatedData = await fetchRelatedNews(initialNewsItem.id, initialNewsItem.category);
-                    const mappedRelated = relatedData.map(mapNewsItem);
-                    setRelatedNews(mappedRelated);
+                    if (Array.isArray(relatedData)) {
+                        const mappedRelated = relatedData.map(mapNewsItem);
+                        setRelatedNews(mappedRelated);
+                    }
                 }
             } catch (err) {
                 console.error("Error loading news detail:", err);

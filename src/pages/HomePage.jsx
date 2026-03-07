@@ -123,14 +123,20 @@ const HomePage = () => {
                 setCategoryMap(map);
 
                 // Update state and cache with fresh data
-                if (headlinesData && headlinesData.length > 0) {
+                if (Array.isArray(headlinesData) && headlinesData.length > 0) {
                     const mappedHeadlines = headlinesData.map(mapNewsItem);
                     setHeroItems(mappedHeadlines);
                     // Cache the results
                     localStorage.setItem('headlines_cache', JSON.stringify(mappedHeadlines));
                 }
-                setSurmansetItems(surmansetData.map(mapNewsItem));
-                setGridItems(allNews.map(mapNewsItem));
+                
+                if (Array.isArray(surmansetData)) {
+                    setSurmansetItems(surmansetData.map(mapNewsItem));
+                }
+                
+                if (Array.isArray(allNews)) {
+                    setGridItems(allNews.map(mapNewsItem));
+                }
                 setVideos(videoData);
                 setPhotos(photoData);
 
@@ -166,7 +172,8 @@ const HomePage = () => {
         }
 
         const defaultOrder = ['home_top', 'headline_slider', 'home_between_mansets', 'surmanset', 'breaking_news', 'multimedia', 'categories'];
-        const savedSections = layoutConfig.sections.map(s => s.id);
+        const sections = Array.isArray(layoutConfig?.sections) ? layoutConfig.sections : [];
+        const savedSections = sections.map(s => s.id);
 
         // Find sections that might be missing in saved config but should exist
         const missing = defaultOrder.filter(id => !savedSections.includes(id));

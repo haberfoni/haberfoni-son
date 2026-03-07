@@ -25,10 +25,10 @@ export const SiteSettingsProvider = ({ children }) => {
                 fetchCategories()
             ]);
 
-            setSettings(settingsData);
-            setAds(adsData);
-            setRedirects(redirectsData);
-            setCategories(categoriesData);
+            setSettings(settingsData || {});
+            setAds(Array.isArray(adsData) ? adsData : []);
+            setRedirects(Array.isArray(redirectsData) ? redirectsData : []);
+            setCategories(Array.isArray(categoriesData) ? categoriesData : []);
 
         } catch (error) {
             console.error('Error loading site data:', error);

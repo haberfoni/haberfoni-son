@@ -33,7 +33,9 @@ const CategoryPage = () => {
 
                 // 2. Fetch News
                 const data = await fetchNewsByCategory(categoryName);
-                setCategoryNews(data.map(mapNewsItem));
+                if (Array.isArray(data)) {
+                    setCategoryNews(data.map(mapNewsItem));
+                }
             } catch (err) {
                 console.error('Error loading category page:', err);
             } finally {

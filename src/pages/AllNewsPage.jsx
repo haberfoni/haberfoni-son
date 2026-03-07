@@ -10,7 +10,9 @@ const AllNewsPage = () => {
     useEffect(() => {
         const loadNews = async () => {
             const data = await fetchNews();
-            setAllNews(data.map(mapNewsItem));
+            if (Array.isArray(data)) {
+                setAllNews(data.map(mapNewsItem));
+            }
         };
         loadNews();
         window.scrollTo(0, 0);

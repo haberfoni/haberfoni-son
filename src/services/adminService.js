@@ -1,9 +1,6 @@
 import { slugify } from '../utils/slugify.js';
 import apiClient from './apiClient';
 
-const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-const API_BASE = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:3000' : 'http://142.132.229.92:3000');
-
 export const adminService = {
     // ... (rest of the file)
     // Service: Pages
@@ -699,7 +696,7 @@ export const adminService = {
             const res = await apiClient.post('/upload/image', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            return `${API_BASE}${res.data.url}`;
+            return res.data.url;
         } catch (error) {
             console.error('Upload error:', error);
             throw new Error('Dosya yüklenirken hata oluştu.');
@@ -740,7 +737,7 @@ export const adminService = {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             if (onProgress) onProgress(100);
-            return `${API_BASE}${res.data.url}`;
+            return res.data.url;
         } catch (error) {
             console.error('Upload error:', error);
             throw new Error('Video yüklenirken hata oluştu.');
