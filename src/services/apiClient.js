@@ -3,7 +3,7 @@ import axios from 'axios';
 // Create Axios instance
 const isProd = import.meta.env.PROD;
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || (isProd ? '/api' : 'http://localhost:3000'),
+    baseURL: import.meta.env.VITE_API_URL || (isProd ? '/servis' : 'http://localhost:3000'),
     headers: {
         'Content-Type': 'application/json',
     },
