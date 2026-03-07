@@ -7,19 +7,42 @@ export const adminService = {
     async getPages() {
         try {
             const res = await apiClient.get('/pages');
-            return res.data || [];
-        } catch (e) { console.error('getPages error:', e); return []; }
+            const data = res.data;
+            return Array.isArray(data) ? data : (data?.data || []);
+        } catch (e) {
+            console.error('getPages error:', e);
+            return [];
+        }
     },
 
     // Service: Footer Sections (stubbed - not in NestJS API yet, return empty)
-    async getFooterSections() { return []; },
+    async getFooterSections() {
+        try {
+            const res = await apiClient.get('/footer-sections');
+            const data = res.data;
+            return Array.isArray(data) ? data : (data?.data || []);
+        } catch (e) {
+            console.error('getFooterSections error:', e);
+            return [];
+        }
+    },
     async createFooterSection(d) { return d; },
     async updateFooterSection(id, d) { return d; },
     async deleteFooterSection(id) { return true; },
     async reorderFooterSections(s) { return true; },
 
     // Service: Footer Links (stubbed)
-    async getFooterLinks(sectionId = null) { return []; },
+    async getFooterLinks(sectionId = null) {
+        try {
+            const url = sectionId ? `/footer-links?section_id=${sectionId}` : '/footer-links';
+            const res = await apiClient.get(url);
+            const data = res.data;
+            return Array.isArray(data) ? data : (data?.data || []);
+        } catch (e) {
+            console.error('getFooterLinks error:', e);
+            return [];
+        }
+    },
     async createFooterLink(d) { return d; },
     async updateFooterLink(id, d) { return d; },
     async deleteFooterLink(id) { return true; },

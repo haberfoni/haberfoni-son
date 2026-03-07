@@ -221,9 +221,10 @@ export const fetchNewsByCategory = async (categorySlug) => {
         const response = await apiClient.get('/news', {
             params: { category: categorySlug, limit: 100 } // Over-fetch to filter
         });
-        const data = response.data.data || [];
+        const data = response.data;
+        const items = Array.isArray(data) ? data : (data?.data || []);
         // Strictly filter out any news without an image
-        const validNews = data.filter(item => item.image_url && item.image_url.trim() !== '');
+        const validNews = items.filter(item => item && item.image_url && item.image_url.trim() !== '');
         return validNews.slice(0, 20);
     } catch (error) {
         console.error('Error fetching news by category:', error);

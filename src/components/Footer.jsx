@@ -29,22 +29,25 @@ const Footer = () => {
             try {
                 // 1. Get Sections
                 const sectionsData = await adminService.getFooterSections();
-                const activeSections = sectionsData?.filter(s => s.is_active) || [];
+                const safeSections = Array.isArray(sectionsData) ? sectionsData : (sectionsData?.data || []);
+                const activeSections = safeSections.filter(s => s && s.is_active) || [];
                 setFooterSections(activeSections);
 
                 // 2. Get Links for each section
                 const linksMap = {};
                 for (const section of activeSections) {
-                    if (section.type === 'custom_links') {
+                    if (section && section.type === 'custom_links') {
                         const links = await adminService.getFooterLinks(section.id);
-                        linksMap[section.id] = links?.filter(l => l.is_active) || [];
+                        const safeLinks = Array.isArray(links) ? links : (links?.data || []);
+                        linksMap[section.id] = safeLinks.filter(l => l && l.is_active) || [];
                     }
                 }
                 setSectionLinks(linksMap);
 
                 // 3. Get active pages for dynamic_pages sections
                 const pagesData = await adminService.getPages();
-                const activePages = pagesData?.filter(p => p.is_active) || [];
+                const safePages = Array.isArray(pagesData) ? pagesData : (pagesData?.data || []);
+                const activePages = safePages.filter(p => p && p.is_active) || [];
                 setPages(activePages);
 
             } catch (err) {

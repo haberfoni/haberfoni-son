@@ -31,12 +31,13 @@ const FooterLinksPage = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const sectionsData = await adminService.getFooterSections();
-            setSections(sectionsData || []);
+            const sectionsDataRaw = await adminService.getFooterSections();
+            const sectionsData = Array.isArray(sectionsDataRaw) ? sectionsDataRaw : (sectionsDataRaw?.data || []);
+            setSections(sectionsData);
 
             // Initial expand all
             const expanded = {};
-            sectionsData.forEach(s => expanded[s.id] = true);
+            sectionsData.forEach(s => { if (s && s.id) expanded[s.id] = true; });
             setExpandedSections(prev => ({ ...expanded, ...prev }));
 
             // Load settings
@@ -46,9 +47,10 @@ const FooterLinksPage = () => {
             // Load links for custom_links sections
             const linksData = {};
             for (const section of sectionsData) {
-                if (section.type === 'custom_links') {
-                    const links = await adminService.getFooterLinks(section.id);
-                    linksData[section.id] = links || [];
+                if (section && section.type === 'custom_links') {
+                    const linksRaw = await adminService.getFooterLinks(section.id);
+                    const links = Array.isArray(linksRaw) ? linksRaw : (linksRaw?.data || []);
+                    linksData[section.id] = links;
                 }
             }
             setLinksBySection(linksData);
