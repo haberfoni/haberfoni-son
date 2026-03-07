@@ -30,8 +30,8 @@ async function main() {
     // 2. Bot Settings
     const botSettings = [
         { source_name: 'AA', is_active: true, auto_publish: true, daily_limit: 100 },
-        { source_name: 'IHA', is_active: false, auto_publish: false, daily_limit: 50 }, // Disabled for now
-        { source_name: 'DHA', is_active: false, auto_publish: false, daily_limit: 50 }, // Disabled for now
+        { source_name: 'IHA', is_active: true, auto_publish: true, daily_limit: 50 },
+        { source_name: 'DHA', is_active: true, auto_publish: true, daily_limit: 50 },
     ];
 
     for (const setting of botSettings) {
