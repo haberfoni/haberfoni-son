@@ -20,6 +20,23 @@ export class BotService implements OnModuleInit {
     async onModuleInit() {
         this.logger.log('BotService initialized');
         await this.cleanupStuckCommands();
+        await this.ensureBotSettings();
+    }
+
+    async ensureBotSettings() {
+        try {
+            const agencies = ['AA', 'IHA', 'DHA'];
+            for (const agency of agencies) {
+                await this.prisma.botSetting.upsert({
+                    where: { source_name: agency },
+                    update: { is_active: true, auto_publish: true },
+                    create: { source_name: agency, is_active: true, auto_publish: true }
+                });
+            }
+            this.logger.log('Bot settings ensured: AA, IHA, DHA are ACTIVE and AUTO_PUBLISH is ON');
+        } catch (error) {
+            this.logger.error(`Failed to ensure bot settings: ${error.message}`);
+        }
     }
 
     async cleanupStuckCommands() {
