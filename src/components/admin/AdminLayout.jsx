@@ -212,6 +212,43 @@ const AdminLayout = () => {
                 </header>
 
                 <div className="flex-1 overflow-y-auto bg-gray-100 p-4 lg:p-8">
+                    {/* System Notifications/Errors */}
+                    {settings && Object.entries(settings).map(([key, value]) => {
+                        if ((key === 'AI_STATUS' || key.startsWith('SYSTEM_ERROR_')) && value) {
+                            try {
+                                const errorData = typeof value === 'string' ? JSON.parse(value) : value;
+                                if (errorData.status === 'ERROR') {
+                                    const isAi = key === 'AI_STATUS';
+                                    return (
+                                        <div key={key} className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+                                            <div className="flex items-start">
+                                                <div className="flex-shrink-0 mt-0.5">
+                                                    <Shield className="h-5 w-5 text-red-500" aria-hidden="true" />
+                                                </div>
+                                                <div className="ml-3 flex-1">
+                                                    <h3 className="text-sm font-bold text-red-800">
+                                                        {isAi ? 'Yapay Zeka (Gemini) Hatası!' : (errorData.title || 'Sistem Hatası!')}
+                                                    </h3>
+                                                    <div className="mt-1 text-sm text-red-700">
+                                                        <p>
+                                                            {isAi ? 'Gemini API şu an çalışmıyor veya kotası dolmuş olabilir. Haberler orijinal haliyle çekilmektedir.' : errorData.description}
+                                                        </p>
+                                                        {errorData.message && (
+                                                            <div className="mt-2 text-xs font-mono bg-red-100/50 p-2 rounded border border-red-200 overflow-x-auto text-red-600">
+                                                                <strong>Detay:</strong> {errorData.message}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                {/* Optional: Add a close button if we want to allow dismissing (requires a backend call to clear) */}
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                            } catch (e) { return null; }
+                        }
+                        return null;
+                    })}
                     <Outlet />
                 </div>
             </main>

@@ -1,9 +1,9 @@
 import axios from 'axios';
 
 // Create Axios instance
-const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const isProd = import.meta.env.PROD;
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:3000' : 'http://142.132.229.92:3000'),
+    baseURL: import.meta.env.VITE_API_URL || (isProd ? 'http://142.132.229.92:3000' : 'http://localhost:3000'),
     headers: {
         'Content-Type': 'application/json',
     },

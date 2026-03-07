@@ -13,7 +13,7 @@ export class AiService {
     const dbApiUrl = await this.settingsService.findOne('AI_API_URL');
 
     const apiKey = dbApiKey?.value || process.env.AI_API_KEY;
-    const apiUrl = dbApiUrl?.value || process.env.AI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-latest:generateContent';
+    const apiUrl = dbApiUrl?.value || process.env.AI_API_URL || 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
 
     if (!apiKey) {
       this.logger.warn('AI_API_KEY is not set (neither in DB nor in ENV). Skipping AI rewrite.');
@@ -84,9 +84,12 @@ export class AiService {
       newContent = newContent.replace(/^```html\n?/, '').replace(/\n?```$/, '');
 
       this.logger.log(`AI Successfully rewrote: ${newTitle.substring(0, 50)}...`);
+      
+      // Update status to OK
+      await this.settingsService.update('AI_STATUS', JSON.stringify({ status: 'OK', timestamp: new Date() }));
 
-      // Small delay after success to breathe (15 RPM limit = 4s per request)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Small delay after success to breathe (15 RPM limit = ~4s per request for safety)
+      await new Promise(resolve => setTimeout(resolve, 4000));
 
       return {
         title: newTitle,
@@ -94,11 +97,21 @@ export class AiService {
         content: newContent
       };
     } catch (error) {
+      let errorMessage = error.message;
       if (error.response) {
+        errorMessage = `API Error: ${error.response.status} - ${JSON.stringify(error.response.data)}`;
         this.logger.error(`AI API Error: ${error.response.status} - ${JSON.stringify(error.response.data)}`);
       } else {
         this.logger.error(`Error in AI rewrite: ${error.message}`);
       }
+
+      // Update status to ERROR
+      await this.settingsService.update('AI_STATUS', JSON.stringify({ 
+        status: 'ERROR', 
+        message: errorMessage, 
+        timestamp: new Date() 
+      }));
+
       return null;
     }
   }
