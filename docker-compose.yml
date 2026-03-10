@@ -84,14 +84,13 @@ services:
     restart: always
     ports:
       - "80:80"
-    depends_on:
-      - backend
     networks:
-      - app_network
+      - backend_network
 
 networks:
-  app_network:
-    driver: bridge
+  backend_network:
+    external: true
+    name: haberfoni-backend_app_network
 
 volumes:
   db_data:
