@@ -2,7 +2,7 @@ export const getYouTubeId = (url) => {
     if (!url) return null;
 
     // RegEx to handle various YouTube URL formats
-    // eslint-disable-next-line no-useless-escape
+     
     const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
     const match = url.match(regExp);
 

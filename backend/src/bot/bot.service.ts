@@ -74,11 +74,11 @@ export class BotService implements OnModuleInit {
         });
     }
 
-    // @Cron('*/5 * * * *')
-    // async handleCron() {
-    //     this.logger.log('Starting scheduled scrape cycle (5 min frequency)...');
-    //     await this.scrapeAll();
-    // }
+    @Cron('*/5 * * * *')
+    async handleCron() {
+        this.logger.log('Starting scheduled scrape cycle (5 min frequency)...');
+        await this.scrapeAll();
+    }
 
     async scrapeAll(commandId?: number) {
         // PREVENT OVERLAPPING: Check if any command is currently PROCESSING
@@ -475,10 +475,25 @@ export class BotService implements OnModuleInit {
                     newsItem.title = rewritten.title;
                     newsItem.summary = rewritten.summary;
                     newsItem.content = rewritten.content;
+                    newsItem.author = 'Yapay Zeka Editörü';
                     this.logger.log(`AI Rewrite SUCCESS for: ${newsItem.title}`);
                 } else {
                     this.logger.warn(`AI Rewrite FAILED or SKIPPED for: ${newsItem.title}`);
                 }
+                // Central delay to respect AI RPM limits (Gemini free is 15 RPM ~ 1 per 4s)
+                await new Promise(resolve => setTimeout(resolve, 4500));
+            }
+
+            // Clean up messy HTML content if AI didn't rewrite it
+            if (newsItem.author !== 'Yapay Zeka Editörü' && newsItem.content) {
+                newsItem.content = newsItem.content
+                    .replace(/\s(style|class)="[^"]*"/gi, '') // Remove inline styles and classes
+                    .replace(/<div[^>]*>/gi, '<p>')          // Convert divs to p
+                    .replace(/<\/div>/gi, '</p>')
+                    .replace(/<span[^>]*>/gi, '')           // Remove spans
+                    .replace(/<\/span>/gi, '')
+                    .replace(/<p>\s*<\/p>/gi, '')           // Remove empty p tags
+                    .trim();
             }
 
             // 3.6 Add Source Attribution Footer

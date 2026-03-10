@@ -350,7 +350,22 @@ const NewsListPage = () => {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="p-4 font-medium text-gray-900 max-w-xs truncate" title={item.title}>{item.title}</td>
+                                        <td className="p-4 max-w-xs truncate">
+                                            <div className="font-medium text-gray-900" title={item.title}>{item.title}</div>
+                                            {['AA', 'IHA', 'DHA'].includes(item.source) && (
+                                                <div className="mt-1 flex gap-1">
+                                                    {item.author === 'Yapay Zeka Editörü' ? (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                                            ✨ AI İçerik
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200" title="İçerik bot tarafından değiştirilmeden alındı.">
+                                                            🔄 Doğrudan Çekildi ({item.source})
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </td>
                                         <td className="p-4 capitalize text-sm text-gray-600">{item.category}</td>
                                         <td className="p-4 text-sm text-gray-500">{formatDate(item.created_at)}</td>
                                         <td className="p-4">

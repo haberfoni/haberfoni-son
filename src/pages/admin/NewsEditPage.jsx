@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft, Image as ImageIcon, Video, AlertTriangle, Eye, Trash2, X } from 'lucide-react';
+import { Save, ArrowLeft, Image as ImageIcon, Video, AlertTriangle, Eye, Trash2, X, RefreshCw } from 'lucide-react';
 
 import { adminService } from '../../services/adminService';
 import { useAuth } from '../../context/AuthContext';
@@ -310,6 +310,25 @@ const NewsEditPage = () => {
         } finally {
             setSaving(false);
         }
+    };
+
+    const cleanHTML = () => {
+        if (!formData.content) return;
+        
+        const cleaned = formData.content
+            .replace(/\s(style|class|id|width|height)="[^"]*"/gi, '') // Remove styles, classes, IDs, dimensions
+            .replace(/<div[^>]*>/gi, '<p>')                          // Div -> P
+            .replace(/<\/div>/gi, '</p>')
+            .replace(/<span[^>]*>/gi, '')                           // Remove spans
+            .replace(/<\/span>/gi, '')
+            .replace(/&nbsp;/g, ' ')                                // Clean NBSP
+            .replace(/<p>\s*<\/p>/gi, '')                           // Remove empty P
+            .replace(/<p>\s*<p>/gi, '<p>')                          // De-nest P
+            .replace(/<\/p>\s*<\/p>/gi, '</p>')
+            .trim();
+        
+        setFormData(prev => ({ ...prev, content: cleaned }));
+        alert('İçerik temizlendi. Lütfen kontrol edip kaydedin.');
     };
 
     if (loading) return <div className="p-8 text-center">Yükleniyor...</div>;
@@ -693,7 +712,18 @@ const NewsEditPage = () => {
 
                     {/* Content (Rich Text) */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">İçerik</label>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-sm font-medium text-gray-700">İçerik</label>
+                            <button
+                                type="button"
+                                onClick={cleanHTML}
+                                className="text-xs text-purple-600 hover:text-purple-800 font-bold hover:underline cursor-pointer flex items-center"
+                                title="Botlardan gelen gereksiz HTML kodlarını (stil, class vb.) temizler."
+                            >
+                                <RefreshCw size={14} className="mr-1" />
+                                HTML Metni Temizle
+                            </button>
+                        </div>
                         <RichTextEditor
                             value={formData.content}
                             onChange={(content) => {

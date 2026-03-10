@@ -4,11 +4,12 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" href="data:," />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Disable referer headers to prevent strict CDNs (like IHA) from blocking images -->
+  <meta name="referrer" content="no-referrer" />
+  
   <title>Haberfoni</title>
   <script src="/config.js" defer></script>
 
-  <link rel="preconnect" href="https://lvbyxrinwkzcjzvbozfu.supabase.co" crossorigin />
   <link rel="preconnect" href="https://api.open-meteo.com" crossorigin />
   <script>
     // Critical LCP Optimization: Removed old Supabase pre-fetch. Now using local backend via API.

@@ -24,13 +24,7 @@ const SEO = ({ title, description, image, url, type = 'website', publishedTime, 
     const fallbackUrl = `${siteUrl}${currentPath}`;
     const fullUrl = url ? (url.startsWith('http') ? url : `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`) : fallbackUrl;
 
-    console.log('%c SEO DATA ', 'background: #007bff; color: white; padding: 2px 5px; border-radius: 2px;', {
-        Title: fullTitle,
-        Description: metaDescription,
-        Canonical: fullUrl,
-        Robots: noIndex ? "noindex, nofollow" : "index, follow",
-        Keywords: tags ? tags.join(', ') : 'None'
-    });
+
 
     const structuredData = type === 'article' ? {
         "@context": "https://schema.org",

@@ -1,0 +1,13 @@
+panel
+ahmetcansertce@hotmail.com
+123456
+
+sunucuya giriş powershell(terminal)
+ssh -i $env:USERPROFILE\.ssh\id_ed25519_hetzner root@142.132.229.92
+
+ls
+
+cd
+
+--
+
