@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 // Create Axios instance
-const isProd = import.meta.env.PROD;
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || (isProd ? '/servis' : 'http://localhost:3000'),
+    // We use the local node environment to safely declare the base url.
+    baseURL: import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:3000' : '/servis'),
     headers: {
         'Content-Type': 'application/json',
     },

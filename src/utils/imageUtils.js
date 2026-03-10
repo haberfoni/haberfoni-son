@@ -1,5 +1,5 @@
-const isProd = import.meta.env.PROD;
-const API_BASE = import.meta.env.VITE_API_URL || (isProd ? '' : 'http://localhost:3000');
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:3000' : '/servis');
 
 export const getOptimizedImageUrl = (url, { width = 800, quality = 80, format = 'webp' } = {}) => {
     if (!url) return url;

@@ -57,19 +57,6 @@ services:
     networks:
       - app_network
 
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: haberfoni_frontend
-    restart: always
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
-    networks:
-      - app_network
-
   # phpMyAdmin - veritabanını tarayıcıdan yönetmek için (opsiyonel)
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
