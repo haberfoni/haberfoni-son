@@ -85,10 +85,10 @@ services:
     ports:
       - "80:80"
     networks:
-      - backend_network
+      - app_network
 
 networks:
-  backend_network:
+  app_network:
     external: true
     name: haberfoni-backend_app_network
 
