@@ -75,6 +75,20 @@ services:
     networks:
       - app_network
 
+  # Frontend & Nginx Proxy
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: haberfoni_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app_network
+
 networks:
   app_network:
     driver: bridge
