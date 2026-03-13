@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clock, Eye, Share2, Play, Calendar } from 'lucide-react';
 import { slugify } from '../utils/slugify';
 import { isDirectVideo, getEmbedUrl } from '../utils/videoUtils';
+import AIBadge from './AIBadge';
 
 const VideoArticle = ({ video, relatedVideos, onVisible }) => {
     const articleRef = useRef(null);
@@ -95,10 +96,11 @@ const VideoArticle = ({ video, relatedVideos, onVisible }) => {
                 <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
                     <div className="flex items-center space-x-4 text-gray-500 text-sm flex-wrap gap-y-2">
                         {video.source && (
-                            <div className="flex items-center space-x-1">
+                            <div className="flex items-center space-x-2">
                                 <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-0.5 rounded border border-red-200 uppercase">
                                     {video.source}
                                 </span>
+                                {video.ai_model && <AIBadge model={video.ai_model} />}
                             </div>
                         )}
                         <div className="flex items-center space-x-1">
@@ -137,6 +139,21 @@ const VideoArticle = ({ video, relatedVideos, onVisible }) => {
                         <p align="justify">Bu video için henüz bir açıklama girilmemiştir.</p>
                     )}
                 </div>
+
+                {/* Tags Display */}
+                {video.tags && video.tags.length > 0 && (
+                    <div className="mt-6 pt-4 border-t border-gray-50 flex flex-wrap gap-2">
+                        {video.tags.map(tag => (
+                            <Link
+                                key={tag.id}
+                                to={`/etiket/${tag.slug}`}
+                                className="px-3 py-1 bg-gray-50 text-gray-600 rounded-full text-xs hover:bg-primary hover:text-white transition-colors border border-gray-100"
+                            >
+                                #{tag.name}
+                            </Link>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Related Videos moved to bottom of article for mobile viewing, or as part of article body if layout permits. 

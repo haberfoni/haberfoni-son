@@ -44,14 +44,12 @@ const NewsListPage = () => {
             setLoading(true);
             const queryFilters = { ...filters };
 
-            // If user is an author, force filter by their ID
             if (profile?.role === 'author') {
                 queryFilters.authorId = user.id;
             }
 
             const { data, count } = await adminService.getNewsList(page, pageSize, queryFilters);
 
-            // Load headlines
             const headlines = await adminService.getHeadlines();
             const headlineIds = new Set(headlines.map(h => h.News?.id).filter(Boolean));
             setHeadlineNewsIds(headlineIds);
@@ -59,10 +57,8 @@ const NewsListPage = () => {
             const sortedData = [...data].sort((a, b) => {
                 const aVal = a[sortConfig.key];
                 const bVal = b[sortConfig.key];
-
                 if (aVal === null || aVal === undefined) return 1;
                 if (bVal === null || bVal === undefined) return -1;
-
                 if (sortConfig.direction === 'asc') {
                     return aVal > bVal ? 1 : -1;
                 } else {
@@ -108,7 +104,7 @@ const NewsListPage = () => {
     };
 
     const handleBulkDuplicate = async () => {
-        if (!window.confirm(`${selectedIds.length} haberi çoğaltmak istediğinize emin misiniz ? `)) return;
+        if (!window.confirm(`${selectedIds.length} haberi çoğaltmak istediğinize emin misiniz`)) return;
         try {
             await adminService.duplicateNewsBulk(selectedIds);
             loadNews();
@@ -122,7 +118,6 @@ const NewsListPage = () => {
 
     const handleDelete = async (id) => {
         if (!window.confirm('Bu haberi silmek istediğinize emin misiniz?')) return;
-
         try {
             await adminService.deleteNews(id);
             setNews(news.filter(n => n.id !== id));
@@ -134,7 +129,7 @@ const NewsListPage = () => {
     };
 
     const handleBulkDelete = async () => {
-        if (!window.confirm(`${selectedIds.length} haberi silmek istediğinize emin misiniz ? `)) return;
+        if (!window.confirm(`${selectedIds.length} haberi silmek istediğinize emin misiniz`)) return;
         try {
             await adminService.deleteNewsBulk(selectedIds);
             loadNews();
@@ -142,7 +137,7 @@ const NewsListPage = () => {
             alert('Seçilen haberler silindi.');
         } catch (error) {
             console.error('Bulk delete failed:', error);
-            alert(`Toplu silme başarısız: ${error.message || error} `);
+            alert(`Toplu silme başarısız: ${error.message || error}`);
         }
     };
 
@@ -330,7 +325,7 @@ const NewsListPage = () => {
                                 </tr>
                             ) : (
                                 news.map(item => (
-                                    <tr key={item.id} className={`hover: bg - gray - 50 transition - colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50' : ''} `}>
+                                    <tr key={item.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50' : ''}`}>
                                         <td className="p-4">
                                             <input
                                                 type="checkbox"
@@ -352,15 +347,20 @@ const NewsListPage = () => {
                                         </td>
                                         <td className="p-4 max-w-xs truncate">
                                             <div className="font-medium text-gray-900" title={item.title}>{item.title}</div>
-                                            {['AA', 'IHA', 'DHA'].includes(item.source) && (
-                                                <div className="mt-1 flex gap-1">
-                                                    {item.author === 'Yapay Zeka Editörü' ? (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                                                            ✨ AI İçerik
+                                            {item.source && ['AA', 'IHA', 'DHA'].includes(item.source) && (
+                                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                                    {item.ai_model || (item.author && (item.author.includes('Yapay Zeka') || item.author.includes('Gemini') || item.author.includes('Groq'))) ? (
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border shadow-sm ${
+                                                            (item.ai_model?.toLowerCase().includes('gemini') || item.author?.includes('Gemini')) ? 'bg-indigo-100 text-indigo-800 border-indigo-300' :
+                                                            (item.ai_model?.toLowerCase().includes('groq') || item.author?.includes('Groq')) ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                                                            item.ai_model?.toLowerCase().includes('openai') ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                                                            'bg-purple-100 text-purple-800 border-purple-300'
+                                                        }`}>
+                                                            ✨ {item.ai_model || (item.author?.includes('Groq') ? 'Groq' : 'Gemini')} İle Özgünleştirildi
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200" title="İçerik bot tarafından değiştirilmeden alındı.">
-                                                            🔄 Doğrudan Çekildi ({item.source})
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-300">
+                                                            📥 {item.source}'dan Doğrudan Çekildi
                                                         </span>
                                                     )}
                                                 </div>
@@ -384,17 +384,17 @@ const NewsListPage = () => {
                                                             alert('Güncelleme başarısız');
                                                         }
                                                     }}
-                                                    className={`inline - flex items - center px - 2 py - 1 rounded text - xs font - bold cursor - pointer transition - colors ${item.published_at ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} `}
+                                                    className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold cursor-pointer transition-colors ${item.published_at ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                                                 >
                                                     {item.published_at ? 'Aktif' : 'Pasif'}
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={(e) => { e.stopPropagation(); handleToggleHeadline(item.id, headlineNewsIds.has(item.id)); }}
-                                                    className={`inline - flex items - center px - 2 py - 1 rounded text - xs font - bold cursor - pointer transition - colors ${headlineNewsIds.has(item.id)
+                                                    className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold cursor-pointer transition-colors ${headlineNewsIds.has(item.id)
                                                         ? 'bg-green-100 text-green-800 hover:bg-green-200'
                                                         : 'bg-red-100 text-red-600 hover:bg-red-200'
-                                                        } `}
+                                                        }`}
                                                     title={headlineNewsIds.has(item.id) ? 'Manşetten Kaldır' : 'Manşete Sabitle'}
                                                 >
                                                     {headlineNewsIds.has(item.id) ? 'Sabitlemeyi Kaldır' : 'Manşete Sabitle'}
@@ -405,7 +405,7 @@ const NewsListPage = () => {
                                             <div className="flex items-center justify-center gap-1">
                                                 {item.views >= 1000 && <span title="Çok popüler!">🔥</span>}
                                                 {item.views >= 500 && item.views < 1000 && <span title="Popüler">⭐</span>}
-                                                <span className={`font - semibold ${item.views >= 1000 ? 'text-orange-600' : item.views >= 500 ? 'text-blue-600' : 'text-gray-600'} `}>
+                                                <span className={`font-semibold ${item.views >= 1000 ? 'text-orange-600' : item.views >= 500 ? 'text-blue-600' : 'text-gray-600'}`}>
                                                     {(item.views || 0).toLocaleString('tr-TR')}
                                                 </span>
                                             </div>
@@ -419,7 +419,7 @@ const NewsListPage = () => {
                                             >
                                                 <span className="text-xs font-bold">Tekrarla</span>
                                             </button>
-                                            <Link to={`/kategori/${item.category}/${item.slug || slugify(item.title)}`} target="_blank" className="inline-block p-2 text-gray-400 hover:text-primary transition-colors" title="Görüntüle" >
+                                            <Link to={`/kategori/${item.category}/${item.slug || slugify(item.title)}`} target="_blank" className="inline-block p-2 text-gray-400 hover:text-primary transition-colors" title="Görüntüle">
                                                 <Eye size={18} />
                                             </Link>
                                             <Link to={`/admin/news/edit/${item.id}`} className="inline-block p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Düzenle">
@@ -433,13 +433,13 @@ const NewsListPage = () => {
                                             >
                                                 <Trash2 size={18} />
                                             </button>
-                                        </td >
-                                    </tr >
+                                        </td>
+                                    </tr>
                                 ))
                             )}
-                        </tbody >
-                    </table >
-                </div >
+                        </tbody>
+                    </table>
+                </div>
 
                 {totalPages > 1 && (
                     <div className="flex justify-center p-4 border-t border-gray-100 space-x-2">
@@ -460,8 +460,8 @@ const NewsListPage = () => {
                         </button>
                     </div>
                 )}
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };
 

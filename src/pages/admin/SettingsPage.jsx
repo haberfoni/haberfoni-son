@@ -32,6 +32,8 @@ const SettingsPage = () => {
         google_youtube_api_key: '',
         ai_api_key: '',
         ai_api_url: '',
+        groq_api_key: '',
+        openai_api_key: '',
         copy_protection: 'false',
     });
 
@@ -444,6 +446,60 @@ const SettingsPage = () => {
                                             onChange={handleChange}
                                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary"
                                         />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mt-8 border-t pt-8">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4">Yapay Zeka (AI) Entegrasyonları</h3>
+                                <div className="bg-purple-50 border-l-4 border-purple-500 p-4 mb-6">
+                                    <p className="text-sm text-purple-700">
+                                        Bot için <strong>Hibrit AI</strong> sistemi aktiftir. Bot öncelikle Gemini'yi dener, kota dolarsa otomatik olarak Groq üzerinden devam eder.
+                                    </p>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-purple-700 mb-2">Gemini API Key (Haberfoni AI)</label>
+                                        <div className="relative">
+                                            <Key size={18} className="absolute left-3 top-2.5 text-purple-400" />
+                                            <input
+                                                type="password"
+                                                name="ai_api_key"
+                                                value={settings.ai_api_key}
+                                                onChange={handleChange}
+                                                className="w-full pl-10 pr-4 py-2 border border-purple-200 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                                                placeholder="Gemini API Anahtarınız"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-orange-700 mb-2">Groq API Key (Yedek AI)</label>
+                                        <div className="relative">
+                                            <Key size={18} className="absolute left-3 top-2.5 text-orange-400" />
+                                            <input
+                                                type="password"
+                                                name="groq_api_key"
+                                                value={settings.groq_api_key}
+                                                onChange={handleChange}
+                                                className="w-full pl-10 pr-4 py-2 border border-orange-200 rounded-lg focus:ring-orange-500 focus:border-orange-500"
+                                                placeholder="Groq API Anahtarınız"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-green-700 mb-2">OpenAI API Key (2. Yedek)</label>
+                                        <div className="relative">
+                                            <Key size={18} className="absolute left-3 top-2.5 text-green-400" />
+                                            <input
+                                                type="password"
+                                                name="openai_api_key"
+                                                value={settings.openai_api_key}
+                                                onChange={handleChange}
+                                                className="w-full pl-10 pr-4 py-2 border border-green-200 rounded-lg focus:ring-green-500 focus:border-green-500"
+                                                placeholder="OpenAI API Anahtarınız"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>

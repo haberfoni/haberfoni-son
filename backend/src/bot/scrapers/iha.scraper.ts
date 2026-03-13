@@ -110,14 +110,20 @@ async function scrapeIHAHTML(url: string, targetCategory: string, bot: BotServic
 
         // Target specific category widgets to avoid scraping sidebar/breaking news
         // If no specific widgets are found (like on the video page), fall back to a broader set of links
+        // Target specific category widgets or more generic sections
         let selector = '.widget_General_Category_Dashboard a, .widget_General_Category_TopFive a, .widget_General_Category_All a, .widget_VideoNews_Dashboard a, .widget_VideoNews_TopFive a, .widget_VideoNews_All a';
+        
+        // If the classic widgets are empty, use the new structure (flex, grid based)
         if ($(selector).length === 0) {
-            selector = '.video-category-list a, .gallery-category-list a, main a, article a, .news-card a, .news-detail a';
+            selector = 'main a[href*="/haber-"], main a[href*="/video-"], main a[href*="/foto-galeri-"], .content a[href*="/haber-"], .flex a[href*="/haber-"]';
         }
 
         $(selector).each((i, elem) => {
             const href = $(elem).attr('href');
             if (href) {
+                // Ignore hash links or purely functional links
+                if (href === '#' || href.startsWith('javascript:')) return;
+
                 const isMatch = (href.includes('/video-') || href.includes('/foto-galeri-') || href.includes('/haber-') || href.match(/-[\d]+\/?$/));
                 if (isMatch) {
                     const fullUrl = href.startsWith('http') ? href : `https://www.iha.com.tr${href}`;
@@ -126,7 +132,7 @@ async function scrapeIHAHTML(url: string, targetCategory: string, bot: BotServic
             }
         });
 
-        console.log(`  Found ${articleLinks.size} candidate links for IHA. Sample:`, Array.from(articleLinks).slice(0, 3));
+        console.log(`  Found ${articleLinks.size} candidate links for IHA.`);
         let count = 0;
         const linksArray = Array.from(articleLinks).slice(0, 30);
         const BATCH_SIZE = 5;
@@ -305,13 +311,17 @@ async function scrapeIHAArticle(url: string, targetCategory: string) {
         let imageUrl: string | null = null;
         const candidates = [
             $('meta[property="og:image"]').attr('content'),
-            $('div.gallery-img img').first().attr('src'),
+            $('meta[name="twitter:image"]').attr('content'),
+            $('.news-detail__content img').first().attr('data-src'),
+            $('.news-detail__content img').first().attr('src'),
+            $('figure img').first().attr('data-src'),
             $('figure img').first().attr('src'),
             $('.article-img img').first().attr('src'),
             $('article img').first().attr('src'),
+            $('div.gallery-img img').first().attr('src'),
         ];
         for (const c of candidates) {
-            if (c && !isBlockedImage(c)) {
+            if (c && !isBlockedImage(c) && !c.includes('base64')) {
                 imageUrl = c.startsWith('http') ? c : 'https://www.iha.com.tr' + c;
                 break;
             }

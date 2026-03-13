@@ -105,7 +105,7 @@ async function scrapeAAHTML(url: string, targetCategory: string, bot: BotService
         // Target the main category news lists specifically
         let selector = '.category-news-list a, .list-news-item a, .news-list-item a, main a, article a';
         if ($(selector).length === 0) {
-            selector = 'a[href*="/tr/"]';
+            selector = 'main a[href*="/tr/"], .content a[href*="/tr/"], a[href*="/tr/"]';
         }
 
         $(selector).each((i, elem) => {

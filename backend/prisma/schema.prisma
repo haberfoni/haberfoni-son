@@ -14,11 +14,12 @@ model News {
   summary         String?    @db.Text
   content         String?    @db.LongText
   image_url       String?    @db.Text
-  category        String?    @db.VarChar(100)
+  category        String?    @db.VarChar(255)
   category_id     Int?
   original_url    String?    @unique @db.VarChar(512)
   source          String?    @db.VarChar(100)
-  author          String?    @db.VarChar(100)
+  author          String?    @db.VarChar(255)
+  ai_model        String?    @db.VarChar(100)
   author_id       String?    @db.VarChar(100)
   published_at    DateTime?
   is_active       Boolean    @default(true)
@@ -175,6 +176,7 @@ model BotCategoryMapping {
   last_scraped_at DateTime?
   last_status     String?
   last_item_count Int       @default(0)
+  last_error      String?   @db.Text
   created_at      DateTime  @default(now())
   updated_at      DateTime  @updatedAt
 
@@ -219,13 +221,39 @@ model Redirect {
 }
 
 model Tag {
-  id         Int       @id @default(autoincrement())
-  name       String    @unique @db.VarChar(100)
-  slug       String    @unique @db.VarChar(100)
-  created_at DateTime  @default(now())
-  NewsTags   NewsTag[]
+  id               Int                @id @default(autoincrement())
+  name             String             @unique @db.VarChar(100)
+  slug             String             @unique @db.VarChar(100)
+  created_at       DateTime           @default(now())
+  NewsTags         NewsTag[]
+  VideoTags        VideoTag[]
+  PhotoGalleryTags PhotoGalleryTag[]
 
   @@map("tags")
+}
+
+model VideoTag {
+  video_id   Int
+  tag_id     Int
+  created_at DateTime @default(now())
+  Video      Video    @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  Tag        Tag      @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([video_id, tag_id])
+  @@index([tag_id], map: "video_tags_tag_id_fkey")
+  @@map("video_tags")
+}
+
+model PhotoGalleryTag {
+  gallery_id Int
+  tag_id     Int
+  created_at DateTime @default(now())
+  Gallery    PhotoGallery @relation(fields: [gallery_id], references: [id], onDelete: Cascade)
+  Tag        Tag          @relation(fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@id([gallery_id, tag_id])
+  @@index([tag_id], map: "photo_gallery_tags_tag_id_fkey")
+  @@map("photo_gallery_tags")
 }
 
 model NewsTag {
@@ -305,6 +333,8 @@ model Video {
   source          String?   @db.VarChar(50)
   slug            String?   @unique @db.VarChar(255)
   author          String?   @db.VarChar(100)
+  ai_model        String?   @db.VarChar(50)
+  VideoTags       VideoTag[]
 
   @@map("videos")
 }
@@ -325,7 +355,9 @@ model PhotoGallery {
   original_url    String?             @db.Text
   source          String?             @db.VarChar(50)
   author          String?             @db.VarChar(100)
+  ai_model        String?             @db.VarChar(50)
   gallery_images  PhotoGalleryImage[]
+  PhotoGalleryTags PhotoGalleryTag[]
 
   @@map("photo_galleries")
 }

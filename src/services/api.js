@@ -24,9 +24,15 @@ export const fetchNews = async () => {
         const response = await apiClient.get('/news?limit=100');
         const data = response.data;
         const items = Array.isArray(data) ? data : (data?.data || []);
-        // Strictly filter out any news without an image
-        const validNews = items.filter(item => item && item.image_url && item.image_url.trim() !== '');
-        return validNews.slice(0, 30);
+        // Prioritize news with images, but don't strictly hide others
+        const sortedNews = items.sort((a, b) => {
+            const hasImgA = a.image_url && a.image_url.trim() !== '';
+            const hasImgB = b.image_url && b.image_url.trim() !== '';
+            if (hasImgA && !hasImgB) return -1;
+            if (!hasImgA && hasImgB) return 1;
+            return 0;
+        });
+        return sortedNews.slice(0, 30);
     } catch (error) {
         console.error('Error fetching news:', error);
         return [];
@@ -223,9 +229,9 @@ export const fetchNewsByCategory = async (categorySlug) => {
         });
         const data = response.data;
         const items = Array.isArray(data) ? data : (data?.data || []);
-        // Strictly filter out any news without an image
-        const validNews = items.filter(item => item && item.image_url && item.image_url.trim() !== '');
-        return validNews.slice(0, 20);
+        // Don't filter out news without images in category pages anymore
+        // Users want to see the latest news even if images are missing
+        return items.slice(0, 24);
     } catch (error) {
         console.error('Error fetching news by category:', error);
         return [];

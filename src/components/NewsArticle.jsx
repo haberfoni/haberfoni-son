@@ -7,6 +7,7 @@ import { getEmbedUrl, isDirectVideo } from '../utils/videoUtils';
 import ImageWithFallback from './ImageWithFallback';
 
 import SourceBadge from './SourceBadge';
+import AIBadge from './AIBadge';
 import { formatDate } from '../utils/mappers';
 
 const NewsArticle = ({ news, onVisible }) => {
@@ -68,8 +69,9 @@ const NewsArticle = ({ news, onVisible }) => {
                 <div className="flex flex-wrap items-center gap-4 text-gray-500 text-sm">
                     {/* Source Logo */}
                     {news.source && (
-                        <div className="mr-2">
+                        <div className="flex items-center space-x-2 mr-2">
                             <SourceBadge source={news.source} />
+                            {news.ai_model && <AIBadge model={news.ai_model} />}
                         </div>
                     )}
 
@@ -78,7 +80,7 @@ const NewsArticle = ({ news, onVisible }) => {
                         <div className="flex items-center">
                             {news.author && (
                                 <span className="font-semibold text-gray-900 mr-2">
-                                    {news.author}
+                                    {news.author.includes('Yapay Zeka') ? 'Yapay Zeka Editörü' : news.author}
                                 </span>
                             )}
                             {news.author && news.published_at && <span className="mx-2 text-gray-300">|</span>}

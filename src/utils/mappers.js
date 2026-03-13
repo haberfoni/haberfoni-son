@@ -29,13 +29,14 @@ export const mapNewsItem = (item) => {
         image_url: getOptimizedImageUrl(item.image_url), // For ads
         adPlacementId: item.adPlacementId, // For ad tracking
         adPlacementId: item.adPlacementId, // For ad tracking
-        tags: item.tags, // Pass tags through
+        tags: item.NewsTags ? item.NewsTags.map(nt => nt.Tag) : (item.tags || []), // Normalize from NewsTags relation or fallback
         seo_title: item.seo_title,
         seo_description: item.seo_description,
         seo_keywords: item.seo_keywords,
         is_published: !!item.published_at, // Derived from timestamp
         published_at: item.published_at,
-        source: item.source
+        source: item.source,
+        ai_model: item.ai_model
     };
 };
 
@@ -53,7 +54,9 @@ export const mapVideoItem = (item) => {
         seo_title: item.seo_title,
         seo_description: item.seo_description,
         seo_keywords: item.seo_keywords,
-        source: item.source
+        source: item.source,
+        tags: item.VideoTags ? item.VideoTags.map(vt => vt.Tag) : (item.tags || []),
+        ai_model: item.ai_model
     };
 };
 
@@ -70,6 +73,8 @@ export const mapPhotoGalleryItem = (item) => {
         seo_title: item.seo_title,
         seo_description: item.seo_description,
         seo_keywords: item.seo_keywords,
-        source: item.source
+        source: item.source,
+        tags: item.PhotoGalleryTags ? item.PhotoGalleryTags.map(pt => pt.Tag) : (item.tags || []),
+        ai_model: item.ai_model
     };
 };

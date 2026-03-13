@@ -54,7 +54,15 @@ export class VideosService {
 
     findOne(id: number) {
         return this.prisma.video.findUnique({
-            where: { id }
+            where: { id },
+            include: { VideoTags: { include: { Tag: true } } }
+        });
+    }
+
+    findBySlug(slug: string) {
+        return this.prisma.video.findUnique({
+            where: { slug },
+            include: { VideoTags: { include: { Tag: true } } }
         });
     }
 

@@ -44,8 +44,8 @@ export async function scrapeDHA(bot: BotService) {
                 const articles: any[] = [];
 
                 // Targeted selectors for DHA main content areas
-                let selector = '.nd-content-column a, .category-news-list a, .nd-news-list a, main a, article a, .news-card a';
-                if ($(selector).length === 0) selector = 'a'; // Extremely loose fallback if nothing found
+                let selector = '.nd-content-column a, .category-news-list a, .nd-news-list a, main a, article a, .news-card a, .swiper-slide a';
+                if ($(selector).length === 0) selector = '.content a, .flex a, a'; // Extremely loose fallback if nothing found
 
                 $(selector).each((i, el) => {
                     const link = $(el).attr('href');

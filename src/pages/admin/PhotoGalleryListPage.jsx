@@ -279,7 +279,27 @@ const PhotoGalleryListPage = () => {
                                                 <img src={getOptimizedImageUrl(item.thumbnail_url) || 'https://via.placeholder.com/150'} alt="" className="w-full h-full object-cover" />
                                             </div>
                                         </td>
-                                        <td className="p-4 font-medium text-gray-900">{item.title}</td>
+                                        <td className="p-4">
+                                            <div className="font-medium text-gray-900">{item.title}</div>
+                                            {item.source && ['AA', 'IHA', 'DHA'].includes(item.source) && (
+                                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                                    {(item.ai_model || (item.author && (item.author.includes('Yapay Zeka') || item.author.includes('Gemini') || item.author.includes('Groq')))) ? (
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border shadow-sm ${
+                                                            (item.ai_model?.toLowerCase().includes('gemini') || item.author?.includes('Gemini')) ? 'bg-indigo-100 text-indigo-800 border-indigo-300' :
+                                                            (item.ai_model?.toLowerCase().includes('groq') || item.author?.includes('Groq')) ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                                                            item.ai_model?.toLowerCase().includes('openai') ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                                                            'bg-purple-100 text-purple-800 border-purple-300'
+                                                        }`}>
+                                                            ✨ {item.ai_model || (item.author?.includes('Groq') ? 'Groq' : 'Gemini')} İle Özgünleştirildi
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-300">
+                                                            📥 {item.source}'dan Doğrudan Çekildi
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </td>
                                         <td className="p-4 text-center">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); toggleStatus(item); }}

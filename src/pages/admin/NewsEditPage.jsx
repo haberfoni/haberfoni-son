@@ -357,6 +357,29 @@ const NewsEditPage = () => {
                 )
             }
 
+            {formData.ai_model && (
+                <div className={`p-3 rounded-lg mb-6 border flex items-center justify-between ${
+                    formData.ai_model === 'Gemini' ? 'bg-purple-50 border-purple-100 text-purple-700' :
+                    formData.ai_model === 'Groq' ? 'bg-orange-50 border-orange-100 text-orange-700' :
+                    'bg-green-50 border-green-100 text-green-700'
+                }`}>
+                    <div className="flex items-center">
+                        <span className="text-xl mr-2">🤖</span>
+                        <div>
+                            <p className="text-sm font-bold">Yapay Zeka Düzenlemesi Aktif</p>
+                            <p className="text-xs opacity-80">Bu haber <strong>{formData.ai_model}</strong> modeli tarafından özgünleştirilmiştir.</p>
+                        </div>
+                    </div>
+                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase border ${
+                        formData.ai_model === 'Gemini' ? 'bg-purple-100 border-purple-200' :
+                        formData.ai_model === 'Groq' ? 'bg-orange-100 border-orange-200' :
+                        'bg-green-100 border-green-200'
+                    }`}>
+                        {formData.ai_model}
+                    </span>
+                </div>
+            )}
+
             <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="p-6 space-y-6">
                     {/* Title */}

@@ -25,9 +25,12 @@ export class VideosController {
         });
     }
 
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.videosService.findOne(+id);
+    @Get(':idOrSlug')
+    findOne(@Param('idOrSlug') idOrSlug: string) {
+        if (isNaN(+idOrSlug)) {
+            return this.videosService.findBySlug(idOrSlug);
+        }
+        return this.videosService.findOne(+idOrSlug);
     }
 
     @Patch(':id')

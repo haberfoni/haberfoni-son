@@ -5,13 +5,16 @@ node_modules/
 dist/
 
 # Environment variables
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+.env
+.env.local
+.env.production
+.env.test
+.env.development
 
 # Runtime data
+public/uploads/
+uploads/
+backend/uploads/
 pids
 *.pid
 *.seed
@@ -23,52 +26,43 @@ coverage/
 # nyc test coverage
 .nyc_output
 
-# Optional npm cache directory
-.npm
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
-
-# next.js build output
-.next
-
-# nuxt.js build output
-.nuxt
-
-# vuepress build output
-.vuepress/dist
-
-# Serverless directories
-.serverless
-
-# FuseBox cache
-.fusebox/
-
-# DynamoDB Local files
-.dynamodb/
-
-# TernJS port file
-.tern-port
-
-# Stores VSCode versions used for testing VSCode extensions
-.vscode-test
-
-# yarn v2
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
-.pnp.*
+# Diagnostic and temporary scripts
+backend/*.js
+!backend/src/**
+backend/*.txt
+bot/*.js
+!bot/src/**
+*.bat
+*.sh
+*.sql
+*.log
+diag.cjs
+test-*.js
+check-*.js
+trigger_bot.js
+diagnose_news.js
+test_ai_visual.js
+check_visual_settings.js
+check_news_images.js
+check_status_full.js
+check_galleries.js
+check_latest.js
+check_mappings.js
+check_sources.js
+check_categories.js
+add_gundem_mappings.js
+verify_gallery.js
+create_bucket.js
+mimic-ad-logic.js
+load-config.js
+login-test.js
+update-layout-db.js
+update_summaries.js
+set-admin.js
+disable-surmanset.js
+check-schema.js
+check-rls.js
+diag_output.txt
 
 # IDE files
 .vscode/

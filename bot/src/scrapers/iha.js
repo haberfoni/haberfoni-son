@@ -92,15 +92,33 @@ export async function scrapeIHAArticle(url, targetCategory) {
         const candidateSelectors = [
             $('meta[property="og:image"]').attr('content'),
             $('div.gallery-img img').first().attr('src'),
+            $('div.gallery-img img').first().attr('data-src'),
             $('figure img').first().attr('src'),
+            $('figure img').first().attr('data-src'),
             $('.article-img img').first().attr('src'),
+            $('.article-img img').first().attr('data-src'),
+            $('#habericerik img').first().attr('src'),
+            $('#habericerik img').first().attr('data-src'),
             $('article img').first().attr('src'),
+            $('article img').first().attr('data-src'),
         ];
         for (const candidate of candidateSelectors) {
             if (candidate && !isBlockedImage(candidate)) {
                 imageUrl = candidate.startsWith('http') ? candidate : 'https://www.iha.com.tr' + candidate;
                 break;
             }
+        }
+
+        // Extract keywords/tags
+        let keywords = $('meta[name="keywords"]').attr('content') || 
+                       $('meta[name="news_keywords"]').attr('content') || '';
+        
+        if (!keywords) {
+            const tags = [];
+            $('.tags a, .tag-list a, .haber-etiketleri a').each((i, el) => {
+                tags.push($(el).text().trim());
+            });
+            keywords = tags.join(', ');
         }
 
         // Content Extraction - paragraph by paragraph to get full text
@@ -161,7 +179,7 @@ export async function scrapeIHAArticle(url, targetCategory) {
             source: 'IHA',
             author: author,
             category: targetCategory,
-            keywords: ''
+            keywords: keywords
         };
     } catch (error) {
         throw new Error(`Failed to scrape article: ${error.message}`);

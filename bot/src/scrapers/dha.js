@@ -269,6 +269,11 @@ export async function scrapeDHA() {
                             if (match) author = match[1];
                         }
 
+                        // Extract keywords/tags
+                        const keywords = $detail('meta[name="keywords"]').attr('content') || 
+                                         $detail('meta[name="news_keywords"]').attr('content') || 
+                                         $detail('.tags a, .tag-list a, .haber-etiketleri a').map((i, el) => $detail(el).text().trim()).get().join(', ') || '';
+
                         // Append Agency Name
                         summary = `${summary} - Demirören Haber Ajansı`;
 
@@ -277,6 +282,7 @@ export async function scrapeDHA() {
                             content: content,
                             summary: summary,
                             author: author, // Author or null/undefined (database will handle it)
+                            keywords: keywords
                         };
 
                         const success = await saveNews(newsItem);

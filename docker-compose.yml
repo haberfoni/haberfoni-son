@@ -39,23 +39,10 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - uploads_data:/public/uploads
+      - ./public/uploads:/public/uploads
     networks:
       - app_network
 
-  bot:
-    build:
-      context: ./bot
-      dockerfile: Dockerfile
-    container_name: haberfoni_bot
-    restart: always
-    environment:
-      DATABASE_URL: mysql://${MYSQL_USER:-haberfoni_user}:${MYSQL_PASSWORD:-Haberfoni_Secur3!DB}@db:3306/${MYSQL_DATABASE:-haberfoni}
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - app_network
 
   # phpMyAdmin - veritabanını tarayıcıdan yönetmek için (opsiyonel)
   phpmyadmin:
@@ -84,6 +71,21 @@ services:
     restart: always
     ports:
       - "80:80"
+    networks:
+      - app_network
+
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    container_name: haberfoni_bot
+    restart: always
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER:-haberfoni_user}:${MYSQL_PASSWORD:-Haberfoni_Secur3!DB}@db:3306/${MYSQL_DATABASE:-haberfoni}
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - app_network
 

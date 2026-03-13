@@ -25,9 +25,12 @@ export class GalleriesController {
         });
     }
 
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.galleriesService.findOne(+id);
+    @Get(':idOrSlug')
+    findOne(@Param('idOrSlug') idOrSlug: string) {
+        if (isNaN(+idOrSlug)) {
+            return this.galleriesService.findBySlug(idOrSlug);
+        }
+        return this.galleriesService.findOne(+idOrSlug);
     }
 
     @Patch(':id')

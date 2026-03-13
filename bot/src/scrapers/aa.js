@@ -116,6 +116,17 @@ async function scrapeAAArticle(url, targetCategory) {
             null;
         const imageUrl = isBlockedImage(imageUrlRaw) ? null : imageUrlRaw;
 
+        // Extract keywords/tags
+        let keywords = $('meta[name="keywords"]').attr('content') || 
+                       $('meta[name="news_keywords"]').attr('content') || '';
+        
+        if (!keywords) {
+            const tags = [];
+            $('.tags a, .tag-list a, .ilgili-konular a').each((i, el) => {
+                tags.push($(el).text().trim());
+            });
+            keywords = tags.join(', ');
+        }
 
         // Extract content - try to find article body
         let contentEl = $('.detay-icerik');
@@ -211,7 +222,7 @@ async function scrapeAAArticle(url, targetCategory) {
             source: 'AA',
             author: author, // Add extracted author
             category: targetCategory,
-            keywords: ''
+            keywords: keywords
         };
     } catch (error) {
         throw new Error(`Failed to scrape article: ${error.message}`);
@@ -260,7 +271,7 @@ export async function scrapeAA() {
                             image_url: imageUrl,
                             source: 'AA',
                             category: mapping.target_category,
-                            keywords: ''
+                            keywords: item.categories ? item.categories.join(', ') : ''
                         };
 
                         const success = await saveNews(newsItem);

@@ -89,14 +89,24 @@ export class NewsService {
   async findBySlug(slug: string) {
     return this.prisma.news.findFirst({
       where: { slug },
-      include: { Category: true }
+      include: { 
+        Category: true,
+        NewsTags: {
+          include: { Tag: true }
+        }
+      }
     });
   }
 
   findOne(id: number) {
     return this.prisma.news.findUnique({
       where: { id },
-      include: { Category: true },
+      include: { 
+        Category: true,
+        NewsTags: {
+          include: { Tag: true }
+        }
+      },
     });
   }
 

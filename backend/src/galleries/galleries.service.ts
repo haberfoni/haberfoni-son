@@ -56,7 +56,20 @@ export class GalleriesService {
     findOne(id: number) {
         return this.prisma.photoGallery.findUnique({
             where: { id },
-            include: { gallery_images: { orderBy: { order_index: 'asc' } } }
+            include: { 
+                gallery_images: { orderBy: { order_index: 'asc' } },
+                PhotoGalleryTags: { include: { Tag: true } }
+            }
+        });
+    }
+
+    findBySlug(slug: string) {
+        return this.prisma.photoGallery.findUnique({
+            where: { slug },
+            include: { 
+                gallery_images: { orderBy: { order_index: 'asc' } },
+                PhotoGalleryTags: { include: { Tag: true } }
+            }
         });
     }
 

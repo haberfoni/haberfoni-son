@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clock, Eye, Share2, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import { slugify } from '../utils/slugify';
 import { getOptimizedImageUrl } from '../utils/imageUtils';
+import AIBadge from './AIBadge';
 
 const PhotoArticle = ({ album, images, relatedAlbums, onVisible }) => {
     const articleRef = useRef(null);
@@ -69,10 +70,11 @@ const PhotoArticle = ({ album, images, relatedAlbums, onVisible }) => {
                 <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <div className="flex items-center space-x-4 text-gray-500 text-sm flex-wrap gap-y-2">
                         {album.source && (
-                            <div className="flex items-center space-x-1">
+                            <div className="flex items-center space-x-2">
                                 <span className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded border border-yellow-200 uppercase">
                                     {album.source}
                                 </span>
+                                {album.ai_model && <AIBadge model={album.ai_model} />}
                             </div>
                         )}
                         <div className="flex items-center space-x-1 text-primary">
@@ -212,6 +214,21 @@ const PhotoArticle = ({ album, images, relatedAlbums, onVisible }) => {
                     </div>
                 ) : (
                     <div className="py-20 text-center text-gray-400">Görsel bulunamadı.</div>
+                )}
+
+                {/* Tags Display */}
+                {album.tags && album.tags.length > 0 && (
+                    <div className="mt-8 pt-4 border-t border-gray-50 flex flex-wrap gap-2">
+                        {album.tags.map(tag => (
+                            <Link
+                                key={tag.id}
+                                to={`/etiket/${tag.slug}`}
+                                className="px-3 py-1 bg-gray-50 text-gray-600 rounded-full text-xs hover:bg-yellow-500 hover:text-white transition-colors border border-gray-100"
+                            >
+                                #{tag.name}
+                            </Link>
+                        ))}
+                    </div>
                 )}
             </div>
 

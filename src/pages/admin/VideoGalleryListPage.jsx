@@ -234,7 +234,7 @@ const VideoGalleryListPage = () => {
                                 <tr><td colSpan="8" className="p-8 text-center text-gray-500">Video bulunamadı.</td></tr>
                             ) : (
                                 videos.map(item => (
-                                    <tr key={item.id} className={`hover: bg - gray - 50 transition - colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50' : ''} `}>
+                                    <tr key={item.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50' : ''}`}>
                                         <td className="p-4">
                                             <input
                                                 type="checkbox"
@@ -251,14 +251,34 @@ const VideoGalleryListPage = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="p-4 font-medium text-gray-900 line-clamp-2 max-w-xs">{item.title}</td>
+                                        <td className="p-4">
+                                            <div className="font-medium text-gray-900 line-clamp-2 max-w-xs">{item.title}</div>
+                                            {item.source && ['AA', 'IHA', 'DHA'].includes(item.source) && (
+                                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                                    {(item.ai_model || (item.author && (item.author.includes('Yapay Zeka') || item.author.includes('Gemini') || item.author.includes('Groq')))) ? (
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border shadow-sm ${
+                                                            (item.ai_model?.toLowerCase().includes('gemini') || item.author?.includes('Gemini')) ? 'bg-indigo-100 text-indigo-800 border-indigo-300' :
+                                                            (item.ai_model?.toLowerCase().includes('groq') || item.author?.includes('Groq')) ? 'bg-orange-100 text-orange-800 border-orange-300' :
+                                                            item.ai_model?.toLowerCase().includes('openai') ? 'bg-blue-100 text-blue-800 border-blue-300' :
+                                                            'bg-purple-100 text-purple-800 border-purple-300'
+                                                        }`}>
+                                                            ✨ {item.ai_model || (item.author?.includes('Groq') ? 'Groq' : 'Gemini')} İle Özgünleştirildi
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-300">
+                                                            📥 {item.source}'dan Doğrudan Çekildi
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </td>
                                         <td className="p-4 text-center">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); toggleStatus(item); }}
-                                                className={`px - 3 py - 1 rounded - full text - xs font - medium transition - colors ${item.published_at
+                                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${item.published_at
                                                         ? 'bg-green-100 text-green-800 hover:bg-green-200'
                                                         : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                                                    } `}
+                                                    }`}
                                             >
                                                 {item.published_at ? 'Yayında' : 'Taslak'}
                                             </button>
